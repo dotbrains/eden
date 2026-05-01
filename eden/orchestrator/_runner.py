@@ -89,6 +89,26 @@ class _AgentRunner:
             self._watchdog.record_activity()
             yield item.rstrip("\n")
 
+    def drain_remaining(self, *, per_item_timeout: float = 0.5) -> list[str]:
+        """Return buffered lines remaining after the completion signal.
+
+        Called once the completion signal is matched so that trailing lines
+        (e.g. the ``result`` JSON emitted by ``claude --output-format
+        stream-json``) are captured before the process is terminated.  Each
+        ``get`` waits up to *per_item_timeout* seconds; the loop exits as soon
+        as the queue is empty for that window or a sentinel (EOF) arrives.
+        """
+        lines: list[str] = []
+        while True:
+            try:
+                item = self._stdout_q.get(timeout=per_item_timeout)
+            except Empty:
+                break
+            if item is _SENTINEL:
+                break
+            lines.append(item.rstrip("\n"))
+        return lines
+
     def terminate(self) -> None:
         proc = self._proc
         if proc is None or proc.poll() is not None:

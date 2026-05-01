@@ -220,6 +220,26 @@ def _run_loop(
                         hit = match(line, completion_signal)
                         if hit is not None:
                             iter_completion = hit
+                            # Drain any trailing lines before terminating so that
+                            # the agent's final ``result`` line (carrying
+                            # session_id + usage) is captured even when the
+                            # completion signal fires before the process exits.
+                            for trailing in runner.drain_remaining():
+                                stdout_chunks.append(trailing + "\n")
+                                trailing_parsed = agent.parse_stream(trailing)
+                                if trailing_parsed is not None:
+                                    tev = replace(
+                                        trailing_parsed,
+                                        iteration=i,
+                                        agent_name=agent.name,
+                                    )
+                                    if tev.type == "usage":
+                                        iter_session_id = tev.session_id
+                                        iter_usage = tev.usage
+                                    if sink is not None:
+                                        sink.write(tev)
+                                    if on_event is not None:
+                                        on_event(tev)
                             runner.terminate()
                             break
             finally:
@@ -227,11 +247,28 @@ def _run_loop(
 
             if iter_session_id is not None and captures:
                 try:
+                    # ``sandbox_cwd`` is the working directory Claude Code sees
+                    # when it writes its session JSONL.  For no_sandbox the
+                    # agent subprocess inherits the host CWD (host_repo_path);
+                    # for container-based sandboxes, handle.worktree_path holds
+                    # the in-container path (e.g. /workspace).  Use
+                    # host_repo_path when the handle's worktree_path lives
+                    # inside host_repo_path (i.e. no_sandbox / native
+                    # execution), otherwise use the handle's own path.
+                    if (
+                        wt.host_repo_path in handle.worktree_path.parents
+                        or handle.worktree_path == wt.host_repo_path
+                    ):
+                        effective_sandbox_cwd = wt.host_repo_path
+                    else:
+                        effective_sandbox_cwd = handle.worktree_path
+                    # Store session files under the target branch name so all
+                    # iterations for a given target are co-located.
                     iter_session_file = capture_session(
                         session_id=iter_session_id,
-                        sandbox_cwd=handle.worktree_path,
+                        sandbox_cwd=effective_sandbox_cwd,
                         host_repo_path=setup.cwd,
-                        branch=wt.branch,
+                        branch=target_branch,
                         iteration=i,
                     )
                 except SessionCaptureFailed as exc:
