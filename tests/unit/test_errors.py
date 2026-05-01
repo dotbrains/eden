@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from eden.providers._types import ExecResult
 
 from eden.errors import EdenError
+from eden.providers._types import ExecResult
 from eden.sandboxes.errors import (
     ContainerStartFailed,
     ExecFailed,
