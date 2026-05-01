@@ -5,7 +5,7 @@ from __future__ import annotations
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
 from eden._version import __version__
 from eden.abort import AbortController, Aborted, AbortSignal
-from eden.agents import Agent, IterationContext, simulated_agent
+from eden.agents import Agent, IterationContext, claude_code, simulated_agent
 from eden.errors import (
     ConfigError,
     CwdError,
@@ -18,6 +18,7 @@ from eden.errors import (
     IdleTimeout,
     InvalidOptions,
     PromptError,
+    SessionCaptureFailed,
     StepTimeout,
 )
 from eden.lifecycle import Hook, HookPhase, Hooks, HostHooks, SandboxHooks
@@ -60,11 +61,13 @@ __all__ = [
     "PromptError",
     "RunResult",
     "SandboxHooks",
+    "SessionCaptureFailed",
     "StepTimeout",
     "StreamEvent",
     "Timeouts",
     "Usage",
     "__version__",
+    "claude_code",
     "create_worktree",
     # entrypoints
     "run",
