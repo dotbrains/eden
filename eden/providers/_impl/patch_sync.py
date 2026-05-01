@@ -33,8 +33,12 @@ def snapshot(root: Path, *, ignore: tuple[str, ...] = _DEFAULT_IGNORE) -> dict[P
     root = root.resolve()
     for current_dir, dirnames, filenames in os.walk(root, followlinks=False):
         rel_current = Path(current_dir).resolve().relative_to(root)
-        if rel_current == Path("."):
+        at_root = rel_current == Path(".")
+        if at_root:
+            # Skip ignored names for both directories (e.g. .git dir in host
+            # repos) and top-level files (e.g. .git file in git worktrees).
             dirnames[:] = [d for d in dirnames if d not in ignore_set]
+            filenames = [f for f in filenames if f not in ignore_set]
         for name in filenames:
             full = Path(current_dir) / name
             # Use the entry's own path (not resolved) as the key so symlinks
