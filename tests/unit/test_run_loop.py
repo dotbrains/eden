@@ -164,3 +164,33 @@ def test_run_loop_emits_text_events_via_callback(tmp_git_repo: Path) -> None:
     )
     text_events = [e for e in events if e.type == "text"]
     assert any(e.text == "alpha" for e in text_events)
+
+
+def test_run_loop_simulated_agent_does_not_capture(tmp_git_repo: Path) -> None:
+    """simulated_agent lacks captures_sessions → capture skipped → session fields are None."""
+    agent = simulated_agent(output="hello\n<promise>COMPLETE</promise>\n")
+    setup = _setup(tmp_git_repo)
+    ctrl = AbortController()
+    result = _run_loop(
+        agent=agent,
+        sandbox=no_sandbox_provider(),
+        setup=setup,
+        branch_strategy=None,
+        max_iterations=1,
+        completion_signal="<promise>COMPLETE</promise>",
+        idle_timeout=10.0,
+        idle_warning_interval=None,
+        name=None,
+        hooks=Hooks(),
+        timeouts=Timeouts(),
+        on_event=None,
+        logging_cfg=None,
+        signal=ctrl.signal,
+        prompt_args=None,
+    )
+    assert result.session_id is None
+    assert result.session_file_path is None
+    assert result.usage is None
+    assert result.iterations[0].session_id is None
+    assert result.iterations[0].session_file_path is None
+    assert result.iterations[0].usage is None

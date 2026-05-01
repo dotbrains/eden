@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-from eden._types import Iteration, RunResult, Timeouts
+from eden._types import Iteration, RunResult, Timeouts, Usage
 from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
 from eden.agents._protocol import Agent
+from eden.errors import SessionCaptureFailed
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
@@ -25,14 +27,29 @@ from eden.orchestrator._setup import (
 )
 from eden.prompt import render_prompt
 from eden.providers._protocols import SandboxProvider
-from eden.providers._types import BranchStrategy, CreateOptions
+from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
+from eden.session import capture_session
 from eden.streaming import StreamEvent
 from eden.worktree._create import create_worktree
 
 
 def _utcnow() -> datetime:
     return datetime.now(UTC)
+
+
+def _claude_projects_mount() -> tuple[Mount, ...]:
+    """Inject ~/.claude/projects/ → /root/.claude/projects/ when the agent
+    needs session capture inside a containerized sandbox.
+
+    no_sandbox ignores the mount; docker honors it. If ~/.claude/projects/
+    doesn't exist on the host yet, return () — Claude Code will create it
+    on first use, but Eden cannot mount a non-existent path.
+    """
+    host_dir = Path.home() / ".claude" / "projects"
+    if not host_dir.exists():
+        return ()
+    return (Mount(host=host_dir, sandbox=Path("/root/.claude/projects")),)
 
 
 def _run_loop(
@@ -72,6 +89,9 @@ def _run_loop(
     log_path: Path | None = None
     preserved: Path | None = None
 
+    captures = bool(getattr(agent, "captures_sessions", False))
+    extra_mounts: tuple[Mount, ...] = _claude_projects_mount() if captures else ()
+
     try:
         run_host_hooks(
             phase=HookPhase.OnWorktreeReady,
@@ -89,7 +109,7 @@ def _run_loop(
                 worktree_path=wt.worktree_path,
                 host_repo_path=wt.host_repo_path,
                 env=setup.merged_env,
-                mounts=(),
+                mounts=extra_mounts,
                 name_hint=name,
             )
         )
@@ -116,6 +136,10 @@ def _run_loop(
 
         for i in range(max_iterations):
             signal.raise_if_aborted()
+            iter_session_id: str | None = None
+            iter_usage: Usage | None = None
+            iter_session_file: Path | None = None
+
             run_host_hooks(
                 phase=HookPhase.OnIterationStart,
                 hooks=hooks.host,
@@ -174,13 +198,21 @@ def _run_loop(
 
                     for line in runner.iter_lines(signal=signal, on_warning=_emit_warning):
                         stdout_chunks.append(line + "\n")
-                        ev = agent.parse_stream(line) or StreamEvent(
-                            type="text",
-                            agent_name=agent.name,
-                            iteration=i,
-                            timestamp=_utcnow(),
-                            text=line,
-                        )
+                        parsed = agent.parse_stream(line)
+                        if parsed is not None:
+                            # Parser doesn't know the real iteration; rewrap.
+                            ev = replace(parsed, iteration=i, agent_name=agent.name)
+                        else:
+                            ev = StreamEvent(
+                                type="text",
+                                agent_name=agent.name,
+                                iteration=i,
+                                timestamp=_utcnow(),
+                                text=line,
+                            )
+                        if ev.type == "usage":
+                            iter_session_id = ev.session_id
+                            iter_usage = ev.usage
                         if sink is not None:
                             sink.write(ev)
                         if on_event is not None:
@@ -192,6 +224,27 @@ def _run_loop(
                             break
             finally:
                 wd.stop()
+
+            if iter_session_id is not None and captures:
+                try:
+                    iter_session_file = capture_session(
+                        session_id=iter_session_id,
+                        sandbox_cwd=handle.worktree_path,
+                        host_repo_path=setup.cwd,
+                        branch=wt.branch,
+                        iteration=i,
+                    )
+                except SessionCaptureFailed as exc:
+                    if sink is not None:
+                        sink.write(
+                            StreamEvent(
+                                type="text",
+                                agent_name=agent.name,
+                                iteration=i,
+                                timestamp=_utcnow(),
+                                text=f"[eden] session capture failed: {exc}",
+                            )
+                        )
 
             run_sandbox_hooks(
                 phase=HookPhase.OnIterationEnd,
@@ -212,9 +265,9 @@ def _run_loop(
                 Iteration(
                     index=i,
                     completion_signal=iter_completion,
-                    session_id=None,
-                    session_file_path=None,
-                    usage=None,
+                    session_id=iter_session_id,
+                    session_file_path=iter_session_file,
+                    usage=iter_usage,
                 )
             )
             if iter_completion is not None:
@@ -254,6 +307,7 @@ def _run_loop(
         if close_result.action == "preserved":
             preserved = wt.worktree_path
 
+    last = iterations[-1] if iterations else None
     return assemble(
         iterations=iterations,
         completion_signal=completion_hit,
@@ -265,6 +319,9 @@ def _run_loop(
         prompt=rendered_prompt,
         env=setup.merged_env,
         log_file_path=log_path,
+        session_id=last.session_id if last else None,
+        session_file_path=last.session_file_path if last else None,
+        usage=last.usage if last else None,
     )
 
 
