@@ -166,3 +166,25 @@ class Aborted(EdenError):
     def __init__(self, *, reason: str = "abort-signal") -> None:
         self.reason = reason
         super().__init__(f"aborted: {reason}")
+
+
+class SessionCaptureFailed(EdenError):
+    """Raised when capture_session() can't locate, read, or write the JSONL.
+
+    Always a soft failure — the orchestrator catches it and surfaces a warning
+    event without aborting the run.
+    """
+
+    def __init__(
+        self,
+        *,
+        code: str = "session.capture_failed",
+        message: str,
+        hint: str | None = None,
+        cause: Exception | None = None,
+    ) -> None:
+        self.code = code
+        self.message = message
+        self.hint = hint
+        self.cause = cause
+        super().__init__(_format(code, message, hint))
