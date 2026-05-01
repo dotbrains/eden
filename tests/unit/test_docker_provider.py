@@ -50,10 +50,10 @@ class _SubprocessFake:
 def fake_subprocess(monkeypatch: pytest.MonkeyPatch) -> _SubprocessFake:
     fake = _SubprocessFake()
     monkeypatch.setattr(
-        "eden.sandboxes.docker.shutil.which",
+        "eden.providers._impl.container.shutil.which",
         lambda name: fake.which_returns,
     )
-    monkeypatch.setattr("eden.sandboxes.docker.subprocess.run", fake.run)
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", fake.run)
     return fake
 
 
@@ -174,7 +174,7 @@ def test_handle_exec_uses_docker_exec(
         captured["kwargs"] = kwargs
         return ExecResult(stdout="ok\n", stderr="", exit_code=0)
 
-    monkeypatch.setattr("eden.sandboxes.docker.stream_exec", fake_stream_exec)
+    monkeypatch.setattr("eden.providers._impl.container.stream_exec", fake_stream_exec)
     result = handle.exec("echo hi", cwd=Path("/workspace/sub"), env={"K": "V"})
     assert result.exit_code == 0
     argv = captured["argv"]
