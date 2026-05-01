@@ -6,24 +6,35 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
+from eden._types import Usage
+
 
 @dataclass(frozen=True)
 class StreamEvent:
     """Discriminated-union event from the orchestrator.
 
     Phase 3a kinds: ``"text"`` (carries ``text``) and ``"idle_warning"`` (carries
-    ``minutes_idle``). Phase 3b adds ``"tool_call"``.
+    ``minutes_idle``). Phase 3b adds ``"tool_call"`` (carries ``tool_name`` and
+    ``tool_input``) and ``"usage"`` (carries ``usage`` and ``session_id``).
     """
 
-    type: Literal["text", "idle_warning"]
+    type: Literal["text", "idle_warning", "tool_call", "usage"]
     agent_name: str
     iteration: int
     timestamp: datetime
     text: str | None = None
     minutes_idle: int | None = None
+    tool_name: str | None = None
+    tool_input: dict[str, object] | None = None
+    usage: Usage | None = None
+    session_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.type == "text" and self.text is None:
             raise ValueError('StreamEvent type="text" requires text to be non-None')
         if self.type == "idle_warning" and self.minutes_idle is None:
             raise ValueError('StreamEvent type="idle_warning" requires minutes_idle to be non-None')
+        if self.type == "tool_call" and self.tool_name is None:
+            raise ValueError('StreamEvent type="tool_call" requires tool_name to be non-None')
+        if self.type == "usage" and self.usage is None:
+            raise ValueError('StreamEvent type="usage" requires usage to be non-None')
