@@ -1,0 +1,95 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eden-agent"
+version = "0.0.1"
+description = "Python orchestrator for AI coding agents in sandboxed worktrees."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [
+    { name = "dotbrains" },
+]
+keywords = [
+    "agents",
+    "claude-code",
+    "codex",
+    "docker",
+    "podman",
+    "sandbox",
+    "worktree",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+    "questionary>=2.0",
+    "python-dotenv>=1.0",
+    "anyio>=4.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "mypy>=1.10",
+    "ruff>=0.5",
+    "build>=1.2",
+]
+
+[project.scripts]
+eden = "eden.cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/dotbrains/eden"
+Issues = "https://github.com/dotbrains/eden/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["eden"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+markers = [
+    "unit: fast unit tests with no external services",
+    "integration: tests that touch real Docker/Podman/cloud services",
+    "smoke: end-to-end smoke tests",
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+files = ["eden", "tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "RUF", # ruff-specific
+]
