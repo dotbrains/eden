@@ -5,7 +5,11 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
+import pytest
+
 import eden
+
+pytestmark = pytest.mark.unit
 
 
 def test_version_string_exists() -> None:

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import pytest
 from typer.testing import CliRunner
 
 from eden.cli.main import app
+
+pytestmark = pytest.mark.unit
 
 runner = CliRunner()
 
