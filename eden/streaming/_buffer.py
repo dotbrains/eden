@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 @dataclass
 class TextDeltaBuffer:
     _residual: str = ""
+    # Phase 3b: will track emitted event count for instrumentation
     _emitted: int = field(default=0, init=False, repr=False)
 
     def feed(self, chunk: str) -> list[str]:
