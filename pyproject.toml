@@ -69,6 +69,7 @@ markers = [
     "unit: fast unit tests with no external services",
     "integration: tests that touch real Docker/Podman/cloud services",
     "smoke: end-to-end smoke tests",
+    "e2e: end-to-end orchestrator runs with simulated_agent (no external services)",
 ]
 
 [tool.mypy]
