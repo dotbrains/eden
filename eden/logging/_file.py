@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import threading
 from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,7 +13,10 @@ from eden.logging._format import format_line
 from eden.logging._redact import redact
 from eden.streaming import StreamEvent
 
-_BRANCH_SANITIZE = re.compile(r"[/\\\s]+")
+# Sanitize: collapse path separators, whitespace, and Windows-illegal filename
+# characters (< > : " * ? |) into a single dash. Keep alphanumerics, dot,
+# underscore, and dash.
+_BRANCH_SANITIZE = re.compile(r"[^A-Za-z0-9._-]+")
 _BRANCH_MAX = 64
 
 
@@ -34,7 +38,10 @@ def default_log_path(
 
 
 class FileLogSink:
-    """Append-mode plain-text log sink. Redaction applied on every write."""
+    """Append-mode plain-text log sink. Redaction applied on every write.
+
+    Thread-safe: ``write`` and ``close`` are serialized by an internal lock.
+    """
 
     def __init__(
         self,
@@ -48,6 +55,7 @@ class FileLogSink:
         self.level = level
         self._env_values = env_values
         self._fp: IO[str] | None = fp
+        self._lock = threading.Lock()
 
     @staticmethod
     def open(
@@ -66,18 +74,20 @@ class FileLogSink:
         )
 
     def write(self, event: StreamEvent) -> None:
-        if self._fp is None:
-            return
-        line = format_line(event, level=self.level)
-        line = redact(line, env_values=self._env_values)
-        self._fp.write(line + "\n")
-        self._fp.flush()
+        with self._lock:
+            if self._fp is None:
+                return
+            line = format_line(event, level=self.level)
+            line = redact(line, env_values=self._env_values)
+            self._fp.write(line + "\n")
+            self._fp.flush()
 
     def close(self) -> None:
-        if self._fp is None:
-            return
-        try:
-            self._fp.flush()
-            self._fp.close()
-        finally:
-            self._fp = None
+        with self._lock:
+            if self._fp is None:
+                return
+            try:
+                self._fp.flush()
+                self._fp.close()
+            finally:
+                self._fp = None

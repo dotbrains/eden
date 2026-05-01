@@ -107,3 +107,20 @@ def test_file_sink_close_is_idempotent(tmp_path: Path) -> None:
     sink = FileLogSink.open(tmp_path / "x.log", level="info", env_values=())
     sink.close()
     sink.close()  # must not raise
+
+
+def test_default_log_path_empty_branch_fallback(tmp_path: Path) -> None:
+    p = default_log_path(host_repo_path=tmp_path, branch="///", now=_ts())
+    stem = p.stem
+    sanitized = stem.rsplit("-", 1)[0]
+    assert sanitized == "run"
+
+
+def test_default_log_path_strips_windows_unsafe_chars(tmp_path: Path) -> None:
+    p = default_log_path(host_repo_path=tmp_path, branch='feat:deploy"x*', now=_ts())
+    # All Windows-illegal chars (`:`, `"`, `*`) replaced with `-`. Adjacent
+    # illegal chars collapse to a single dash.
+    stem = p.stem
+    sanitized = stem.rsplit("-", 1)[0]
+    for c in ':"*<>?|':
+        assert c not in sanitized
