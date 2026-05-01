@@ -83,3 +83,15 @@ def test_run_result_is_frozen() -> None:
     )
     with pytest.raises(FrozenInstanceError):
         rr.branch = "other"  # type: ignore[misc]
+
+
+def test_commit_is_frozen() -> None:
+    c = Commit(sha="abc123")
+    with pytest.raises(FrozenInstanceError):
+        c.sha = "def456"  # type: ignore[misc]
+
+
+def test_timeouts_is_frozen() -> None:
+    t = Timeouts()
+    with pytest.raises(FrozenInstanceError):
+        t.hook_step = 120.0  # type: ignore[misc]
