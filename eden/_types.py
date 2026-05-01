@@ -1,4 +1,12 @@
-"""Shared frozen dataclasses for eden's public result surface."""
+"""Shared frozen dataclasses for eden's public result surface.
+
+Convention: every type here is a ``@dataclass(frozen=True)``. ``frozen``
+prevents attribute reassignment on the dataclass itself; it does NOT make
+contained collections (``list``, ``dict``) read-only. Callers should treat
+the contained ``iterations``, ``commits``, and ``env`` collections on
+``RunResult`` as snapshots — eden never mutates them after construction
+and consumers should not either.
+"""
 
 from __future__ import annotations
 
