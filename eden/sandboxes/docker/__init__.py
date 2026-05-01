@@ -48,7 +48,7 @@ class _DockerHandle:
     ) -> ExecResult:
         argv: list[str] = ["docker", "exec", "-i"]
         if cwd is not None:
-            argv.extend(["-w", str(cwd)])
+            argv.extend(["-w", cwd.as_posix()])
         if env:
             for k, v in env.items():
                 argv.extend(["-e", f"{k}={v}"])
@@ -63,7 +63,7 @@ class _DockerHandle:
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
         subprocess.run(
-            ["docker", "cp", str(host), f"{self.container_id}:{sandbox}"],
+            ["docker", "cp", str(host), f"{self.container_id}:{sandbox.as_posix()}"],
             check=True,
             capture_output=True,
             text=True,
@@ -71,7 +71,7 @@ class _DockerHandle:
 
     def copy_file_out(self, sandbox: Path, host: Path) -> None:
         subprocess.run(
-            ["docker", "cp", f"{self.container_id}:{sandbox}", str(host)],
+            ["docker", "cp", f"{self.container_id}:{sandbox.as_posix()}", str(host)],
             check=True,
             capture_output=True,
             text=True,
@@ -143,7 +143,7 @@ def provider(
             "sleep",
         ]
         for m in mount_map.values():
-            spec = f"{m.host}:{m.sandbox}"
+            spec = f"{m.host}:{m.sandbox.as_posix()}"
             if m.read_only:
                 spec += ":ro"
             argv.extend(["-v", spec])
