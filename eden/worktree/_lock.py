@@ -14,6 +14,12 @@ if sys.platform == "win32":  # pragma: no cover - branch covered on Windows runn
 else:
     import fcntl
 
+# On Windows, msvcrt.locking() locks a byte range and OS-level reads of that
+# range fail with PermissionError. We lock a phantom byte at this offset (well
+# past any plausible PID-file size) so readers can still read the PID content
+# at byte 0.
+_WIN_LOCK_BYTE_OFFSET = 0x10000
+
 
 @dataclass
 class _LockHandle:
@@ -30,7 +36,7 @@ class _LockHandle:
         try:
             if sys.platform == "win32":  # pragma: no cover
                 try:
-                    os.lseek(self.fd, 0, os.SEEK_SET)
+                    os.lseek(self.fd, _WIN_LOCK_BYTE_OFFSET, os.SEEK_SET)
                     msvcrt.locking(self.fd, msvcrt.LK_UNLCK, 1)
                 except OSError:
                     pass
@@ -47,14 +53,17 @@ class _LockHandle:
             self.fd = -1
             try:
                 self.path.unlink()
-            except FileNotFoundError:
+            except (FileNotFoundError, PermissionError):
+                # On Windows, another process may still hold a transient read
+                # handle on the file when we unlink — defer cleanup to the
+                # next acquirer, which wipes stale locks.
                 pass
 
 
 def _try_lock(fd: int) -> bool:
     try:
         if sys.platform == "win32":  # pragma: no cover
-            os.lseek(fd, 0, os.SEEK_SET)
+            os.lseek(fd, _WIN_LOCK_BYTE_OFFSET, os.SEEK_SET)
             msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         else:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
