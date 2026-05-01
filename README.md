@@ -2,7 +2,7 @@
 
 Python orchestrator for AI coding agents in sandboxed worktrees.
 
-> **Status:** Pre-alpha. Phase 1 (skeleton) only — `eden run`, sandbox providers, agents, and templates are not yet implemented. See `docs/superpowers/specs/2026-04-30-eden-python-rewrite-design.md` for the full design and `docs/superpowers/plans/` for phase-by-phase implementation plans.
+> **Status:** Pre-alpha. Phases 1–2 complete: package skeleton, provider Protocols, worktree manager, `no_sandbox` and `docker` MVP providers, `create_sandbox()` factory. `eden run`, agents, templates, and the interactive scaffolder are not yet implemented. See `docs/superpowers/specs/2026-04-30-eden-python-rewrite-design.md` for the full design and `docs/superpowers/plans/` for phase-by-phase implementation plans.
 
 ## Install (development)
 
