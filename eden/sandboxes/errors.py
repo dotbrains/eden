@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from eden.errors import EdenError
 
 if TYPE_CHECKING:
-    from eden.providers._types import ExecResult, StrategyTag  # type: ignore[import-not-found]
+    from eden.providers._types import ExecResult, StrategyTag
 
 
 class SandboxError(EdenError):
