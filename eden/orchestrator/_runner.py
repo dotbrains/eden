@@ -6,6 +6,7 @@ import os
 import subprocess
 import threading
 from collections.abc import Callable, Generator, Mapping
+from pathlib import Path
 from queue import Empty, Queue
 from typing import IO, Any
 
@@ -31,10 +32,12 @@ class _AgentRunner:
         argv: list[str],
         env: Mapping[str, str],
         watchdog: IdleWatchdog,
+        cwd: Path | None = None,
     ) -> None:
         self._argv = list(argv)
         self._env = dict(env)
         self._watchdog = watchdog
+        self._cwd = cwd
         self._proc: subprocess.Popen[str] | None = None
         self._stdout_q: Queue[Any] = Queue()
         self._stderr_chunks: list[str] = []
@@ -45,6 +48,7 @@ class _AgentRunner:
         self._proc = subprocess.Popen(
             self._argv,
             env=merged,
+            cwd=str(self._cwd) if self._cwd is not None else None,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
