@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime
 
 import pytest
@@ -53,3 +54,35 @@ def test_buffer_flush_returns_residual() -> None:
     buf.feed("residual")
     assert buf.flush() == "residual"
     assert buf.flush() == ""
+
+
+def test_stream_event_is_frozen() -> None:
+    ev = StreamEvent(
+        type="text",
+        agent_name="simulated",
+        iteration=0,
+        timestamp=datetime(2026, 5, 1, tzinfo=UTC),
+        text="hi",
+    )
+    with pytest.raises(FrozenInstanceError):
+        ev.iteration = 99  # type: ignore[misc]
+
+
+def test_stream_event_rejects_text_kind_without_text_payload() -> None:
+    with pytest.raises(ValueError, match="text"):
+        StreamEvent(
+            type="text",
+            agent_name="simulated",
+            iteration=0,
+            timestamp=datetime(2026, 5, 1, tzinfo=UTC),
+        )
+
+
+def test_stream_event_rejects_idle_warning_kind_without_minutes_idle_payload() -> None:
+    with pytest.raises(ValueError, match="minutes_idle"):
+        StreamEvent(
+            type="idle_warning",
+            agent_name="simulated",
+            iteration=0,
+            timestamp=datetime(2026, 5, 1, tzinfo=UTC),
+        )
