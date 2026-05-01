@@ -9,9 +9,7 @@ from pathlib import Path
 
 from eden.worktree.errors import WorktreeLocked
 
-_IS_WINDOWS = sys.platform == "win32"
-
-if _IS_WINDOWS:  # pragma: no cover - branch covered on Windows runners
+if sys.platform == "win32":  # pragma: no cover - branch covered on Windows runners
     import msvcrt
 else:
     import fcntl
@@ -30,10 +28,10 @@ class _LockHandle:
         if self.fd < 0:
             return
         try:
-            if _IS_WINDOWS:  # pragma: no cover
+            if sys.platform == "win32":  # pragma: no cover
                 try:
                     os.lseek(self.fd, 0, os.SEEK_SET)
-                    msvcrt.locking(self.fd, msvcrt.LK_UNLCK, 1)  # type: ignore[attr-defined]
+                    msvcrt.locking(self.fd, msvcrt.LK_UNLCK, 1)
                 except OSError:
                     pass
             else:
@@ -55,9 +53,9 @@ class _LockHandle:
 
 def _try_lock(fd: int) -> bool:
     try:
-        if _IS_WINDOWS:  # pragma: no cover
+        if sys.platform == "win32":  # pragma: no cover
             os.lseek(fd, 0, os.SEEK_SET)
-            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)  # type: ignore[attr-defined]
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
         else:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         return True
