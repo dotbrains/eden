@@ -1,4 +1,10 @@
-"""Base + Phase 3a runtime errors for the eden package."""
+"""Base + Phase 3a runtime errors for the eden package.
+
+Convention: every concrete error accepts a ``cause`` keyword argument that
+stores the originating exception as a named attribute. ``cause`` does NOT
+set ``__cause__``; callers who want chained tracebacks must use
+``raise XError(..., cause=e) from e``.
+"""
 
 from __future__ import annotations
 
@@ -10,6 +16,7 @@ class EdenError(Exception):
 
 
 def _format(code: str, message: str, hint: str | None) -> str:
+    """Return ``[code] message`` with an optional newline-prefixed hint."""
     base = f"[{code}] {message}"
     return f"{base}\nhint: {hint}" if hint else base
 
