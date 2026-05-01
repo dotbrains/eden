@@ -24,7 +24,8 @@ from eden.errors import (
 from eden.lifecycle import Hook, HookPhase, Hooks, HostHooks, SandboxHooks
 from eden.logging import Logging
 from eden.orchestrator import create_worktree, run
-from eden.providers._types import BranchStrategy, Mount
+from eden.providers._protocols import IsolatedSandboxHandle
+from eden.providers._types import BranchStrategy, FinalizeResult, Mount
 from eden.streaming import StreamEvent
 
 __all__ = [
@@ -43,6 +44,7 @@ __all__ = [
     "EdenError",
     "EdenTimeoutError",
     "EnvMergeError",
+    "FinalizeResult",
     # lifecycle
     "Hook",
     "HookError",
@@ -53,6 +55,7 @@ __all__ = [
     "HostHooks",
     "IdleTimeout",
     "InvalidOptions",
+    "IsolatedSandboxHandle",
     "Iteration",
     "IterationContext",
     # config / data
