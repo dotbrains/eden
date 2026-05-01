@@ -102,8 +102,11 @@ def create_worktree(
     strategy: BranchStrategy,
     name_hint: str | None = None,
 ) -> WorktreeHandle:
+    # Ensure .eden/ is gitignored regardless of strategy so metadata files
+    # created by any path don't surface as untracked in the host repo.
+    _ensure_eden_gitignore(host_repo_path)
+
     if strategy.tag == "head":
-        _ensure_eden_gitignore(host_repo_path)
         dirty = status_porcelain(repo_path=host_repo_path).strip()
         if dirty:
             files = tuple(line[3:] for line in dirty.splitlines() if len(line) > 3)[:10]
