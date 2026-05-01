@@ -79,3 +79,17 @@ def test_provider_protocol() -> None:
     assert p.name == "fake"
     assert p.kind == "bind_mount"
     assert p.supports_strategy(BranchStrategy.head()) is True
+
+
+def test_public_surface_importable() -> None:
+    from eden.providers import (  # noqa: F401
+        BindMountSandboxHandle,
+        BranchStrategy,
+        CreateOptions,
+        ExecResult,
+        Mount,
+        SandboxHandle,
+        SandboxProvider,
+        StrategyTag,
+        make_bind_mount_provider,
+    )
