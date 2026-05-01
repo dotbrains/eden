@@ -46,5 +46,9 @@ jobs:
       - name: mypy --strict
         run: mypy --strict eden tests
 
-      - name: pytest
-        run: pytest -v
+      - name: pytest (unit)
+        run: pytest -v -m unit
+
+      - name: pytest (integration)
+        if: runner.os == 'Linux'
+        run: pytest -v -m integration
