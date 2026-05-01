@@ -6,7 +6,7 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Literal, Protocol, runtime_checkable
 
-from eden.providers._types import BranchStrategy, CreateOptions, ExecResult
+from eden.providers._types import BranchStrategy, CreateOptions, ExecResult, FinalizeResult
 
 
 @runtime_checkable
@@ -34,6 +34,19 @@ class SandboxHandle(Protocol):
 class BindMountSandboxHandle(SandboxHandle, Protocol):
     """Marker — bind-mount providers don't add methods, but the type tag
     distinguishes them from isolated handles for orchestrator narrowing."""
+
+
+@runtime_checkable
+class IsolatedSandboxHandle(SandboxHandle, Protocol):
+    """A SandboxHandle whose state is replicated to the host on close via
+    a `finalize(target)` call. Cloud and local "isolated" providers implement
+    this; bind-mount providers (docker, podman, no_sandbox) do not.
+
+    The orchestrator detects this Protocol via ``hasattr(handle, "finalize")``;
+    the runtime-checkable Protocol exists for type-checker narrowing.
+    """
+
+    def finalize(self, target: Path) -> FinalizeResult: ...
 
 
 @runtime_checkable

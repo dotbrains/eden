@@ -63,3 +63,17 @@ class CreateOptions:
     env: Mapping[str, str]
     mounts: tuple[Mount, ...]
     name_hint: str | None
+
+
+@dataclass(frozen=True)
+class FinalizeResult:
+    """Summary of what `IsolatedSandboxHandle.finalize()` applied to the target.
+
+    `applied=True` means every detected change was successfully replayed onto
+    the target. `False` means at least one file copy or unlink failed —
+    failures are logged but ``apply`` continues with remaining files.
+    """
+
+    applied: bool
+    files_changed: tuple[Path, ...]
+    patch_size_bytes: int
