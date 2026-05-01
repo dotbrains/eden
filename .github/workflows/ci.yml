@@ -46,8 +46,8 @@ jobs:
       - name: mypy --strict
         run: mypy --strict eden tests
 
-      - name: pytest (unit)
-        run: pytest -v -m unit
+      - name: pytest (unit + e2e)
+        run: pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
 
       - name: pytest (integration)
         if: runner.os == 'Linux'
