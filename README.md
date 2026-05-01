@@ -2,7 +2,7 @@
 
 Python orchestrator for AI coding agents in sandboxed worktrees.
 
-> **Status:** Pre-alpha. Phases 1–2 complete: package skeleton, provider Protocols, worktree manager, `no_sandbox` and `docker` MVP providers, `create_sandbox()` factory. `eden run`, agents, templates, and the interactive scaffolder are not yet implemented. See `docs/superpowers/specs/2026-04-30-eden-python-rewrite-design.md` for the full design and `docs/superpowers/plans/` for phase-by-phase implementation plans.
+> **Status:** Pre-alpha. Phases 1–3a complete: package skeleton, provider Protocols, worktree manager, `no_sandbox` and `docker` MVP providers, `create_sandbox()` factory, top-level `eden.run(...)` orchestrator with `simulated_agent`, prompt rendering pipeline, lifecycle hooks, idle/abort/completion handling, and file logging. Claude Code agent (3b), additional providers (4), other agents (5), CLI scaffolder (6), and full docs (7) are not yet implemented. See `docs/superpowers/specs/2026-04-30-eden-python-rewrite-design.md` for the full design and `docs/superpowers/plans/` for phase-by-phase implementation plans.
 
 ## Install (development)
 
