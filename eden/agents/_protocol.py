@@ -10,8 +10,14 @@ from eden.streaming import StreamEvent
 
 @runtime_checkable
 class Agent(Protocol):
-    name: str
-    model: str
+    # Declared as read-only properties so that frozen dataclasses (e.g.
+    # _ClaudeCodeAgent) satisfy the protocol without mypy raising
+    # "expected settable variable, got read-only attribute".
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def model(self) -> str: ...
 
     def build_command(self, ctx: IterationContext) -> list[str]: ...
 
