@@ -181,7 +181,13 @@ def _run_loop(
             wd.start()
             try:
                 iter_completion: str | None = None
-                with _AgentRunner(argv=argv, env=setup.merged_env, watchdog=wd) as runner:
+                agent_cwd = handle.worktree_path if handle.worktree_path.exists() else None
+                with _AgentRunner(
+                    argv=argv,
+                    env=setup.merged_env,
+                    watchdog=wd,
+                    cwd=agent_cwd,
+                ) as runner:
 
                     def _emit_warning(minutes: int, _i: int = i) -> None:
                         ev = StreamEvent(
@@ -310,6 +316,36 @@ def _run_loop(
             if iter_completion is not None:
                 completion_hit = iter_completion
                 break
+
+        # Phase 4a: post-iteration finalize for isolated providers.
+        if handle is not None and hasattr(handle, "finalize"):
+            try:
+                fr = handle.finalize(target=wt.host_repo_path)
+                if sink is not None:
+                    sink.write(
+                        StreamEvent(
+                            type="text",
+                            agent_name=agent.name,
+                            iteration=len(iterations),
+                            timestamp=_utcnow(),
+                            text=(
+                                f"[eden] finalized: applied={fr.applied} "
+                                f"files={len(fr.files_changed)} "
+                                f"bytes={fr.patch_size_bytes}"
+                            ),
+                        )
+                    )
+            except Exception as exc:
+                if sink is not None:
+                    sink.write(
+                        StreamEvent(
+                            type="text",
+                            agent_name=agent.name,
+                            iteration=len(iterations),
+                            timestamp=_utcnow(),
+                            text=f"[eden] finalize failed: {exc}",
+                        )
+                    )
 
     finally:
         if handle is not None:
