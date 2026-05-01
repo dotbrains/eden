@@ -30,6 +30,7 @@ def test_slack_bot_token_redacted() -> None:
 def test_slack_user_token_redacted() -> None:
     out = redact("xoxp-secret-stuff", env_values=())
     assert "xoxp-" not in out
+    assert "<redacted>" in out
 
 
 def test_env_value_redacted() -> None:
