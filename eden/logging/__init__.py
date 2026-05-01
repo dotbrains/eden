@@ -1,5 +1,7 @@
-"""Logging surface — file sink + redaction. (Public re-exports added in task 8.)"""
+"""Logging surface — Logging dataclass + file sink."""
 
 from __future__ import annotations
 
-__all__: list[str] = []
+from eden.logging._config import Logging
+
+__all__ = ["Logging"]
