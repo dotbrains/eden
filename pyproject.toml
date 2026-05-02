@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eden-agent"
-version = "0.0.1"
+version = "0.1.0"
 description = "Python orchestrator for AI coding agents in sandboxed worktrees."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -22,7 +22,7 @@ keywords = [
     "worktree",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
