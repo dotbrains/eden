@@ -17,6 +17,17 @@ An agent factory returns an object satisfying the [`Agent`](python-api.md#agent-
 
 Default models for the wrapper factories are illustrative — pass any model identifier the underlying CLI accepts. The `claude_code` factory has no default; pick a model explicitly.
 
+```mermaid
+flowchart TD
+    Agent[Agent Protocol]
+    Agent --> sim[simulated_agent<br/>in-process]
+    Agent --> claude[claude_code<br/>captures sessions]
+    Agent --> cli[cli_agent<br/>generic CLI shim]
+    cli --> codex[codex<br/>binary: codex]
+    cli --> opencode[opencode<br/>binary: opencode]
+    cli --> pi[pi<br/>binary: pi]
+```
+
 ## Importing
 
 Every agent factory is re-exported from the top-level `eden` package:

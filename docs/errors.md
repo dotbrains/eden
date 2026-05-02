@@ -27,46 +27,64 @@ All three families share `EdenError` as a common ancestor.
 
 ## Hierarchy
 
+```mermaid
+classDiagram
+    class EdenError
+    class TimeoutError {
+        <<builtin>>
+    }
+
+    class ConfigError
+    class HookError
+    class EdenTimeoutError
+    class Aborted
+    class SessionCaptureFailed
+    class RestError
+    class SandboxError
+    class WorktreeError
+
+    EdenError <|-- ConfigError
+    EdenError <|-- HookError
+    EdenError <|-- EdenTimeoutError
+    EdenError <|-- Aborted
+    EdenError <|-- SessionCaptureFailed
+    EdenError <|-- RestError
+    EdenError <|-- SandboxError
+    EdenError <|-- WorktreeError
+    TimeoutError <|-- EdenTimeoutError
+
+    ConfigError <|-- InvalidOptions
+    ConfigError <|-- PromptError
+    ConfigError <|-- EnvMergeError
+    ConfigError <|-- CwdError
+
+    HookError <|-- HookFailed
+    HookError <|-- HookTimeout
+
+    EdenTimeoutError <|-- IdleTimeout
+    EdenTimeoutError <|-- StepTimeout
+
+    RestError <|-- RestAuthError
+    RestError <|-- RestNotFoundError
+    RestError <|-- RestRateLimited
+
+    SandboxError <|-- ProviderUnavailable
+    SandboxError <|-- ImageNotFound
+    SandboxError <|-- ContainerStartFailed
+    SandboxError <|-- ExecFailed
+    SandboxError <|-- ExecTimeout
+    SandboxError <|-- UnsupportedStrategy
+
+    WorktreeError <|-- WorktreeLocked
+    WorktreeError <|-- DirtyHostBlocked
+    WorktreeError <|-- BranchExists
+    WorktreeError <|-- GitCommandFailed
 ```
-EdenError                                    eden/errors.py
-|
-+-- ConfigError                              [config bucket]
-|   +-- InvalidOptions
-|   +-- PromptError
-|   +-- EnvMergeError
-|   +-- CwdError
-|
-+-- HookError
-|   +-- HookFailed
-|   +-- HookTimeout
-|
-+-- EdenTimeoutError      (also subclass of builtins.TimeoutError)
-|   +-- IdleTimeout
-|   +-- StepTimeout
-|
-+-- Aborted
-|
-+-- SessionCaptureFailed
-|
-+-- RestError
-|   +-- RestAuthError
-|   +-- RestNotFoundError
-|   +-- RestRateLimited
-|
-+-- SandboxError                             eden/sandboxes/errors.py
-|   +-- ProviderUnavailable
-|   +-- ImageNotFound
-|   +-- ContainerStartFailed
-|   +-- ExecFailed
-|   +-- ExecTimeout
-|   +-- UnsupportedStrategy
-|
-+-- WorktreeError                            eden/worktree/errors.py
-    +-- WorktreeLocked
-    +-- DirtyHostBlocked
-    +-- BranchExists
-    +-- GitCommandFailed
-```
+
+Module locations:
+- `EdenError` and the top-level subclasses live in `eden/errors.py`.
+- `SandboxError` family lives in `eden/sandboxes/errors.py`.
+- `WorktreeError` family lives in `eden/worktree/errors.py`.
 
 ## Top-level errors
 
