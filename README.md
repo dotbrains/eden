@@ -9,6 +9,17 @@ Python orchestrator for AI coding agents in sandboxed git worktrees.
 
 Eden creates a fresh git worktree on a new branch, runs a coding agent (Claude Code, Codex, opencode, pi, or any line-streaming CLI) inside a sandbox (Docker, Podman, isolated, Daytona, or Vercel), captures its output, and commits the changes back. You get a branch with one clean commit per iteration, ready to review or merge.
 
+```mermaid
+flowchart LR
+    Repo[(Host repo)] --> WT[Fresh worktree<br/>on new branch]
+    WT --> SB[Sandbox<br/>docker • podman • isolated<br/>daytona • vercel • no_sandbox]
+    SB --> Agent[Coding agent<br/>claude_code • codex<br/>opencode • pi • cli_agent]
+    Agent -->|stdout stream| Loop{iteration loop}
+    Loop -->|commit per iteration| Branch[Eden branch]
+    Loop -->|next iteration| Agent
+    Branch --> Repo
+```
+
 ## Install
 
 ```bash

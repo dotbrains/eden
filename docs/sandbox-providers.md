@@ -17,6 +17,20 @@ Eden ships six sandbox providers covering local, isolated, and cloud execution. 
 
 Each provider's `kind` (`"none"`, `"bind_mount"`, or `"isolated"`) controls how `create_sandbox` and `run()` resolve the default branch strategy and whether the orchestrator calls `handle.finalize(...)` after the run. See [how-it-works.md](how-it-works.md) for the full lifecycle.
 
+## Choosing a provider
+
+```mermaid
+flowchart TD
+    Start{Trust the agent's edits?} -->|yes| ns[no_sandbox<br/>fastest, runs in your shell]
+    Start -->|no| Where{Where should it run?}
+    Where -->|local| Local{Need real-time host writes?}
+    Where -->|remote / burstable| Cloud{Which cloud?}
+    Local -->|yes — bind mount| docker[docker / podman<br/>container, host filesystem visible]
+    Local -->|no — strong isolation| isolated[isolated<br/>copy in, patch-sync on finalize]
+    Cloud -->|managed VMs| daytona[daytona]
+    Cloud -->|Vercel sandboxes| vercel[vercel]
+```
+
 ## Importing
 
 Every provider lives at `eden.sandboxes.<name>` and exposes a single public name: `provider`. The conventional import alias gives readable call sites:

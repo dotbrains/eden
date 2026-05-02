@@ -18,6 +18,36 @@ If your provider only adds bind-mount semantics to a different container runtime
 
 Eden defines four Protocols in `eden/providers/_protocols.py`. Three are runtime-checkable; the fourth (`SandboxProvider`) is the factory contract.
 
+```mermaid
+classDiagram
+    class SandboxProvider {
+        <<Protocol>>
+        +name: str
+        +kind: bind_mount|isolated|none
+        +supports_strategy(strategy) bool
+        +create(opts) SandboxHandle
+    }
+    class SandboxHandle {
+        <<Protocol>>
+        +worktree_path: Path
+        +exec(cmd, on_line, ...) ExecResult
+        +copy_file_in(src, dst)
+        +copy_file_out(src, dst)
+        +close()
+    }
+    class BindMountSandboxHandle {
+        <<Protocol>>
+    }
+    class IsolatedSandboxHandle {
+        <<Protocol>>
+        +finalize(target) FinalizeResult
+    }
+
+    SandboxHandle <|-- BindMountSandboxHandle
+    SandboxHandle <|-- IsolatedSandboxHandle
+    SandboxProvider ..> SandboxHandle : create&#40;&#41; returns
+```
+
 ### `SandboxProvider`
 
 The factory side. Your `provider(...)` factory must return an instance satisfying this Protocol — use [`make_bind_mount_provider`](#make_bind_mount_provider) or [`make_isolated_provider`](#make_isolated_provider) instead of writing a bespoke class unless you have a reason.

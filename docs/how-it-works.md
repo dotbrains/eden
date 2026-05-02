@@ -24,6 +24,17 @@ The worktree path is handed to a `SandboxProvider`, which materialises an enviro
 - **Patch-sync** (`isolated`) — files are copied into a sandbox directory. After the run, `finalize()` returns a `FinalizeResult` whose patch is applied back to the host worktree.
 - **Cloud** (`daytona`, `vercel`) — files are uploaded over REST. After the run, `finalize()` downloads the diff and replays it onto the host worktree.
 
+```mermaid
+flowchart LR
+    Worktree[Host worktree] --> Bind{provider category}
+    Bind -->|bind-mount| BM[no_sandbox<br/>docker<br/>podman]
+    Bind -->|patch-sync| PS[isolated]
+    Bind -->|cloud| CL[daytona<br/>vercel]
+    BM -->|edits in place| Worktree
+    PS -->|finalize&#40;&#41; patch| Worktree
+    CL -->|REST download diff| Worktree
+```
+
 See [sandbox-providers.md](sandbox-providers.md) for the full provider matrix.
 
 ## Agent iteration
@@ -66,26 +77,39 @@ See [python-api.md#lifecycle-hooks](python-api.md#lifecycle-hooks) for the type 
 
 ## Iteration loop diagram
 
-```
-run()
- |-- create_worktree()              <- new branch, fresh tree, advisory lock
- |-- HostHooks.on_worktree_ready
- |-- create sandbox
- |    `-- SandboxHooks.on_sandbox_ready
- |-- for each iteration (1..max_iterations):
- |    |-- HostHooks.on_iteration_start
- |    |-- SandboxHooks.on_iteration_start
- |    |-- render prompt              <- {{KEY}} substitution + !`cmd` blocks
- |    |-- agent.build_command(ctx)
- |    |-- handle.exec(argv)          <- stream stdout -> StreamEvents
- |    |-- commit changes on worktree branch
- |    |-- SandboxHooks.on_iteration_end
- |    `-- HostHooks.on_iteration_end
- |        (early exit: completion_signal | idle_timeout | abort | step_timeout)
- |-- handle.finalize(target)         <- only if not bind-mount
- |-- SandboxHooks.on_close
- |-- HostHooks.on_close
- `-- return RunResult
+```mermaid
+sequenceDiagram
+    participant Caller as Caller
+    participant Run as run()
+    participant Host as HostHooks
+    participant SB as Sandbox
+    participant Box as SandboxHooks
+    participant Agent
+
+    Caller->>Run: run(...)
+    Run->>Run: create_worktree()
+    Run->>Host: on_worktree_ready
+    Run->>SB: create sandbox
+    SB->>Box: on_sandbox_ready
+
+    loop each iteration (1..max_iterations)
+        Run->>Host: on_iteration_start
+        Run->>Box: on_iteration_start
+        Run->>Run: render prompt
+        Run->>Agent: build_command(ctx)
+        Run->>SB: handle.exec(argv)
+        SB-->>Run: stdout stream → StreamEvents
+        Run->>Run: commit changes
+        Run->>Box: on_iteration_end
+        Run->>Host: on_iteration_end
+        Note over Run: early exit on completion_signal,<br/>idle_timeout, abort, or step_timeout
+    end
+
+    Run->>SB: handle.finalize(target)
+    Note right of SB: skipped for bind-mount providers
+    Run->>Box: on_close
+    Run->>Host: on_close
+    Run-->>Caller: RunResult
 ```
 
 ## See also
