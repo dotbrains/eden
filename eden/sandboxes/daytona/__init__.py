@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import base64
 import os
+import tempfile
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
 from eden.errors import RestNotFoundError
 from eden.providers._helpers import make_isolated_provider
+from eden.providers._impl import patch_sync
 from eden.providers._impl.http_rest import RestClient
 from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
@@ -176,10 +178,21 @@ class _DaytonaHandle:
         host.write_bytes(base64.b64decode(result.stdout))
 
     def finalize(self, target: Path) -> FinalizeResult:
-        # Stub for Task 4. Returning applied=False so any caller calling
-        # finalize() before Task 4 ships sees a clean "no-op" rather than
-        # a confusing missing-method error.
-        return FinalizeResult(applied=False, files_changed=(), patch_size_bytes=0)
+        try:
+            after = _snapshot_remote(self.client, self.sandbox_id, root=self.worktree_path)
+        except Exception:
+            return FinalizeResult(applied=False, files_changed=(), patch_size_bytes=0)
+
+        diff_result = patch_sync.diff(before=self.baseline, after=after)
+        if not (diff_result.added or diff_result.changed or diff_result.removed):
+            return FinalizeResult(applied=True, files_changed=(), patch_size_bytes=0)
+
+        # Pull each added/changed file to a tmp dir, then patch_sync.apply against target.
+        with tempfile.TemporaryDirectory() as tmp_root_str:
+            tmp_root = Path(tmp_root_str)
+            for rel in sorted(diff_result.added | diff_result.changed):
+                self.copy_file_out(self.worktree_path / rel, tmp_root / rel)
+            return patch_sync.apply(diff_result, src=tmp_root, dst=target)
 
     def close(self) -> None:
         try:
