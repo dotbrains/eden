@@ -51,21 +51,25 @@ You should see a generated branch name like `eden/20260502124551-548ac339` and o
 
 ## Scaffold a real project
 
+Make sure your agent CLI (`claude`, `codex`, `opencode`, `pi`) is installed and authenticated, and that Docker (or your chosen sandbox) is running on the host first.
+
 ```bash
 eden init --sandbox docker --agent claude-code --yes
 ```
 
-This writes `.eden/Dockerfile`, `.eden/prompt.md`, `.eden/main.py`, `.eden/.env.example`, and `.eden/.gitignore`. Edit `prompt.md` for your task, then:
+This writes `.eden/Dockerfile`, `.eden/prompt.md`, `.eden/main.py`, `.eden/.env.example`, and `.eden/.gitignore`. Edit `prompt.md` for your task, then follow the next steps `eden init` prints:
 
 ```bash
+cp .eden/.env.example .env  # then fill in your API keys (e.g. ANTHROPIC_API_KEY)
+docker build -t eden:<repo-name> -f .eden/Dockerfile .
 python .eden/main.py
 ```
 
-Make sure your agent CLI (`claude`, `codex`, `opencode`, `pi`) is installed and authenticated, and that Docker (or your chosen sandbox) is running on the host first.
+Replace `<repo-name>` with the lowercased name of the current directory — that's the default tag `eden init` chose (override with `--image-name` at scaffold time). The docker provider expects the image to already exist; it does not auto-build.
 
 ## Where to go next
 
 - [Python API](python-api.md) — full reference for `run(...)` and friends.
-- [Sandbox providers](sandbox-providers.md) — pick the right sandbox for your workload.
-- [Agents](agents.md) — choose between `claude_code`, `codex`, `opencode`, `pi`.
-- [Prompts](prompts.md) — beyond a literal string: shell blocks, args, file sources.
+- [Sandbox providers](sandbox-providers.md) *(forthcoming)* — pick the right sandbox for your workload.
+- [Agents](agents.md) *(forthcoming)* — choose between `claude_code`, `codex`, `opencode`, `pi`.
+- [Prompts](prompts.md) *(forthcoming)* — beyond a literal string: shell blocks, args, file sources.
