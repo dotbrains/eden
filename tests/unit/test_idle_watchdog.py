@@ -13,14 +13,17 @@ pytestmark = pytest.mark.unit
 
 
 def test_no_warning_when_activity_keeps_resetting() -> None:
-    wd = IdleWatchdog(idle_timeout=0.5, idle_warning_interval=0.1)
+    # Use a 10x cushion between reset cadence and warn_interval so the test
+    # tolerates scheduling jitter on loaded CI runners (the 2x cushion this
+    # originally used flaked routinely on macOS hosted runners).
+    wd = IdleWatchdog(idle_timeout=2.0, idle_warning_interval=0.5)
     wd.start()
     try:
-        for _ in range(8):
-            time.sleep(0.05)
+        for _ in range(20):
+            time.sleep(0.02)
             wd.record_activity()
-        # No warning should have fired in this 0.4s window because we reset
-        # every 0.05s.
+        # No warning should fire in this ~0.4s window: activity resets every
+        # ~20ms, well under the 500ms warn_interval.
         assert wd.poll_warning() is None
     finally:
         wd.stop()
