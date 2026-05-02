@@ -101,8 +101,12 @@ def test_host_hook_timeout_raises_hook_timeout(tmp_path: Path) -> None:
 
 
 def test_sandbox_hooks_run_parallel(tmp_path: Path) -> None:
+    # 0.4s sleep x 4 hooks: sequential = 1.6s, parallel ~ 0.4s + threadpool
+    # overhead. Threshold 1.0s gives ~0.6s of slack so the test stays
+    # meaningful (sequential always fails) while tolerating slow Windows CI
+    # VMs (a 0.1s slack with 0.2s sleeps flaked routinely on py3.13).
     seen: list[str] = []
-    handle = _FakeHandle(worktree_path=tmp_path, seen=seen, sleep_per_call=0.2)
+    handle = _FakeHandle(worktree_path=tmp_path, seen=seen, sleep_per_call=0.4)
     hooks = SandboxHooks(
         on_sandbox_ready=(
             Hook(cmd="A"),
@@ -121,8 +125,7 @@ def test_sandbox_hooks_run_parallel(tmp_path: Path) -> None:
     )
     elapsed = time.monotonic() - start
     assert sorted(seen) == ["A", "B", "C", "D"]
-    # Sequential would be ~0.8s; parallel should be far less.
-    assert elapsed < 0.7
+    assert elapsed < 1.0
 
 
 def test_sandbox_hook_failures_aggregated(tmp_path: Path) -> None:
