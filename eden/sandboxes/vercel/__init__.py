@@ -268,11 +268,16 @@ def _snapshot_remote(
     root: Path,
     team_id: str | None,
 ) -> dict[Path, str]:
+    # Use ``-exec sha256sum {} +`` rather than ``-print0 | xargs -0 sha256sum``:
+    # GNU xargs runs the command once with no arguments when find finds nothing,
+    # which makes sha256sum hash empty stdin and emit "<hash>  -" — corrupting the
+    # parsed snapshot. ``-exec ... +`` skips the command entirely on no matches
+    # and is portable across GNU/BSD find.
     cmd = (
         f"cd {root.as_posix()} && "
         "find . -type f "
         "-not -path './.git/*' -not -path './.eden/*' "
-        "-print0 | xargs -0 sha256sum 2>/dev/null"
+        "-exec sha256sum {} + 2>/dev/null"
     )
     params = {"teamId": team_id} if team_id else None
     response = client.post(
