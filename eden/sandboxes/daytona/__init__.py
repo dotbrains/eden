@@ -228,11 +228,16 @@ def _snapshot_remote(client: RestClient, sandbox_id: str, *, root: Path) -> dict
     """REST-shell `find ... | xargs sha256sum` and parse stdout into the
     `dict[Path, hex]` shape produced by `patch_sync.snapshot()` locally.
     """
+    # Use ``-exec sha256sum {} +`` rather than ``-print0 | xargs -0 sha256sum``:
+    # GNU xargs runs the command once with no arguments when find finds nothing,
+    # which makes sha256sum hash empty stdin and emit "<hash>  -" — corrupting the
+    # parsed snapshot. ``-exec ... +`` skips the command entirely on no matches
+    # and is portable across GNU/BSD find.
     cmd = (
         f"cd {root.as_posix()} && "
         "find . -type f "
         "-not -path './.git/*' -not -path './.eden/*' "
-        "-print0 | xargs -0 sha256sum 2>/dev/null"
+        "-exec sha256sum {} + 2>/dev/null"
     )
     response = client.post(
         f"/toolbox/{sandbox_id}/process/execute",
