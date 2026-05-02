@@ -51,10 +51,14 @@ def capture_session(
         host_repo_path / ".eden" / "sessions" / safe_branch / f"iter-{iteration}-{session_id}.jsonl"
     )
     try:
+        # ``sandbox_cwd.as_posix()`` keeps the prefix in forward-slash form so
+        # paths emitted by Linux-container Claude Code (always POSIX) still
+        # match when Eden runs on a Windows host (where ``str(Path("/workspace"))``
+        # would be ``"\\workspace"``).
         write_session_copy(
             src=src,
             dest=dest,
-            sandbox_prefix=str(sandbox_cwd),
+            sandbox_prefix=sandbox_cwd.as_posix(),
             host_prefix=str(host_repo_path),
         )
     except OSError as exc:
