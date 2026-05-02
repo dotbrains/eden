@@ -13,10 +13,13 @@ pytestmark = pytest.mark.e2e
 
 def test_simulated_agent_full_run(e2e_git_repo: Path) -> None:
     events: list[eden.StreamEvent] = []
+    # delay_per_line / idle_warning_interval ratio is 10x — generous enough
+    # that the watchdog reliably emits at least one warning even on slow,
+    # loaded CI VMs (a 3x ratio flaked on macOS hosted runners).
     result = eden.run(
         agent=eden.simulated_agent(
             output="working on it\n<promise>COMPLETE</promise>\n",
-            delay_per_line=0.15,
+            delay_per_line=0.5,
         ),
         sandbox=__import__(
             "eden.sandboxes.no_sandbox",
