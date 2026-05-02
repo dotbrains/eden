@@ -5,7 +5,16 @@ from __future__ import annotations
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
 from eden._version import __version__
 from eden.abort import AbortController, Aborted, AbortSignal
-from eden.agents import Agent, IterationContext, claude_code, simulated_agent
+from eden.agents import (
+    Agent,
+    IterationContext,
+    claude_code,
+    cli_agent,
+    codex,
+    opencode,
+    pi,
+    simulated_agent,
+)
 from eden.errors import (
     ConfigError,
     CwdError,
@@ -79,8 +88,12 @@ __all__ = [
     "Usage",
     "__version__",
     "claude_code",
+    "cli_agent",
+    "codex",
     "create_worktree",
+    "opencode",
     # entrypoints
+    "pi",
     "run",
     "simulated_agent",
 ]
