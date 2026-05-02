@@ -32,7 +32,7 @@ A 15-line minimum-viable example using `simulated_agent` and `no_sandbox`:
 
 ```python
 from eden import run, simulated_agent
-from eden.providers.no_sandbox import no_sandbox
+from eden.sandboxes.no_sandbox import provider as no_sandbox
 
 result = run(
     agent=simulated_agent(output="<promise>COMPLETE</promise>\n"),
