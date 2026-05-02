@@ -50,11 +50,17 @@ class RestClient:
         path: str,
         *,
         json: Mapping[str, Any] | None = None,
+        params: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
-        return self._request("POST", path, json=json)
+        return self._request("POST", path, json=json, params=params)
 
-    def delete(self, path: str) -> None:
-        self._request("DELETE", path, expect_json=False)
+    def delete(
+        self,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._request("DELETE", path, expect_json=False, params=params)
 
     def close(self) -> None:
         self._session.close()
