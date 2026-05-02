@@ -43,4 +43,4 @@ Eden does not run agents — it orchestrates them. You still need the agent's CL
 
 - [Quick start](quick-start.md)
 - [Python API](python-api.md)
-- [How it works](how-it-works.md) *(forthcoming)*
+- [How it works](how-it-works.md)

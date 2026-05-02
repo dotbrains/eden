@@ -51,4 +51,4 @@ Read source: `eden/logging/_config.py`.
 
 ## Sandbox-specific configuration
 
-Each sandbox provider takes its own keyword arguments — `image=` for `docker`/`podman`, `api_key=`/`organization_id=`/`base_url=` for `daytona`, `access_token=`/`team_id=`/`base_url=`/`runtime=` for `vercel`, etc. See [sandbox-providers.md](sandbox-providers.md) *(forthcoming)* for the full provider matrix.
+Each sandbox provider takes its own keyword arguments — `image=` for `docker`/`podman`, `api_key=`/`organization_id=`/`base_url=` for `daytona`, `access_token=`/`team_id=`/`base_url=`/`runtime=` for `vercel`, etc. See [sandbox-providers.md](sandbox-providers.md) for the full provider matrix.

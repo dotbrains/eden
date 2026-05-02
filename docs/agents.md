@@ -267,6 +267,6 @@ Each agent reads its own credentials from environment variables, per its own doc
 ## See also
 
 - [Python API: Agents](python-api.md#agents) — full Protocol and factory reference.
-- [Custom providers](custom-providers.md) *(forthcoming)* — for sandbox-side provider authoring (the agent side stays unchanged).
+- [Custom providers](custom-providers.md) — for sandbox-side provider authoring (the agent side stays unchanged).
 - [How it works](how-it-works.md) — where `build_command(ctx)` and `parse_stream(line)` plug into the iteration loop.
-- [ADR 0003 — One agent per file](adr/0003-one-agent-per-file.md) *(forthcoming)* — the rationale behind the per-agent subpackage layout.
+- [ADR 0003 — One agent per file](adr/0003-one-agent-per-file.md) — the rationale behind the per-agent subpackage layout.
