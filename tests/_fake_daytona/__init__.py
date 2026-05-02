@@ -9,8 +9,10 @@ snapshot/diff/apply flow without an actual Daytona account.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
+import sys
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -85,6 +87,17 @@ def start_fake_daytona(
                 # string and chdir into <exec_root>.
                 try:
                     rewritten = cmd.replace("/workspace", str(exec_root / "workspace"))
+                    # macOS ships BSD base64, which requires `-i <file>` rather
+                    # than a bare positional argument.  _DaytonaHandle.copy_file_out
+                    # sends `base64 <path>` (Linux/GNU convention); rewrite it to
+                    # the portable `cat <path> | base64` form so the fake server
+                    # works on both macOS and Linux.
+                    if sys.platform == "darwin":
+                        rewritten = re.sub(
+                            r"\bbase64 (/[^\s|;&)]+)",
+                            r"cat \1 | base64",
+                            rewritten,
+                        )
                     proc = subprocess.run(
                         ["/bin/sh", "-c", rewritten],
                         cwd=str(exec_root),
