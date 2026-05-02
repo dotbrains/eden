@@ -1,0 +1,600 @@
+# Python API
+
+Reference for everything importable from the top-level `eden` package — every entry-point, dataclass, Protocol, factory, hook type, abort primitive, and error class that `eden.__all__` re-exports.
+
+---
+
+## Importing
+
+Eden's surface is a single module. Import what you need from `eden`; nothing private is part of the contract.
+
+```python
+from eden import (
+    run, create_worktree,
+    RunResult, Iteration, Commit, Usage, Timeouts, Mount, FinalizeResult,
+    BranchStrategy, StreamEvent, Logging,
+    AbortController, AbortSignal, Aborted,
+    Agent, IterationContext,
+    simulated_agent, claude_code, codex, opencode, pi, cli_agent,
+    Hook, HookPhase, Hooks, HostHooks, SandboxHooks,
+    IsolatedSandboxHandle,
+    EdenError, ConfigError, CwdError, EdenTimeoutError, EnvMergeError,
+    HookError, HookFailed, HookTimeout, IdleTimeout, InvalidOptions,
+    PromptError, RestAuthError, RestError, RestNotFoundError,
+    RestRateLimited, SessionCaptureFailed, StepTimeout,
+    __version__,
+)
+```
+
+Sandbox providers live alongside the public surface but are imported from `eden.providers` (see [sandbox-providers.md](sandbox-providers.md)) — they are passed into `run(sandbox=...)`.
+
+A 15-line minimum-viable example using `simulated_agent` and `no_sandbox`:
+
+```python
+from eden import run, simulated_agent
+from eden.providers.no_sandbox import no_sandbox
+
+result = run(
+    agent=simulated_agent(output="<promise>COMPLETE</promise>\n"),
+    sandbox=no_sandbox(),
+    prompt="say hi",
+    max_iterations=1,
+)
+
+print(result.completion_signal)  # "<promise>COMPLETE</promise>"
+print(result.branch)              # generated worktree branch
+print(len(result.iterations))     # 1
+```
+
+---
+
+## Entry points
+
+### `run(...)`
+
+Runs an agent against a sandbox in a managed worktree and returns a `RunResult`. Keyword-only.
+
+```python
+def run(
+    *,
+    agent: Agent,
+    sandbox: SandboxProvider,
+    prompt: str | None = None,
+    prompt_file: str | Path | None = None,
+    prompt_args: Mapping[str, str] | None = None,
+    cwd: str | Path | None = None,
+    env: Mapping[str, str] | None = None,
+    branch_strategy: BranchStrategy | None = None,
+    max_iterations: int = 1,
+    completion_signal: str | list[str] = "<promise>COMPLETE</promise>",
+    idle_timeout: float | timedelta = 600.0,
+    idle_warning_interval: float | timedelta | None = None,
+    name: str | None = None,
+    hooks: Hooks | None = None,
+    timeouts: Timeouts | None = None,
+    on_event: Callable[[StreamEvent], None] | None = None,
+    logging: Logging | None = None,
+    signal: AbortSignal | None = None,
+) -> RunResult: ...
+```
+
+Parameters:
+
+- `agent` — anything satisfying the `Agent` Protocol (see Agents below).
+- `sandbox` — a `SandboxProvider` (`no_sandbox()`, `docker(...)`, `daytona(...)`, etc.).
+- `prompt` / `prompt_file` / `prompt_args` — supply the iteration prompt inline, from a file path, or with `{name}` substitutions; mutually-aware (see [prompts.md](prompts.md)). Exactly one of `prompt` or `prompt_file` is required.
+- `cwd` — host path that will be the worktree root's source. Defaults to `Path.cwd()`.
+- `env` — extra environment variables forwarded into the agent process.
+- `branch_strategy` — one of `BranchStrategy.head()`, `merge_to_head(base)`, `named(branch, base)`. Defaults to a generated `eden/<slug>` branch.
+- `max_iterations` — maximum agent loop iterations. Default `1`.
+- `completion_signal` — string or list-of-strings whose appearance in agent output stops the loop early. Default `"<promise>COMPLETE</promise>"`.
+- `idle_timeout` — seconds (or `timedelta`) of stdout silence before the run aborts with `IdleTimeout`. Default `600.0`.
+- `idle_warning_interval` — emit `StreamEvent(type="idle_warning")` every N seconds during idleness. `None` disables.
+- `name` — informational tag used in worktree branch slugs and stream events.
+- `hooks` — `Hooks(host=..., sandbox=...)` lifecycle bundle. Default `Hooks()`.
+- `timeouts` — `Timeouts(...)` per-step deadlines. Default `Timeouts()`.
+- `on_event` — callback invoked with every `StreamEvent`. Use to forward to UIs, logs, or queues.
+- `logging` — `Logging.file(path)` to mirror events as JSONL.
+- `signal` — `AbortSignal` for cooperative cancellation. If omitted, `run` allocates its own (unused) signal.
+
+Returns a `RunResult`.
+
+### `create_worktree(...)`
+
+Carves a worktree without launching an agent — useful when you want to manage the iteration loop yourself.
+
+```python
+def create_worktree(
+    *,
+    branch: str | None = None,
+    branch_strategy: BranchStrategy | None = None,
+    name: str | None = None,
+) -> WorktreeHandle: ...
+```
+
+Provide either `branch` (named) or `branch_strategy` (any of the three strategies); supplying both raises `ValueError`. Defaults to `BranchStrategy.merge_to_head()`. Returns a `WorktreeHandle` with `.branch`, `.worktree_path`, and `.close()` (works as a context manager).
+
+---
+
+## Configuration types
+
+### `Timeouts`
+
+Frozen dataclass capping per-step durations.
+
+```python
+@dataclass(frozen=True)
+class Timeouts:
+    hook_step: float = 60.0
+    iteration_step: float | None = None
+```
+
+- `hook_step` — seconds budget for any individual hook command. Exceeded → `HookTimeout`.
+- `iteration_step` — seconds budget for one agent iteration. `None` defers to `idle_timeout`. Exceeded → `StepTimeout`.
+
+### `Logging`
+
+JSONL file sink for `StreamEvent`s.
+
+```python
+@dataclass(frozen=True)
+class Logging:
+    type: Literal["file"]
+    path: Path
+    level: Literal["debug", "info", "warn", "error"] = "info"
+
+    @staticmethod
+    def file(path: str | Path, level: ... = "info") -> Logging: ...
+```
+
+Use `Logging.file("run.jsonl")` to capture every event the orchestrator emits.
+
+### `Mount`
+
+Provider-side bind-mount declaration (used by sandbox providers, not by `run` directly).
+
+```python
+@dataclass(frozen=True)
+class Mount:
+    host: Path
+    sandbox: Path
+    read_only: bool = False
+```
+
+### `BranchStrategy`
+
+Frozen dataclass with three named constructors describing how the worktree branch relates to `base`:
+
+```python
+@dataclass(frozen=True)
+class BranchStrategy:
+    tag: Literal["head", "merge_to_head", "named"]
+    branch: str | None = None
+    base: str = "main"
+
+    @staticmethod
+    def head() -> BranchStrategy: ...
+    @staticmethod
+    def merge_to_head(base: str = "main") -> BranchStrategy: ...
+    @staticmethod
+    def named(branch: str, base: str = "main") -> BranchStrategy: ...
+```
+
+- `head()` — work directly on the current `HEAD`; no merge, no auto-named branch.
+- `merge_to_head(base)` — generated branch off `base`; merged back on success.
+- `named(branch, base)` — explicit branch off `base`; preserved as-is.
+
+---
+
+## Result types
+
+### `RunResult`
+
+Returned by `run()`. Frozen dataclass.
+
+```python
+@dataclass(frozen=True)
+class RunResult:
+    iterations: list[Iteration]
+    completion_signal: str | None
+    branch: str
+    stdout: str
+    commits: list[Commit]
+    worktree_path: Path
+    preserved_worktree_path: Path | None
+    merged_to_target_branch: str | None
+    cwd: Path
+    prompt: str
+    env: dict[str, str]
+    log_file_path: Path | None
+    session_id: str | None
+    session_file_path: Path | None
+    usage: Usage | None
+```
+
+`completion_signal` is the matched signal that stopped the loop (or `None` if all iterations ran to completion). `merged_to_target_branch` is set when a `merge_to_head` strategy successfully merged. `usage` is the final iteration's token usage.
+
+### `Iteration`
+
+```python
+@dataclass(frozen=True)
+class Iteration:
+    index: int
+    completion_signal: str | None
+    session_id: str | None
+    session_file_path: Path | None
+    usage: Usage | None
+```
+
+One entry per executed iteration. `session_id` and `session_file_path` are populated when the agent reports `captures_sessions=True`.
+
+### `Commit`
+
+```python
+@dataclass(frozen=True)
+class Commit:
+    sha: str
+```
+
+Captured commit on the worktree branch — populated in order they appeared.
+
+### `Usage`
+
+Token-accounting numbers from agents that report them (e.g. Claude Code).
+
+```python
+@dataclass(frozen=True)
+class Usage:
+    input_tokens: int
+    cache_creation_input_tokens: int
+    cache_read_input_tokens: int
+    output_tokens: int
+```
+
+### `FinalizeResult`
+
+Returned by `IsolatedSandboxHandle.finalize(target)` — summarises what the cloud/isolated provider replayed onto the host.
+
+```python
+@dataclass(frozen=True)
+class FinalizeResult:
+    applied: bool
+    files_changed: tuple[Path, ...]
+    patch_size_bytes: int
+```
+
+`applied=False` means at least one copy or unlink failed; the orchestrator logs failures and continues.
+
+---
+
+## Streaming
+
+### `StreamEvent`
+
+The single discriminated union surfaced by `on_event` and the JSONL log.
+
+```python
+@dataclass(frozen=True)
+class StreamEvent:
+    type: Literal["text", "idle_warning", "tool_call", "usage"]
+    agent_name: str
+    iteration: int
+    timestamp: datetime
+    text: str | None = None
+    minutes_idle: int | None = None
+    tool_name: str | None = None
+    tool_input: dict[str, object] | None = None
+    usage: Usage | None = None
+    session_id: str | None = None
+```
+
+The four `type` kinds:
+
+- `"text"` — line of agent output. Carries `text`.
+- `"idle_warning"` — emitted on `idle_warning_interval`. Carries `minutes_idle`.
+- `"tool_call"` — agent invoked a tool. Carries `tool_name` and `tool_input`.
+- `"usage"` — token usage report. Carries `usage` (and optionally `session_id`).
+
+`__post_init__` enforces that the type-specific fields are non-`None`.
+
+---
+
+## Agents
+
+### `Agent` Protocol
+
+Structural contract every agent must satisfy. Runtime-checkable.
+
+```python
+@runtime_checkable
+class Agent(Protocol):
+    @property
+    def name(self) -> str: ...
+    @property
+    def model(self) -> str: ...
+    def build_command(self, ctx: IterationContext) -> list[str]: ...
+    def parse_stream(self, line: str) -> StreamEvent | None: ...
+```
+
+Agents may also expose `captures_sessions: bool` — the orchestrator reads it via `getattr` and post-processes session JSONL when `True`.
+
+### `IterationContext`
+
+Passed into `Agent.build_command(ctx)`.
+
+```python
+@dataclass(frozen=True)
+class IterationContext:
+    iteration: int
+    prompt: str
+    sandbox_handle: SandboxHandle
+    worktree_path: Path
+    branch: str
+    name: str | None
+```
+
+### Factories
+
+Six factories ship in-tree. Each returns an `Agent`. See [agents.md](agents.md) for capability comparisons.
+
+#### `simulated_agent(...)`
+
+```python
+def simulated_agent(
+    name: str = "simulated",
+    model: str = "deterministic-1",
+    *,
+    output: str | list[str] | Callable[[IterationContext], str] = "<promise>COMPLETE</promise>\n",
+    delay_per_line: float = 0.0,
+    fail_with: Exception | None = None,
+) -> Agent: ...
+```
+
+A deterministic agent that emits a pre-baked output. Use in tests, in examples, or when wiring up the orchestrator without an LLM.
+
+#### `claude_code(...)`
+
+```python
+def claude_code(
+    model: str,
+    *,
+    name: str = "claude-code",
+    effort: Literal["low", "medium", "high"] | None = None,
+    env: Mapping[str, str] | None = None,
+    capture_sessions: bool = True,
+    extra_args: tuple[str, ...] = (),
+) -> Agent: ...
+```
+
+Wraps the Claude Code CLI; sets `captures_sessions=True` so the orchestrator preserves session JSONLs under `.eden/sessions/`. Pass `extra_args` for any CLI flag eden does not yet surface.
+
+#### `codex(...)`
+
+```python
+def codex(
+    model: str = "gpt-5",
+    *,
+    env: Mapping[str, str] | None = None,
+    extra_args: tuple[str, ...] = (),
+) -> Agent: ...
+```
+
+Thin wrapper over `cli_agent` for the OpenAI Codex CLI binary. Default `model="gpt-5"` is illustrative.
+
+#### `opencode(...)`
+
+```python
+def opencode(
+    model: str = "claude-opus-4",
+    *,
+    env: Mapping[str, str] | None = None,
+    extra_args: tuple[str, ...] = (),
+) -> Agent: ...
+```
+
+Wrapper for `sst/opencode`. Default `model="claude-opus-4"` is illustrative — opencode supports many providers.
+
+#### `pi(...)`
+
+```python
+def pi(
+    model: str = "pi-3.5",
+    *,
+    env: Mapping[str, str] | None = None,
+    extra_args: tuple[str, ...] = (),
+) -> Agent: ...
+```
+
+Wrapper for the `pi` CLI binary.
+
+#### `cli_agent(...)`
+
+Generic factory for any line-streaming CLI. The codex/opencode/pi wrappers are 5-line shims over this.
+
+```python
+def cli_agent(
+    *,
+    name: str,
+    model: str,
+    binary: str,
+    build_argv: Callable[[IterationContext], list[str]] | None = None,
+    parse_stream: Callable[[str], StreamEvent | None] | None = None,
+    captures_sessions: bool = False,
+    env: Mapping[str, str] | None = None,
+    extra_args: tuple[str, ...] = (),
+) -> Agent: ...
+```
+
+- `name` — `StreamEvent.agent_name`.
+- `model` — informational; threaded into argv if your `build_argv` references it.
+- `binary` — executable resolved through `$PATH` at spawn.
+- `build_argv` — override the default `[binary, *extra_args, ctx.prompt]`.
+- `parse_stream` — override the default `None` (orchestrator emits `text` events per line).
+- `captures_sessions` — opt-in session post-processing.
+- `env` — per-agent env additions (merged by the orchestrator).
+- `extra_args` — appended between binary and prompt by the default `build_argv`.
+
+---
+
+## Lifecycle hooks
+
+Eden runs commands at five named phases — `HookPhase` enumerates them and `Hooks` bundles host-side and sandbox-side variants.
+
+### `Hook`
+
+```python
+@dataclass(frozen=True)
+class Hook:
+    cmd: str
+    cwd: Path | None = None
+    env: Mapping[str, str] | None = None
+    timeout: float | None = None
+```
+
+A single shell command to run. `timeout=None` defers to `Timeouts.hook_step`.
+
+### `HookPhase`
+
+```python
+class HookPhase(Enum):
+    OnWorktreeReady = "on_worktree_ready"
+    OnSandboxReady = "on_sandbox_ready"
+    OnIterationStart = "on_iteration_start"
+    OnIterationEnd = "on_iteration_end"
+    OnClose = "on_close"
+```
+
+Order: `OnWorktreeReady` (host) → `OnSandboxReady` (sandbox) → for each iteration `OnIterationStart` → agent → `OnIterationEnd` → on exit `OnClose`.
+
+### `HostHooks`
+
+```python
+@dataclass(frozen=True)
+class HostHooks:
+    on_worktree_ready: tuple[Hook, ...] = ()
+    on_iteration_start: tuple[Hook, ...] = ()
+    on_iteration_end: tuple[Hook, ...] = ()
+    on_close: tuple[Hook, ...] = ()
+```
+
+Host hooks run sequentially on the workstation. Note: `on_sandbox_ready` is sandbox-only.
+
+### `SandboxHooks`
+
+```python
+@dataclass(frozen=True)
+class SandboxHooks:
+    on_sandbox_ready: tuple[Hook, ...] = ()
+    on_iteration_start: tuple[Hook, ...] = ()
+    on_iteration_end: tuple[Hook, ...] = ()
+    on_close: tuple[Hook, ...] = ()
+```
+
+Sandbox hooks run inside the sandbox handle. They may execute in parallel where the provider supports it.
+
+### `Hooks`
+
+```python
+@dataclass(frozen=True)
+class Hooks:
+    host: HostHooks = field(default_factory=HostHooks)
+    sandbox: SandboxHooks = field(default_factory=SandboxHooks)
+```
+
+Failure mapping: a hook that exits non-zero raises `HookFailed`; exceeding its `timeout` raises `HookTimeout`. Both are subclasses of `HookError`.
+
+---
+
+## Cancellation
+
+Cooperative cancellation uses an `AbortController` / `AbortSignal` pair. Pass the signal to `run(signal=...)`; call `controller.abort()` from another thread to stop.
+
+### `AbortController`
+
+```python
+@dataclass
+class AbortController:
+    signal: AbortSignal = field(default_factory=AbortSignal)
+
+    def abort(self, *, reason: str = "abort-signal") -> None: ...
+```
+
+Writer side. `abort()` is idempotent — only the first call records a `reason`.
+
+### `AbortSignal`
+
+```python
+@dataclass
+class AbortSignal:
+    def is_aborted(self) -> bool: ...
+    @property
+    def reason(self) -> str | None: ...
+    def raise_if_aborted(self) -> None: ...
+    def wait(self, timeout: float | None = None) -> bool: ...
+```
+
+Reader side. Pollable via `is_aborted()`, blocking via `wait(timeout)`, and assertable via `raise_if_aborted()` (raises `Aborted`).
+
+### `Aborted`
+
+```python
+class Aborted(EdenError):
+    def __init__(self, *, reason: str = "abort-signal") -> None: ...
+```
+
+Raised by `raise_if_aborted()` and surfaced from `run()` when cancellation lands.
+
+---
+
+## Provider Protocol re-export
+
+### `IsolatedSandboxHandle`
+
+Eden re-exports `IsolatedSandboxHandle` so consumers can build cloud or out-of-tree providers without depending on `eden.providers._protocols` directly.
+
+```python
+@runtime_checkable
+class IsolatedSandboxHandle(SandboxHandle, Protocol):
+    def finalize(self, target: Path) -> FinalizeResult: ...
+```
+
+A `SandboxHandle` whose state replicates back to the host on close via `finalize(target)`. The orchestrator detects the protocol via `hasattr(handle, "finalize")`. Bind-mount providers (docker, podman, no_sandbox) do not implement it. See [custom-providers.md](custom-providers.md) for the full protocol surface.
+
+---
+
+## Errors
+
+Every error eden raises descends from `EdenError`. Each concrete class accepts a `cause` keyword argument and carries `code`, `message`, and `hint` attributes for structured logging. `EdenTimeoutError` additionally subclasses the built-in `TimeoutError` for mixed-`except` ergonomics. See [errors.md](errors.md) for the full taxonomy with `code` strings, raise sites, and recovery guidance.
+
+The 16 concrete error classes re-exported from `eden`:
+
+- `EdenError` — base class for everything.
+- `ConfigError` — bad arguments, env, or cwd; raised before any side-effect.
+- `CwdError` — invalid `cwd=` (missing, not a directory, not in a git repo).
+- `EdenTimeoutError` — base for time-budget exceedances; subclasses `TimeoutError`.
+- `EnvMergeError` — conflicting `env` overrides between caller, agent, and provider.
+- `HookError` — base for hook failures.
+- `HookFailed` — a hook command exited non-zero.
+- `HookTimeout` — a hook exceeded `Timeouts.hook_step` (or its own `timeout`).
+- `IdleTimeout` — agent stdout was silent past `idle_timeout`.
+- `InvalidOptions` — generic kwarg validation failure.
+- `PromptError` — `prompt`/`prompt_file`/`prompt_args` resolution failed.
+- `RestAuthError` — 401/403 from a cloud provider's REST API.
+- `RestError` — base for any non-2xx REST response (or `status=0` connection failure).
+- `RestNotFoundError` — 404 from a cloud provider.
+- `RestRateLimited` — 429 after retries were exhausted.
+- `SessionCaptureFailed` — the orchestrator could not locate or read a session JSONL; soft failure surfaced as a warning event.
+- `StepTimeout` — an iteration exceeded `Timeouts.iteration_step`.
+
+---
+
+## Version
+
+### `__version__`
+
+```python
+import eden
+print(eden.__version__)
+```
+
+`eden.__version__` exposes the installed package version (read via `importlib.metadata`). Unit tests assert the value matches `pyproject.toml`.
