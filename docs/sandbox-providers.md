@@ -224,7 +224,7 @@ Provisions a Daytona cloud sandbox via REST (`POST /api/sandbox`), uploads the h
 - Latency-sensitive iteration loops. Every `exec` is a REST round-trip; tight loops are noticeably slower than local providers.
 - Environments where outbound HTTPS to `api.daytona.io` (or your override) is blocked.
 
-See [ADR 0001 — Finalizing vs. direct handles](adr/0001-finalizing-vs-direct-handles.md) *(forthcoming)* for the patch-sync rationale.
+See [ADR 0001 — Finalizing vs. direct handles](adr/0001-finalizing-vs-direct-handles.md) for the patch-sync rationale.
 
 ## `vercel`
 
@@ -273,7 +273,7 @@ Provisions a Vercel sandbox via `POST /v1/sandboxes`, uploads the worktree base6
 
 ## See also
 
-- [Custom providers](custom-providers.md) *(forthcoming)* — implementing your own `SandboxProvider` and `IsolatedSandboxHandle`.
+- [Custom providers](custom-providers.md) — implementing your own `SandboxProvider` and `IsolatedSandboxHandle`.
 - [Configuration](configuration.md) — the env vars each cloud provider falls back to.
 - [Python API: `Mount`, `BranchStrategy`, `FinalizeResult`](python-api.md#configuration-types) — provider-agnostic types.
 - [How it works](how-it-works.md) — when `finalize()` runs and how the orchestrator detects bind-mount vs isolated handles.

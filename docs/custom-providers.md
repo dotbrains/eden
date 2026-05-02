@@ -320,4 +320,4 @@ Read these for full implementations of each shape:
 - [Sandbox providers](sandbox-providers.md) — the in-tree provider catalog and matrix.
 - [How it works](how-it-works.md) — where `create()`, `exec()`, and `finalize()` plug into the iteration loop.
 - [Errors](errors.md) — `SandboxError` family raised by providers (`ProviderUnavailable`, `ExecFailed`, `ExecTimeout`, `UnsupportedStrategy`).
-- [ADR 0001 — Finalizing vs. direct handles](adr/0001-finalizing-vs-direct-handles.md) *(forthcoming)* — why `finalize()` is a per-iteration call rather than a streaming sync.
+- [ADR 0001 — Finalizing vs. direct handles](adr/0001-finalizing-vs-direct-handles.md) — why `finalize()` is a per-iteration call rather than a streaming sync.

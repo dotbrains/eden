@@ -70,6 +70,6 @@ Replace `<repo-name>` with the lowercased name of the current directory — that
 ## Where to go next
 
 - [Python API](python-api.md) — full reference for `run(...)` and friends.
-- [Sandbox providers](sandbox-providers.md) *(forthcoming)* — pick the right sandbox for your workload.
-- [Agents](agents.md) *(forthcoming)* — choose between `claude_code`, `codex`, `opencode`, `pi`.
-- [Prompts](prompts.md) *(forthcoming)* — beyond a literal string: shell blocks, args, file sources.
+- [Sandbox providers](sandbox-providers.md) — pick the right sandbox for your workload.
+- [Agents](agents.md) — choose between `claude_code`, `codex`, `opencode`, `pi`.
+- [Prompts](prompts.md) — beyond a literal string: shell blocks, args, file sources.

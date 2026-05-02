@@ -24,7 +24,7 @@ The worktree path is handed to a `SandboxProvider`, which materialises an enviro
 - **Patch-sync** (`isolated`) — files are copied into a sandbox directory. After the run, `finalize()` returns a `FinalizeResult` whose patch is applied back to the host worktree.
 - **Cloud** (`daytona`, `vercel`) — files are uploaded over REST. After the run, `finalize()` downloads the diff and replays it onto the host worktree.
 
-See [sandbox-providers.md](sandbox-providers.md) *(forthcoming)* for the full provider matrix.
+See [sandbox-providers.md](sandbox-providers.md) for the full provider matrix.
 
 ## Agent iteration
 
@@ -43,7 +43,7 @@ For non-bind-mount providers, the orchestrator calls `handle.finalize(target)` a
 
 Bind-mount providers do not implement `finalize()` — their changes are already on disk. The orchestrator detects the protocol via `hasattr(handle, "finalize")`.
 
-See [`FinalizeResult`](python-api.md#finalizeresult) and [custom-providers.md](custom-providers.md) *(forthcoming)*.
+See [`FinalizeResult`](python-api.md#finalizeresult) and [custom-providers.md](custom-providers.md).
 
 ## Lifecycle hooks
 
@@ -92,5 +92,5 @@ run()
 
 - [Python API](python-api.md) — type reference for every name shown here.
 - [Prompts](prompts.md) — how `prompt`/`prompt_file`/`prompt_args` are rendered each iteration.
-- [Sandbox providers](sandbox-providers.md) *(forthcoming)* — provider matrix and per-provider notes.
-- [Custom providers](custom-providers.md) *(forthcoming)* — implementing your own sandbox.
+- [Sandbox providers](sandbox-providers.md) — provider matrix and per-provider notes.
+- [Custom providers](custom-providers.md) — implementing your own sandbox.
