@@ -26,6 +26,7 @@ MANIFEST
 .env
 .venv
 env/
+!eden/env/
 venv/
 ENV/
 env.bak/
