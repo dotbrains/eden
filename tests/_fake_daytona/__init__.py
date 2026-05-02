@@ -157,7 +157,7 @@ def start_fake_daytona(
     # daemon-threaded, so it dies with the test process. For deterministic
     # cleanup across tests, callers should treat this as a function-scoped
     # fixture and call `_stop()` themselves if they want immediate cleanup.
-    server._eden_stop = _stop
+    server._eden_stop = _stop  # type: ignore[attr-defined]
     return base_url
 
 
