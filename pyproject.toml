@@ -36,6 +36,7 @@ dependencies = [
     "questionary>=2.0",
     "python-dotenv>=1.0",
     "anyio>=4.4",
+    "requests>=2.32",
 ]
 
 [project.optional-dependencies]
@@ -47,8 +48,6 @@ dev = [
     "build>=1.2",
     "types-requests>=2.32",
 ]
-daytona = ["requests >= 2.32"]
-vercel = ["requests >= 2.32"]
 
 [project.scripts]
 eden = "eden.cli.main:app"
