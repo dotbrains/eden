@@ -45,7 +45,10 @@ dev = [
     "mypy>=1.10",
     "ruff>=0.5",
     "build>=1.2",
+    "types-requests>=2.32",
 ]
+daytona = ["requests >= 2.32"]
+vercel = ["requests >= 2.32"]
 
 [project.scripts]
 eden = "eden.cli.main:app"
