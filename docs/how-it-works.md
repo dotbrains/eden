@@ -82,32 +82,32 @@ sequenceDiagram
     participant Caller as Caller
     participant Run as run()
     participant Host as HostHooks
-    participant SB as Sandbox
-    participant Box as SandboxHooks
+    participant Sandbox
+    participant SandboxHooks
     participant Agent
 
     Caller->>Run: run(...)
     Run->>Run: create_worktree()
     Run->>Host: on_worktree_ready
-    Run->>SB: create sandbox
-    SB->>Box: on_sandbox_ready
+    Run->>Sandbox: create sandbox
+    Sandbox->>SandboxHooks: on_sandbox_ready
 
     loop each iteration (1..max_iterations)
         Run->>Host: on_iteration_start
-        Run->>Box: on_iteration_start
+        Run->>SandboxHooks: on_iteration_start
         Run->>Run: render prompt
         Run->>Agent: build_command(ctx)
-        Run->>SB: handle.exec(argv)
-        SB-->>Run: stdout stream → StreamEvents
+        Run->>Sandbox: handle.exec(argv)
+        Sandbox-->>Run: stdout stream → StreamEvents
         Run->>Run: commit changes
-        Run->>Box: on_iteration_end
+        Run->>SandboxHooks: on_iteration_end
         Run->>Host: on_iteration_end
         Note over Run: early exit on completion_signal,<br/>idle_timeout, abort, or step_timeout
     end
 
-    Run->>SB: handle.finalize(target)
-    Note right of SB: skipped for bind-mount providers
-    Run->>Box: on_close
+    Run->>Sandbox: handle.finalize(target)
+    Note right of Sandbox: skipped for bind-mount providers
+    Run->>SandboxHooks: on_close
     Run->>Host: on_close
     Run-->>Caller: RunResult
 ```
