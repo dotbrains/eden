@@ -18,6 +18,38 @@ import pytest
 pytestmark = pytest.mark.unit
 
 
+_SEQUENCE_RESERVED_KEYWORDS = frozenset(
+    {
+        "box",
+        "loop",
+        "alt",
+        "opt",
+        "par",
+        "and",
+        "critical",
+        "break",
+        "rect",
+        "note",
+        "participant",
+        "actor",
+        "activate",
+        "deactivate",
+        "autonumber",
+        "link",
+        "links",
+        "properties",
+        "details",
+        "over",
+        "right",
+        "left",
+        "of",
+        "as",
+        "else",
+        "end",
+    }
+)
+
+
 _KNOWN_DIAGRAM_TYPES = frozenset(
     {
         "flowchart",
@@ -102,6 +134,33 @@ def _validate(block: _Block) -> list[str]:
         if diff != 0:
             errors.append(f"unbalanced {opener}{closer}: {diff:+d}")
 
+    if base == "sequenceDiagram":
+        errors.extend(_check_sequence_keywords(non_empty))
+
+    return errors
+
+
+_PARTICIPANT_RE = re.compile(r"^\s*(?:participant|actor)\s+(\S+)(?:\s+as\s+.*)?$")
+_ARROW_RE = re.compile(r"^\s*(\S+?)\s*(?:-->>|->>|--x|-x|--\)|-\)|<<--|<<-|-->|->)\s*(\S+?)\s*:")
+
+
+def _check_sequence_keywords(non_empty: list[str]) -> list[str]:
+    errors: list[str] = []
+    seen: set[str] = set()
+    for line in non_empty:
+        m = _PARTICIPANT_RE.match(line)
+        if m:
+            seen.add(m.group(1))
+            continue
+        a = _ARROW_RE.match(line)
+        if a:
+            seen.update({a.group(1), a.group(2)})
+    for name in seen:
+        if name.lower() in _SEQUENCE_RESERVED_KEYWORDS:
+            errors.append(
+                f"participant identifier {name!r} collides with mermaid reserved "
+                "keyword (case-insensitive); rename to avoid parser ambiguity"
+            )
     return errors
 
 
