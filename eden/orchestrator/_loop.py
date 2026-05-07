@@ -28,12 +28,12 @@ from eden.orchestrator._setup import (
 from eden.orchestrator._summary import format_context_window_line
 from eden.output import OutputDefinition, extract_structured_output
 from eden.prompt import render_prompt
-from eden.providers._protocols import SandboxProvider
+from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.session import capture_session
 from eden.streaming import StreamEvent
-from eden.worktree._create import create_worktree
+from eden.worktree._create import WorktreeHandle, create_worktree
 
 
 def _utcnow() -> datetime:
@@ -73,19 +73,42 @@ def _run_loop(
     prompt_args: Mapping[str, str] | None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    existing_worktree: WorktreeHandle | None = None,
+    existing_handle: SandboxHandle | None = None,
 ) -> RunResult:
-    strategy = resolve_branch_strategy(
-        branch_strategy=branch_strategy,
-        sandbox_kind=sandbox.kind,
-    )
-    if not sandbox.supports_strategy(strategy):
-        raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
+    # Caller-managed mode: when both ``existing_worktree`` and
+    # ``existing_handle`` are provided, the loop reuses them and skips both
+    # creation and teardown — used by ``Sandbox.run()`` so multiple agents
+    # can share one container and one branch.
+    caller_managed = existing_worktree is not None and existing_handle is not None
+    if caller_managed:
+        assert existing_worktree is not None
+        wt: WorktreeHandle = existing_worktree
+        if branch_strategy is not None:
+            from eden.errors import InvalidOptions
+
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "branch_strategy is incompatible with caller-managed runs; "
+                    "the sandbox already owns its worktree and branch"
+                ),
+            )
+    else:
+        strategy = resolve_branch_strategy(
+            branch_strategy=branch_strategy,
+            sandbox_kind=sandbox.kind,
+        )
+        if not sandbox.supports_strategy(strategy):
+            raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
+        wt = create_worktree(
+            host_repo_path=setup.cwd, strategy=strategy, name_hint=name
+        )
 
     target_branch = resolve_target_branch(host_repo_path=setup.cwd)
 
-    wt = create_worktree(host_repo_path=setup.cwd, strategy=strategy, name_hint=name)
     sink: FileLogSink | None = None
-    handle = None
+    handle: SandboxHandle | None = existing_handle if caller_managed else None
     iterations: list[Iteration] = []
     stdout_chunks: list[str] = []
     completion_hit: str | None = None
@@ -97,33 +120,36 @@ def _run_loop(
     extra_mounts: tuple[Mount, ...] = _claude_projects_mount() if captures else ()
 
     try:
-        run_host_hooks(
-            phase=HookPhase.OnWorktreeReady,
-            hooks=hooks.host,
-            worktree_path=wt.worktree_path,
-            env=setup.merged_env,
-            timeouts=timeouts,
-        )
+        if not caller_managed:
+            run_host_hooks(
+                phase=HookPhase.OnWorktreeReady,
+                hooks=hooks.host,
+                worktree_path=wt.worktree_path,
+                env=setup.merged_env,
+                timeouts=timeouts,
+            )
 
         signal.raise_if_aborted()
 
-        handle = sandbox.create(
-            CreateOptions(
-                branch=wt.branch,
-                worktree_path=wt.worktree_path,
-                host_repo_path=wt.host_repo_path,
-                env=setup.merged_env,
-                mounts=extra_mounts,
-                name_hint=name,
+        if not caller_managed:
+            handle = sandbox.create(
+                CreateOptions(
+                    branch=wt.branch,
+                    worktree_path=wt.worktree_path,
+                    host_repo_path=wt.host_repo_path,
+                    env=setup.merged_env,
+                    mounts=extra_mounts,
+                    name_hint=name,
+                )
             )
-        )
-        run_sandbox_hooks(
-            phase=HookPhase.OnSandboxReady,
-            hooks=hooks.sandbox,
-            handle=handle,
-            env=setup.merged_env,
-            timeouts=timeouts,
-        )
+            run_sandbox_hooks(
+                phase=HookPhase.OnSandboxReady,
+                hooks=hooks.sandbox,
+                handle=handle,
+                env=setup.merged_env,
+                timeouts=timeouts,
+            )
+        assert handle is not None
 
         log_cfg = logging_cfg or Logging.file(
             default_log_path(
@@ -404,7 +430,7 @@ def _run_loop(
                     )
 
     finally:
-        if handle is not None:
+        if handle is not None and not caller_managed:
             try:
                 run_sandbox_hooks(
                     phase=HookPhase.OnClose,
@@ -415,26 +441,28 @@ def _run_loop(
                 )
             except Exception:
                 pass
-        try:
-            run_host_hooks(
-                phase=HookPhase.OnClose,
-                hooks=hooks.host,
-                worktree_path=wt.worktree_path,
-                env=setup.merged_env,
-                timeouts=timeouts,
-            )
-        except Exception:
-            pass
-        if handle is not None:
+        if not caller_managed:
+            try:
+                run_host_hooks(
+                    phase=HookPhase.OnClose,
+                    hooks=hooks.host,
+                    worktree_path=wt.worktree_path,
+                    env=setup.merged_env,
+                    timeouts=timeouts,
+                )
+            except Exception:
+                pass
+        if handle is not None and not caller_managed:
             try:
                 handle.close()
             except Exception:
                 pass
         if sink is not None:
             sink.close()
-        close_result = wt.close()
-        if close_result.action == "preserved":
-            preserved = wt.worktree_path
+        if not caller_managed:
+            close_result = wt.close()
+            if close_result.action == "preserved":
+                preserved = wt.worktree_path
 
     last = iterations[-1] if iterations else None
     full_stdout = "".join(stdout_chunks)
