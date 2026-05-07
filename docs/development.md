@@ -12,9 +12,12 @@ cd eden
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -e ".[dev]"
+pre-commit install   # one-time, wires the git hook
 ```
 
-The `[dev]` extra pulls in `pytest`, `pytest-cov`, `mypy`, `ruff`, `build`, and `types-requests`. Eden requires Python 3.11+; CI tests against 3.11, 3.12, and 3.13.
+The `[dev]` extra pulls in `pytest`, `pytest-cov`, `mypy`, `ruff`, `pre-commit`, `build`, and `types-requests`. `mypy` and `ruff` are pinned tightly so local pre-commit runs match CI byte-for-byte. Eden requires Python 3.11+; CI tests against 3.11, 3.12, and 3.13.
+
+After `pre-commit install`, every `git commit` runs ruff format, ruff lint, and `mypy --strict` against `eden/` and `tests/`. To check the whole tree without committing: `pre-commit run --all-files`.
 
 ## Repo layout
 
@@ -57,11 +60,11 @@ See [Python API](python-api.md) for the full public surface, [Sandbox providers]
 The CI workflow (`.github/workflows/ci.yml`) installs the package with the `[dev]` extra and runs all of these on each push and pull request, across the matrix `{ubuntu-latest, macos-latest, windows-latest}` x `{3.11, 3.12, 3.13}`:
 
 ```bash
-ruff format --check eden tests
-ruff check eden tests
-mypy --strict eden tests
+pre-commit run --all-files   # ruff format, ruff check, mypy --strict
 pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
 ```
+
+The same `pre-commit` config (`.pre-commit-config.yaml`) gates every local commit, so format/lint/type errors fail before push instead of after CI.
 
 The `integration` marker runs as a separate step on Linux only.
 
