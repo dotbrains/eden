@@ -103,6 +103,46 @@ Parameters:
 
 Returns a `RunResult`.
 
+### `interactive(...)`
+
+Run an agent attached to the parent terminal's stdio. There is no iteration loop, no idle watchdog, no completion-signal matching — eden carves a worktree, optionally renders a prompt, and execs the agent. The function returns when the agent process exits.
+
+```python
+def interactive(
+    *,
+    agent: Agent,
+    sandbox: SandboxProvider | None = None,
+    prompt: str | None = None,
+    prompt_file: str | Path | None = None,
+    prompt_args: Mapping[str, str] | None = None,
+    cwd: str | Path | None = None,
+    env: Mapping[str, str] | None = None,
+    branch_strategy: BranchStrategy | None = None,
+    name: str | None = None,
+    hooks: Hooks | None = None,
+) -> InteractiveResult: ...
+```
+
+- `sandbox` defaults to `no_sandbox()`. Other providers raise `InvalidOptions` for now — TTY allocation in containers (`docker exec -t`) is a follow-up.
+- `prompt` / `prompt_file` / `prompt_args` are optional. When supplied, the rendered text is passed to the agent's `build_interactive_command(ctx)` (or `build_command(ctx)` when no interactive override exists).
+- `branch_strategy` defaults to `BranchStrategy.head()` when the provider supports it — interactive sessions usually want writes to land in the host repo directly. Override to `merge_to_head()` or `named()` for an isolated session.
+- `hooks` runs the same `OnWorktreeReady` / `OnSandboxReady` / `OnClose` lifecycle as `run()`; `OnIterationStart` / `OnIterationEnd` are not relevant.
+
+Returns an [`InteractiveResult`](#interactiveresult).
+
+### `InteractiveResult`
+
+```python
+@dataclass(frozen=True)
+class InteractiveResult:
+    branch: str
+    exit_code: int
+    worktree_path: Path
+    cwd: Path
+```
+
+Lightweight: `exit_code` is the agent's exit status; `branch` is the worktree branch (`"HEAD"` for the head strategy); `worktree_path` is where the agent ran (commit / inspect from there). No commit list, no stdout — interactive sessions don't capture either.
+
 ### `create_sandbox(...)`
 
 Creates a sandbox + worktree once and returns a `Sandbox` whose `.run(...)` method can be called multiple times against the same branch and container. Use when one logical task requires multiple agent runs (implement → review, plan → execute, etc.) and you want them to share environment, branch, and any provider-side caches.

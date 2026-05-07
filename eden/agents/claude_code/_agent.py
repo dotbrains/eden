@@ -33,5 +33,20 @@ class _ClaudeCodeAgent:
         """Deliver the prompt via stdin to dodge the Linux 128 KB execve limit."""
         return ctx.prompt
 
+    def build_interactive_command(self, ctx: IterationContext) -> list[str]:
+        """Build argv for an interactive (TTY) Claude Code session.
+
+        No ``--print``, no ``-p -``, no stream-json — claude's default TUI is
+        what the user sees. The optional prompt is appended as a positional
+        seed argument; an empty prompt drops it entirely.
+        """
+        argv: list[str] = ["claude", "--model", self.model]
+        if self._effort is not None:
+            argv.extend(["--thinking-effort", self._effort])
+        argv.extend(self._extra_args)
+        if ctx.prompt:
+            argv.append(ctx.prompt)
+        return argv
+
     def parse_stream(self, line: str) -> StreamEvent | None:
         return parse_line(line, agent_name=self.name, iteration=0)
