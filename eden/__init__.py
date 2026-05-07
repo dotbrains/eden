@@ -41,6 +41,7 @@ from eden.orchestrator import create_worktree, run
 from eden.output import Output, OutputDefinition
 from eden.providers._protocols import IsolatedSandboxHandle
 from eden.providers._types import BranchStrategy, FinalizeResult, Mount
+from eden.sandboxes import Sandbox, create_sandbox
 from eden.streaming import StreamEvent
 
 __all__ = [
@@ -84,6 +85,7 @@ __all__ = [
     "RestNotFoundError",
     "RestRateLimited",
     "RunResult",
+    "Sandbox",
     "SandboxHooks",
     "SessionCaptureFailed",
     "StepTimeout",
@@ -95,6 +97,7 @@ __all__ = [
     "claude_code",
     "cli_agent",
     "codex",
+    "create_sandbox",
     "create_worktree",
     "opencode",
     # entrypoints

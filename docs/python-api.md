@@ -103,6 +103,36 @@ Parameters:
 
 Returns a `RunResult`.
 
+### `create_sandbox(...)`
+
+Creates a sandbox + worktree once and returns a `Sandbox` whose `.run(...)` method can be called multiple times against the same branch and container. Use when one logical task requires multiple agent runs (implement → review, plan → execute, etc.) and you want them to share environment, branch, and any provider-side caches.
+
+```python
+def create_sandbox(
+    *,
+    sandbox: SandboxProvider,
+    branch: str | None = None,
+    branch_strategy: BranchStrategy | None = None,
+    cwd: Path | None = None,
+    env: Mapping[str, str] | None = None,
+    mounts: tuple[Mount, ...] | None = None,
+    name: str | None = None,
+) -> Sandbox: ...
+```
+
+The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, plus a `.run(...)` method (same shape as the top-level `run()` minus `agent`/`sandbox` already supplied). It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle and worktree on exit.
+
+### `Sandbox.run(...)`
+
+Run an agent against an already-created sandbox. Same arguments as `run()` minus `sandbox=` (already bound) and `branch_strategy=` (would be ignored — the sandbox already owns a branch). Useful for sequential-reviewer / planner-executor patterns where multiple agents share one branch.
+
+```python
+with eden.create_sandbox(sandbox=docker_provider(...), branch="eden/feature/x") as s:
+    impl = s.run(agent=eden.claude_code("..."), prompt_file="implement.md", max_iterations=20)
+    if impl.commits:
+        s.run(agent=eden.claude_code("..."), prompt_file="review.md", max_iterations=1)
+```
+
 ### `create_worktree(...)`
 
 Carves a worktree without launching an agent — useful when you want to manage the iteration loop yourself.

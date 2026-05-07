@@ -1,6 +1,6 @@
 # Templates
 
-`eden init` scaffolds a project from a template. Two templates ship today: `blank` (minimal) and `simple-loop` (an iteration-driven worker that picks tasks from a backlog manager).
+`eden init` scaffolds a project from a template. Three templates ship today: `blank` (minimal), `simple-loop` (an iteration-driven worker over a backlog manager), and `sequential-reviewer` (implement-then-review per task on a shared sandbox).
 
 ---
 
@@ -143,3 +143,32 @@ The same five filenames as `blank` (`Dockerfile`, `prompt.md`, `main.py`, `.env.
 The template is a starting point — edit `prompt.md` to change the agent's working rules, bump `max_iterations` in `main.py` for longer sessions, or swap in a different sandbox.
 
 Read source: `eden/cli/_templates/simple_loop.py`, `eden/cli/_templates/_backlog.py`.
+
+---
+
+## `sequential-reviewer`
+
+A two-phase loop: per task, an *implementer* agent commits a change on a fresh named branch, then a *reviewer* agent inspects the diff and either approves it or commits a follow-up cleanup. Both agents share one [`Sandbox`](python-api.md#sandboxrun) so the second run sees the implementer's working tree directly — no extra container, no extra branch carve.
+
+```bash
+eden init --template sequential-reviewer --backlog github --yes
+```
+
+Same `--backlog` flag as `simple-loop` (defaults to `github`; `beads` also supported).
+
+### Files produced
+
+| File                         | Role                                                                                              |
+|------------------------------|---------------------------------------------------------------------------------------------------|
+| `Dockerfile`                 | Same shape as `simple-loop`: python:3.13-slim, the chosen backlog CLI, non-root `agent` user.    |
+| `implement-prompt.md`        | Pick the highest-priority open task and commit its implementation. Emits `<promise>COMPLETE</promise>` when done. |
+| `review-prompt.md`           | Reads `git diff {{TARGET_BRANCH}}...{{SOURCE_BRANCH}}`, suggests cleanups, commits any.           |
+| `CODING_STANDARDS.md`        | A short, editable list of standards the reviewer enforces.                                        |
+| `main.py`                    | Outer loop carving a named branch per iteration and running implementer + reviewer in sequence.   |
+| `.env.example`, `.gitignore` | Same as the other templates.                                                                       |
+
+### Customizing
+
+Drop in your own `CODING_STANDARDS.md`. Tighten the implementer prompt to your codebase's testing conventions. Crank `MAX_ITERATIONS` in `main.py` for longer sessions.
+
+Read source: `eden/cli/_templates/sequential_reviewer.py`.

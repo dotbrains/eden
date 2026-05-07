@@ -2,20 +2,45 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
+from typing import TYPE_CHECKING
 
+from eden._types import RunResult, Timeouts
+from eden.abort import AbortSignal
+from eden.abort._signal import AbortController
+from eden.lifecycle import Hooks
+from eden.logging._config import Logging
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
+from eden.streaming import StreamEvent
 from eden.worktree._create import WorktreeHandle, create_worktree
+
+if TYPE_CHECKING:
+    from eden.agents._protocol import Agent
+    from eden.output import OutputDefinition
+
+
+def _seconds(value: float | timedelta) -> float:
+    if isinstance(value, timedelta):
+        return value.total_seconds()
+    return float(value)
+
+
+def _maybe_seconds(value: float | timedelta | None) -> float | None:
+    if value is None:
+        return None
+    return _seconds(value)
 
 
 @dataclass
 class Sandbox:
     worktree: WorktreeHandle
     handle: SandboxHandle
+    sandbox_provider: SandboxProvider
     cwd: Path | None = None
 
     def __enter__(self) -> Sandbox:
@@ -29,6 +54,100 @@ class Sandbox:
             self.handle.close()
         finally:
             self.worktree.close()
+
+    def run(
+        self,
+        *,
+        agent: Agent,
+        prompt: str | None = None,
+        prompt_file: str | Path | None = None,
+        prompt_args: Mapping[str, str] | None = None,
+        env: Mapping[str, str] | None = None,
+        max_iterations: int = 1,
+        completion_signal: str | list[str] = "<promise>COMPLETE</promise>",
+        idle_timeout: float | timedelta = 600.0,
+        idle_warning_interval: float | timedelta | None = None,
+        name: str | None = None,
+        hooks: Hooks | None = None,
+        timeouts: Timeouts | None = None,
+        on_event: Callable[[StreamEvent], None] | None = None,
+        logging: Logging | None = None,
+        signal: AbortSignal | None = None,
+        output: OutputDefinition | None = None,
+        resume_session: str | None = None,
+    ) -> RunResult:
+        """Run an agent against this existing sandbox + worktree.
+
+        Mirrors the signature of :func:`eden.run` but reuses the worktree and
+        handle the sandbox already holds — no new branch is carved, no new
+        container is spawned. Use this to run multiple agents (e.g. an
+        implementer followed by a reviewer) against the same branch.
+        """
+        # Lazy imports keep eden.sandboxes importable from agents/orchestrator
+        # without cycles.
+        from eden.errors import InvalidOptions
+        from eden.orchestrator._loop import _run_loop
+        from eden.orchestrator._setup import resolve_setup
+
+        cwd_path = self.cwd if self.cwd is not None else self.worktree.host_repo_path
+        provider_env: dict[str, str] = {}
+        setup = resolve_setup(
+            prompt=prompt,
+            prompt_file=prompt_file,
+            prompt_args=prompt_args,
+            cwd=cwd_path,
+            env=env,
+            provider_env=provider_env,
+            sandbox_kind=self.sandbox_provider.kind,
+        )
+        if resume_session is not None and max_iterations != 1:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "resume_session= is only valid with max_iterations=1; "
+                    f"got max_iterations={max_iterations}"
+                ),
+            )
+        if output is not None:
+            if max_iterations != 1:
+                raise InvalidOptions(
+                    code="config.invalid_options",
+                    message=(
+                        "output= is only valid with max_iterations=1; got "
+                        f"max_iterations={max_iterations}"
+                    ),
+                )
+            tag_marker = f"<{output.tag}>"
+            if tag_marker not in setup.prompt_text:
+                raise InvalidOptions(
+                    code="config.invalid_options",
+                    message=(
+                        f"output tag {tag_marker} not referenced in prompt; "
+                        "the agent must be told which tag to emit"
+                    ),
+                )
+        abort = signal if signal is not None else AbortController().signal
+        return _run_loop(
+            agent=agent,
+            sandbox=self.sandbox_provider,
+            setup=setup,
+            branch_strategy=None,
+            max_iterations=max_iterations,
+            completion_signal=completion_signal,
+            idle_timeout=_seconds(idle_timeout),
+            idle_warning_interval=_maybe_seconds(idle_warning_interval),
+            name=name,
+            hooks=hooks if hooks is not None else Hooks(),
+            timeouts=timeouts if timeouts is not None else Timeouts(),
+            on_event=on_event,
+            logging_cfg=logging,
+            signal=abort,
+            prompt_args=prompt_args,
+            output=output,
+            resume_session=resume_session,
+            existing_worktree=self.worktree,
+            existing_handle=self.handle,
+        )
 
 
 def create_sandbox(
@@ -78,4 +197,9 @@ def create_sandbox(
         wt.close()
         raise
 
-    return Sandbox(worktree=wt, handle=handle, cwd=cwd)
+    return Sandbox(
+        worktree=wt,
+        handle=handle,
+        sandbox_provider=sandbox,
+        cwd=cwd,
+    )

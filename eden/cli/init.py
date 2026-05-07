@@ -14,6 +14,7 @@ from eden.cli._templates._backlog import (
     list_backlog_managers,
 )
 from eden.cli._templates.blank import render_blank
+from eden.cli._templates.sequential_reviewer import render_sequential_reviewer
 from eden.cli._templates.simple_loop import render_simple_loop
 
 console = Console(stderr=True)
@@ -21,7 +22,8 @@ console = Console(stderr=True)
 
 _VALID_SANDBOXES = ("docker", "podman")
 _VALID_AGENTS = ("claude-code", "codex", "opencode", "pi")
-_VALID_TEMPLATES = ("blank", "simple-loop")
+_VALID_TEMPLATES = ("blank", "simple-loop", "sequential-reviewer")
+_TEMPLATES_REQUIRING_BACKLOG = {"simple-loop", "sequential-reviewer"}
 _VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
 
 _DEFAULT_MODEL: dict[str, str] = {
@@ -63,7 +65,7 @@ def init_command(
             )
         model = model or typer.prompt("Model", default=_DEFAULT_MODEL[agent])
         template = template or typer.prompt("Template", default="blank")
-        if template == "simple-loop":
+        if template in _TEMPLATES_REQUIRING_BACKLOG:
             backlog = backlog or typer.prompt("Backlog manager", default="github")
     else:
         sandbox = sandbox or "docker"
@@ -74,7 +76,7 @@ def init_command(
             )
         model = model or _DEFAULT_MODEL[agent]
         template = template or "blank"
-        if template == "simple-loop":
+        if template in _TEMPLATES_REQUIRING_BACKLOG:
             backlog = backlog or "github"
 
     image_name = image_name or f"eden:{Path.cwd().name.lower()}"
@@ -91,7 +93,7 @@ def init_command(
         raise typer.BadParameter(
             f"template must be one of {list(_VALID_TEMPLATES)}, got {template!r}",
         )
-    if template == "simple-loop":
+    if template in _TEMPLATES_REQUIRING_BACKLOG:
         if backlog not in _VALID_BACKLOGS:
             raise typer.BadParameter(
                 f"backlog must be one of {list(_VALID_BACKLOGS)}, got {backlog!r}",
@@ -104,9 +106,18 @@ def init_command(
             model=model,
             image_name=image_name,
         )
-    else:  # simple-loop
+    elif template == "simple-loop":
         assert backlog is not None
         files = render_simple_loop(
+            sandbox=sandbox,
+            agent=agent,
+            model=model,
+            image_name=image_name,
+            backlog=get_backlog_manager(cast(BacklogName, backlog)),
+        )
+    else:  # sequential-reviewer
+        assert backlog is not None
+        files = render_sequential_reviewer(
             sandbox=sandbox,
             agent=agent,
             model=model,
