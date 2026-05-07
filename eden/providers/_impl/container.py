@@ -219,6 +219,79 @@ def _mount_spec(
 SANDBOX_HOMEDIR: Path = Path("/home/agent")
 
 
+def _file_mount_parents(
+    mounts: list[Mount], *, sandbox_homedir: Path
+) -> list[Path]:
+    """Return distinct parent directories that need creating before agents run.
+
+    A parent is included when:
+    - the host path is a regular file (not a directory),
+    - the expanded sandbox path lies under ``sandbox_homedir``.
+
+    Mounts targeting paths outside ``sandbox_homedir`` (e.g. ``/etc/...``) are
+    skipped — eden won't ``mkdir -p`` arbitrary system directories.
+    """
+    seen: list[Path] = []
+    for m in mounts:
+        if not m.host.is_file():
+            continue
+        expanded = _expand_sandbox_tilde(m.sandbox, sandbox_homedir=sandbox_homedir)
+        # ``is_relative_to`` requires the same root; both are absolute POSIX paths.
+        try:
+            expanded.relative_to(sandbox_homedir)
+        except ValueError:
+            continue
+        parent = expanded.parent
+        if parent == sandbox_homedir or parent in seen:
+            continue
+        seen.append(parent)
+    return seen
+
+
+def _ensure_mount_parents(
+    *,
+    binary: str,
+    container_id: str,
+    parents: list[Path],
+    uid: int,
+    gid: int,
+) -> None:
+    """Create each parent dir inside the container and chown to ``uid:gid``.
+
+    Runs ``<binary> exec --user 0:0 <container_id> sh -c 'mkdir -p "$1" &&
+    chown "$2:$3" "$1"'`` per parent. Failures raise ``ContainerStartFailed``
+    so the user finds out at start-up rather than as a confused EACCES later.
+    """
+    for parent in parents:
+        proc = subprocess.run(
+            [
+                binary,
+                "exec",
+                "--user",
+                "0:0",
+                container_id,
+                "sh",
+                "-c",
+                'mkdir -p "$1" && chown "$2:$3" "$1"',
+                "sh",  # $0 — required because $1/$2/$3 follow.
+                parent.as_posix(),
+                str(uid),
+                str(gid),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode != 0:
+            raise ContainerStartFailed(
+                image=container_id,
+                exit_code=proc.returncode,
+                stderr=(
+                    f"failed to prepare mount parent {parent.as_posix()!r}: "
+                    f"{proc.stderr.strip()}"
+                ),
+            )
+
+
 def make_container_provider(
     *,
     binary: Literal["docker", "podman"],
@@ -317,6 +390,32 @@ def make_container_provider(
                 stderr=run_proc.stderr,
             )
         container_id = run_proc.stdout.strip()
+
+        # Auto-create in-container parent dirs for file mounts targeting
+        # paths under SANDBOX_HOMEDIR. Without this, docker bind-creates the
+        # chain as root-owned and the agent user (effective_uid) can't write.
+        parents = _file_mount_parents(
+            list(mount_map.values()), sandbox_homedir=SANDBOX_HOMEDIR
+        )
+        if parents:
+            try:
+                _ensure_mount_parents(
+                    binary=binary,
+                    container_id=container_id,
+                    parents=parents,
+                    uid=effective_uid,
+                    gid=effective_gid,
+                )
+            except ContainerStartFailed:
+                # Wipe the just-started container so the user isn't left with
+                # a half-prepared sandbox no one will close.
+                subprocess.run(
+                    [binary, "kill", container_id],
+                    capture_output=True,
+                    text=True,
+                )
+                raise
+
         return _ContainerHandle(
             binary=binary,
             container_id=container_id,

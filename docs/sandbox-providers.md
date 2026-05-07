@@ -112,7 +112,7 @@ def provider(
 ```
 
 - `image` — container image (must already be built; the provider does not build).
-- `mounts` — extra bind mounts beyond the worktree itself. See [`Mount`](python-api.md#mount). `Mount.sandbox` paths starting with `~` are expanded to `/home/agent` (the default in-container homedir).
+- `mounts` — extra bind mounts beyond the worktree itself. See [`Mount`](python-api.md#mount). `Mount.sandbox` paths starting with `~` are expanded to `/home/agent` (the default in-container homedir). For **file** mounts (host path is a regular file) whose target lives under `/home/agent`, eden runs a one-shot `mkdir -p` + `chown` after container start so the agent user can write into the parent directory; the prep failure surfaces as `ContainerStartFailed` before any user code runs.
 - `env` — environment variables propagated into the container.
 - `network` — Docker `--network` flag value (e.g. `"host"`, `"none"`). `None` keeps Docker's default bridge.
 - `container_uid` / `container_gid` — UID/GID passed via `--user`. `None` (default) auto-derives from the host's UID/GID so files written through the bind-mounted worktree land owned by the host user. A pre-flight `docker image inspect` raises `ImageUidMismatch` when the image was built for a different numeric UID; rebuild with `--build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g)` to align them.
