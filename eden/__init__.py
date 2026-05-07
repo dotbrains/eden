@@ -33,10 +33,12 @@ from eden.errors import (
     RestRateLimited,
     SessionCaptureFailed,
     StepTimeout,
+    StructuredOutputError,
 )
 from eden.lifecycle import Hook, HookPhase, Hooks, HostHooks, SandboxHooks
 from eden.logging import Logging
 from eden.orchestrator import create_worktree, run
+from eden.output import Output, OutputDefinition
 from eden.providers._protocols import IsolatedSandboxHandle
 from eden.providers._types import BranchStrategy, FinalizeResult, Mount
 from eden.streaming import StreamEvent
@@ -74,6 +76,8 @@ __all__ = [
     # config / data
     "Logging",
     "Mount",
+    "Output",
+    "OutputDefinition",
     "PromptError",
     "RestAuthError",
     "RestError",
@@ -84,6 +88,7 @@ __all__ = [
     "SessionCaptureFailed",
     "StepTimeout",
     "StreamEvent",
+    "StructuredOutputError",
     "Timeouts",
     "Usage",
     "__version__",

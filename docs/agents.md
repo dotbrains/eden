@@ -113,15 +113,21 @@ def claude_code(
 - `effort` — optional `--thinking-effort` level (`"low"`, `"medium"`, `"high"`).
 - `env` — per-agent environment additions; the orchestrator merges them with the host env.
 - `capture_sessions` — when `True`, the orchestrator post-processes each iteration's session JSONL into `.eden/sessions/`. Default `True`.
-- `extra_args` — escape hatch for unsurfaced Claude CLI flags. Inserted before the `--` prompt separator.
+- `extra_args` — escape hatch for unsurfaced Claude CLI flags. Inserted before the stdin sigil (`-p -`).
+
+### Argv shape
+
+Eden builds `claude --print --output-format stream-json --verbose --model <model> [--thinking-effort ...] [--resume <id>] [extra_args...] -p -` and pipes the prompt via stdin. Stdin delivery dodges the Linux 128 KB execve argv-size limit, so prompts of any size are safe.
+
+### Session capture and resume
+
+`captures_sessions=True` is the default. The orchestrator watches `~/.claude/projects/<slug>/<id>.jsonl` and copies it to `.eden/sessions/<branch>/<iteration>.jsonl` after each iteration; `Iteration.session_id` and `Iteration.session_file_path` are populated. Set `capture_sessions=False` to skip this work.
+
+To **resume** a captured session, pass `run(..., resume_session=<id>)` (top-level `run()` argument, not on the factory). Eden appends `--resume <id>` to the argv. Resume requires `max_iterations=1`; otherwise `InvalidOptions` is raised.
 
 ### What binary it wraps
 
 The `claude` CLI from Anthropic (Claude Code). Must be installed and authenticated on `$PATH` at `run()` time.
-
-### Session capture
-
-`captures_sessions=True` is the default. The orchestrator watches `~/.claude/projects/<slug>/<id>.jsonl` and copies it to `.eden/sessions/<branch>/<iteration>.jsonl` after each iteration; `Iteration.session_id` and `Iteration.session_file_path` are populated. Set `capture_sessions=False` to skip this work.
 
 ### When to use
 
@@ -177,12 +183,13 @@ agent = opencode("claude-opus-4")
 def opencode(
     model: str = "claude-opus-4",
     *,
+    variant: str | None = None,
     env: Mapping[str, str] | None = None,
     extra_args: tuple[str, ...] = (),
 ) -> Agent: ...
 ```
 
-Thin wrapper over [`cli_agent`](#cli_agent) with `binary="opencode"` and `name="opencode"`. `captures_sessions` is `False`.
+Builds the argv `opencode run --model <model> [--variant <v>] [extra_args] <prompt>`. `variant` controls reasoning effort (e.g. `"high"`, `"max"`, `"low"`, `"minimal"`); omit to keep opencode's default. Uses `cli_agent` under the hood with a custom argv builder; `captures_sessions` is `False`.
 
 ### What binary it wraps
 

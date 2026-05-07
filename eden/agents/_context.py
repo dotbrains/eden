@@ -16,3 +16,4 @@ class IterationContext:
     worktree_path: Path
     branch: str
     name: str | None
+    resume_session: str | None = None

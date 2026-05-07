@@ -33,11 +33,13 @@ class _AgentRunner:
         env: Mapping[str, str],
         watchdog: IdleWatchdog,
         cwd: Path | None = None,
+        stdin: str | None = None,
     ) -> None:
         self._argv = list(argv)
         self._env = dict(env)
         self._watchdog = watchdog
         self._cwd = cwd
+        self._stdin = stdin
         self._proc: subprocess.Popen[str] | None = None
         self._stdout_q: Queue[Any] = Queue()
         self._stderr_chunks: list[str] = []
@@ -45,10 +47,15 @@ class _AgentRunner:
     def __enter__(self) -> _AgentRunner:
         merged = dict(os.environ)
         merged.update(self._env)
+        # When stdin payload is provided, open a pipe so we can write to it; the
+        # write is offloaded to a daemon thread so a large prompt cannot deadlock
+        # against a slow-consuming agent (and doesn't block the main loop).
+        stdin_pipe = subprocess.PIPE if self._stdin is not None else None
         self._proc = subprocess.Popen(
             self._argv,
             env=merged,
             cwd=str(self._cwd) if self._cwd is not None else None,
+            stdin=stdin_pipe,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -66,6 +73,21 @@ class _AgentRunner:
             target=lambda: self._stderr_chunks.extend(stderr),
             daemon=True,
         ).start()
+        if self._stdin is not None:
+            stdin_stream = self._proc.stdin
+            stdin_payload = self._stdin
+            assert stdin_stream is not None
+
+            def _write_stdin() -> None:
+                try:
+                    stdin_stream.write(stdin_payload)
+                finally:
+                    try:
+                        stdin_stream.close()
+                    except Exception:
+                        pass
+
+            threading.Thread(target=_write_stdin, daemon=True).start()
         return self
 
     def __exit__(self, *exc: object) -> None:

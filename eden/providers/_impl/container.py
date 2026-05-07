@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import secrets
 import shutil
@@ -21,6 +22,7 @@ from eden.sandboxes._exec import stream_exec
 from eden.sandboxes.errors import (
     ContainerStartFailed,
     ImageNotFound,
+    ImageUidMismatch,
     ProviderUnavailable,
 )
 
@@ -95,6 +97,104 @@ class _ContainerHandle:
         return None
 
 
+def _check_image_uid(
+    *, binary: str, image: str, expected_uid: int
+) -> None:
+    """Verify the image's USER UID matches the expected one.
+
+    Skips silently when the image has no USER directive or a non-numeric one
+    (e.g. ``USER agent``) — in those cases UID is set at runtime via ``--user``.
+    Raises ``ImageUidMismatch`` for a numeric mismatch.
+    """
+    proc = subprocess.run(
+        [binary, "image", "inspect", image, "--format", "{{.Config.User}}"],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        return  # ImageNotFound is raised by the caller's earlier inspect
+    raw = (proc.stdout or "").strip()
+    if not raw:
+        return
+    uid_part = raw.split(":", 1)[0]
+    try:
+        image_uid = int(uid_part)
+    except ValueError:
+        return
+    if image_uid != expected_uid:
+        raise ImageUidMismatch(
+            image=image,
+            image_uid=image_uid,
+            expected_uid=expected_uid,
+        )
+
+
+def _host_uid() -> int:
+    """Return the host's UID, or 1000 on platforms without ``getuid``."""
+    getuid = getattr(os, "getuid", None)
+    return getuid() if getuid is not None else 1000
+
+
+def _host_gid() -> int:
+    """Return the host's GID, or 1000 on platforms without ``getgid``."""
+    getgid = getattr(os, "getgid", None)
+    return getgid() if getgid is not None else 1000
+
+
+SelinuxLabel = Literal["z", "Z"]
+
+
+def _expand_sandbox_tilde(sandbox: Path, *, sandbox_homedir: Path | None) -> Path:
+    """Expand a leading ``~`` in a sandbox-side path using ``sandbox_homedir``.
+
+    Raises ``ValueError`` if ``sandbox`` starts with ``~`` but the provider has
+    no ``sandbox_homedir``. Paths without a leading ``~`` pass through unchanged.
+    """
+    parts = sandbox.parts
+    if not parts or parts[0] != "~":
+        return sandbox
+    if sandbox_homedir is None:
+        raise ValueError(
+            f"sandbox path {sandbox.as_posix()!r} starts with ~ but provider has "
+            "no sandbox_homedir; pass an absolute sandbox path or use a provider "
+            "that defines a homedir"
+        )
+    rest = parts[1:]
+    return sandbox_homedir.joinpath(*rest) if rest else sandbox_homedir
+
+
+def _mount_spec(
+    *,
+    host: Path,
+    sandbox: Path,
+    read_only: bool,
+    selinux: SelinuxLabel | None,
+    sandbox_homedir: Path | None = None,
+) -> str:
+    """Build a bind-mount spec string.
+
+    Combines ``read_only`` and SELinux relabel suffixes into the trailing
+    options block expected by ``docker run -v`` / ``podman run -v``:
+    ``host:sandbox[:opt1,opt2...]``. Expands a leading ``~`` in ``sandbox``
+    using ``sandbox_homedir`` (e.g. ``Path("/home/agent")``).
+    """
+    expanded = _expand_sandbox_tilde(sandbox, sandbox_homedir=sandbox_homedir)
+    spec = f"{host}:{expanded.as_posix()}"
+    opts: list[str] = []
+    if read_only:
+        opts.append("ro")
+    if selinux is not None:
+        opts.append(selinux)
+    if opts:
+        spec += ":" + ",".join(opts)
+    return spec
+
+
+# Default in-container home directory used by tilde-expansion. Matches the
+# ``agent`` user created by eden's blank-template Dockerfile.
+SANDBOX_HOMEDIR: Path = Path("/home/agent")
+
+
 def make_container_provider(
     *,
     binary: Literal["docker", "podman"],
@@ -102,14 +202,30 @@ def make_container_provider(
     mounts: tuple[Mount, ...] | None = None,
     env: Mapping[str, str] | None = None,
     network: str | None = None,
+    container_uid: int | None = None,
+    container_gid: int | None = None,
+    selinux_label: SelinuxLabel | None = "z",
 ) -> SandboxProvider:
     """Build a bind-mount SandboxProvider backed by ``<binary> run``.
 
     Identical argv shape for docker and podman; the binary name is threaded
     through every subprocess call (run, exec, cp, kill).
+
+    ``container_uid`` / ``container_gid`` set the in-container user. When
+    ``None``, defaults to the host's UID/GID so files written into bind-mounted
+    paths land with the host user as owner. A pre-flight ``image inspect``
+    raises ``ImageUidMismatch`` if the image was built for a different UID.
+
+    ``selinux_label`` appends an SELinux relabel suffix to every bind mount.
+    Default ``"z"`` shares the label across containers; ``"Z"`` makes it
+    container-private; ``None`` disables relabeling (use on hosts where SELinux
+    is not enforced or relabel would conflict). The label is harmless on
+    non-SELinux hosts (Docker / Podman ignore the suffix).
     """
     provider_mounts: tuple[Mount, ...] = mounts or ()
     provider_env: dict[str, str] = dict(env) if env else {}
+    effective_uid: int = container_uid if container_uid is not None else _host_uid()
+    effective_gid: int = container_gid if container_gid is not None else _host_gid()
 
     def _create(opts: CreateOptions) -> BindMountSandboxHandle:
         if not shutil.which(binary):
@@ -122,6 +238,8 @@ def make_container_provider(
         )
         if inspect.returncode != 0:
             raise ImageNotFound(image=image, stderr=inspect.stderr)
+
+        _check_image_uid(binary=binary, image=image, expected_uid=effective_uid)
 
         # Mount precedence: implicit /workspace, then opts.mounts, then
         # provider_mounts (last write wins on sandbox-path collision).
@@ -147,13 +265,19 @@ def make_container_provider(
             "-i",
             "--name",
             container_name,
+            "--user",
+            f"{effective_uid}:{effective_gid}",
             "--entrypoint",
             "sleep",
         ]
         for m in mount_map.values():
-            spec = f"{m.host}:{m.sandbox.as_posix()}"
-            if m.read_only:
-                spec += ":ro"
+            spec = _mount_spec(
+                host=m.host,
+                sandbox=m.sandbox,
+                read_only=m.read_only,
+                selinux=selinux_label,
+                sandbox_homedir=SANDBOX_HOMEDIR,
+            )
             argv.extend(["-v", spec])
         for k, v in merged_env.items():
             argv.extend(["-e", f"{k}={v}"])

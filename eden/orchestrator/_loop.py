@@ -25,6 +25,8 @@ from eden.orchestrator._setup import (
     resolve_branch_strategy,
     resolve_target_branch,
 )
+from eden.orchestrator._summary import format_context_window_line
+from eden.output import OutputDefinition, extract_structured_output
 from eden.prompt import render_prompt
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
@@ -69,6 +71,8 @@ def _run_loop(
     logging_cfg: Logging | None,
     signal: AbortSignal,
     prompt_args: Mapping[str, str] | None,
+    output: OutputDefinition | None = None,
+    resume_session: str | None = None,
 ) -> RunResult:
     strategy = resolve_branch_strategy(
         branch_strategy=branch_strategy,
@@ -133,6 +137,22 @@ def _run_loop(
             level=log_cfg.level,
             env_values=tuple(setup.merged_env.values()),
         )
+        agent_stream_cb = log_cfg.on_agent_stream_event
+
+        def _forward_agent_event(ev: StreamEvent) -> None:
+            """Fire ``Logging.on_agent_stream_event`` for agent-derived events.
+
+            Errors raised by the callback are swallowed so a broken forwarder
+            cannot kill the run.
+            """
+            if agent_stream_cb is None:
+                return
+            if ev.type not in ("text", "tool_call", "usage"):
+                return
+            try:
+                agent_stream_cb(ev)
+            except Exception:
+                pass
 
         for i in range(max_iterations):
             signal.raise_if_aborted()
@@ -171,6 +191,7 @@ def _run_loop(
                     worktree_path=wt.worktree_path,
                     branch=wt.branch,
                     name=name,
+                    resume_session=resume_session,
                 )
             )
 
@@ -182,11 +203,31 @@ def _run_loop(
             try:
                 iter_completion: str | None = None
                 agent_cwd = handle.worktree_path if handle.worktree_path.exists() else None
+                # Optional stdin payload — agents that override prompt
+                # delivery (e.g. claude_code, to dodge the 128 KB execve
+                # arg limit on Linux) implement ``stdin_content(ctx)``.
+                stdin_fn = getattr(agent, "stdin_content", None)
+                stdin_payload = (
+                    stdin_fn(
+                        IterationContext(
+                            iteration=i,
+                            prompt=rendered_prompt,
+                            sandbox_handle=handle,
+                            worktree_path=wt.worktree_path,
+                            branch=wt.branch,
+                            name=name,
+                            resume_session=resume_session,
+                        )
+                    )
+                    if callable(stdin_fn)
+                    else None
+                )
                 with _AgentRunner(
                     argv=argv,
                     env=setup.merged_env,
                     watchdog=wd,
                     cwd=agent_cwd,
+                    stdin=stdin_payload,
                 ) as runner:
 
                     def _emit_warning(minutes: int, _i: int = i) -> None:
@@ -223,6 +264,7 @@ def _run_loop(
                             sink.write(ev)
                         if on_event is not None:
                             on_event(ev)
+                        _forward_agent_event(ev)
                         hit = match(line, completion_signal)
                         if hit is not None:
                             iter_completion = hit
@@ -246,6 +288,7 @@ def _run_loop(
                                         sink.write(tev)
                                     if on_event is not None:
                                         on_event(tev)
+                                    _forward_agent_event(tev)
                             runner.terminate()
                             break
             finally:
@@ -288,6 +331,19 @@ def _run_loop(
                                 text=f"[eden] session capture failed: {exc}",
                             )
                         )
+
+            if iter_usage is not None:
+                ctx_ev = StreamEvent(
+                    type="text",
+                    agent_name=agent.name,
+                    iteration=i,
+                    timestamp=_utcnow(),
+                    text=format_context_window_line(iter_usage),
+                )
+                if sink is not None:
+                    sink.write(ctx_ev)
+                if on_event is not None:
+                    on_event(ctx_ev)
 
             run_sandbox_hooks(
                 phase=HookPhase.OnIterationEnd,
@@ -381,11 +437,20 @@ def _run_loop(
             preserved = wt.worktree_path
 
     last = iterations[-1] if iterations else None
+    full_stdout = "".join(stdout_chunks)
+    extracted: object | None = None
+    if output is not None:
+        extracted = extract_structured_output(
+            full_stdout,
+            output,
+            branch=wt.branch,
+            preserved_worktree_path=preserved,
+        )
     return assemble(
         iterations=iterations,
         completion_signal=completion_hit,
         branch=wt.branch,
-        stdout="".join(stdout_chunks),
+        stdout=full_stdout,
         worktree_path=wt.worktree_path,
         preserved_worktree_path=preserved,
         cwd=setup.cwd,
@@ -395,6 +460,7 @@ def _run_loop(
         session_id=last.session_id if last else None,
         session_file_path=last.session_file_path if last else None,
         usage=last.usage if last else None,
+        output=extracted,
     )
 
 

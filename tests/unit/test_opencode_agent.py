@@ -68,3 +68,25 @@ def test_opencode_extra_args_threaded() -> None:
     assert "--config" in argv
     assert "x.yaml" in argv
     assert argv.index("x.yaml") < argv.index("p")
+
+
+def test_opencode_argv_includes_run_subcommand_and_model() -> None:
+    a = opencode(model="claude-sonnet-4")
+    argv = a.build_command(_ctx(prompt="p"))
+    assert argv[:2] == ["opencode", "run"]
+    assert "--model" in argv
+    assert argv[argv.index("--model") + 1] == "claude-sonnet-4"
+
+
+def test_opencode_variant_threaded() -> None:
+    a = opencode(model="m", variant="high")
+    argv = a.build_command(_ctx(prompt="p"))
+    assert "--variant" in argv
+    assert argv[argv.index("--variant") + 1] == "high"
+    assert argv.index("--variant") < argv.index("p")
+
+
+def test_opencode_no_variant_omits_flag() -> None:
+    a = opencode(model="m")
+    argv = a.build_command(_ctx(prompt="p"))
+    assert "--variant" not in argv

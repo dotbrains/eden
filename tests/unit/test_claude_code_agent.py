@@ -66,13 +66,21 @@ def test_captures_sessions_false_overrides() -> None:
     assert a.captures_sessions is False
 
 
-def test_build_command_returns_argv_with_prompt() -> None:
+def test_build_command_returns_argv_with_stdin_sigil() -> None:
     a = claude_code(model="m")
     argv = a.build_command(_ctx(prompt="hi"))
     assert argv[0] == "claude"
     assert "stream-json" in argv
-    assert argv[-1] == "hi"
-    assert argv[-2] == "--"
+    # Prompt is delivered via stdin (`-p -`), not appended to argv.
+    assert argv[-2:] == ["-p", "-"]
+    assert "hi" not in argv
+
+
+def test_stdin_content_returns_prompt() -> None:
+    a = claude_code(model="m")
+    assert hasattr(a, "stdin_content")
+    payload = a.stdin_content(_ctx(prompt="my-prompt"))  # type: ignore[attr-defined]
+    assert payload == "my-prompt"
 
 
 def test_build_command_with_effort_includes_thinking_effort() -> None:

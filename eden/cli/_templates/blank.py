@@ -5,11 +5,22 @@ from __future__ import annotations
 BLANK_DOCKERFILE = """\
 FROM python:3.13-slim
 
-WORKDIR /workspace
+# Align in-container UID/GID with the host so files written into the
+# bind-mounted worktree land with the host user as owner. Override at build
+# time: --build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g)
+ARG AGENT_UID=1000
+ARG AGENT_GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \\
     git \\
     && rm -rf /var/lib/apt/lists/*
+
+RUN groupadd --gid ${AGENT_GID} agent \\
+    && useradd --uid ${AGENT_UID} --gid ${AGENT_GID} \\
+       --create-home --home-dir /home/agent --shell /bin/sh agent
+
+WORKDIR /workspace
+USER ${AGENT_UID}:${AGENT_GID}
 
 CMD ["sleep", "infinity"]
 """
