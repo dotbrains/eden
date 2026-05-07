@@ -18,6 +18,7 @@ from eden.errors import (
     RestNotFoundError,
     RestRateLimited,
 )
+from eden.tracing import set_attributes, span
 
 _DEFAULT_TIMEOUT = 60.0
 _DEFAULT_MAX_RETRIES = 3
@@ -157,6 +158,29 @@ class RestClient:
         expect_json: bool = True,
     ) -> dict[str, Any]:
         url = self._url(path)
+        with span(
+            "eden.rest.request",
+            attributes={"http.method": method, "http.url": url},
+        ) as request_span:
+            return self._request_impl(
+                method=method,
+                url=url,
+                params=params,
+                json=json,
+                expect_json=expect_json,
+                request_span=request_span,
+            )
+
+    def _request_impl(
+        self,
+        *,
+        method: str,
+        url: str,
+        params: Mapping[str, Any] | None,
+        json: Mapping[str, Any] | None,
+        expect_json: bool,
+        request_span: Any,
+    ) -> dict[str, Any]:
         last_exc: Exception | None = None
         for attempt in range(self.max_retries + 1):
             try:
@@ -180,6 +204,10 @@ class RestClient:
                 ) from exc
 
             if 200 <= resp.status_code < 300:
+                set_attributes(
+                    request_span,
+                    {"http.status_code": resp.status_code, "http.retry_count": attempt},
+                )
                 if not expect_json:
                     return {}
                 try:

@@ -39,3 +39,4 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [ADR 0009 — Containerized TTY for `interactive()`](adr/0009-containerized-tty-for-interactive.md)
 - [ADR 0010 — Auto-create parent directories for file mounts](adr/0010-auto-create-mount-parent-dirs.md)
 - [ADR 0011 — Async API surface](adr/0011-async-api-surface.md)
+- [ADR 0012 — OpenTelemetry tracing](adr/0012-otel-tracing.md)
