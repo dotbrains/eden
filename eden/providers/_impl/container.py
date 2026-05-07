@@ -81,6 +81,30 @@ class _ContainerHandle:
             text=True,
         )
 
+    def interactive_exec(
+        self,
+        argv: list[str],
+        *,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> int:
+        """Run ``argv`` inside the container with a TTY attached.
+
+        Builds ``<binary> exec -it [-w cwd] [-e K=V ...] <container_id> <argv>``.
+        Stdio is inherited from the parent so the user gets a real terminal
+        for the agent's TUI. Returns the exec-call's exit code.
+        """
+        cmd: list[str] = [self.binary, "exec", "-it"]
+        if cwd is not None:
+            cmd.extend(["-w", cwd.as_posix()])
+        if env:
+            for k, v in env.items():
+                cmd.extend(["-e", f"{k}={v}"])
+        cmd.append(self.container_id)
+        cmd.extend(argv)
+        proc = subprocess.run(cmd, check=False)
+        return proc.returncode
+
     def close(self) -> None:
         proc = subprocess.run(
             [self.binary, "kill", self.container_id],

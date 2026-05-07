@@ -51,8 +51,8 @@ def test_interactive_propagates_nonzero_exit(e2e_git_repo: Path) -> None:
     assert result.exit_code == 7
 
 
-def test_interactive_rejects_non_no_sandbox(e2e_git_repo: Path) -> None:
-    """Until containerized TTY support lands, only no_sandbox is allowed."""
+def test_interactive_rejects_isolated_sandbox(e2e_git_repo: Path) -> None:
+    """Isolated providers don't expose a TTY (no container to exec into)."""
     from eden.sandboxes.isolated import provider as isolated
 
     with pytest.raises(eden.InvalidOptions) as ex:
@@ -60,7 +60,7 @@ def test_interactive_rejects_non_no_sandbox(e2e_git_repo: Path) -> None:
             agent=_exit_zero_agent(),
             sandbox=isolated(),
         )
-    assert "no_sandbox" in ex.value.message
+    assert "interactive" in ex.value.message.lower()
 
 
 def test_interactive_default_sandbox_is_no_sandbox(e2e_git_repo: Path) -> None:

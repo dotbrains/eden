@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -72,19 +71,6 @@ def interactive(
         from eden.sandboxes.no_sandbox import provider as no_sandbox
 
         sandbox = no_sandbox()
-    if sandbox.name != "no_sandbox":
-        raise InvalidOptions(
-            code="config.invalid_options",
-            message=(
-                f"interactive() only supports the no_sandbox provider in this "
-                f"version; got sandbox={sandbox.name!r}"
-            ),
-            hint=(
-                "containerized TTY sessions (docker exec -t / podman exec -t) "
-                "are tracked as a follow-up; use eden.run() for non-interactive "
-                "containerized agent runs"
-            ),
-        )
 
     cwd_path = Path(cwd) if cwd is not None else Path.cwd()
     if not cwd_path.exists() or not cwd_path.is_dir():
@@ -185,16 +171,32 @@ def interactive(
             else agent.build_command(ctx)
         )
 
-        # Inherit stdin / stdout / stderr so the agent gets a real TTY.
-        proc = subprocess.run(
-            argv,
-            cwd=str(wt.worktree_path),
-            env={**__import__("os").environ, **merged_env},
-            check=False,
-        )
+        # Dispatch via the handle's ``interactive_exec`` method when available
+        # — bind-mount providers (no_sandbox, docker, podman) implement it; the
+        # docker / podman impls wrap argv in ``<binary> exec -it`` so the user
+        # gets a real TTY inside the container. Isolated providers (Daytona,
+        # Vercel, the local isolated copy) don't expose a TTY: raise a clear
+        # InvalidOptions instead.
+        ix = getattr(handle, "interactive_exec", None)
+        if not callable(ix):
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    f"sandbox={sandbox.name!r} does not expose an interactive "
+                    "TTY"
+                ),
+                hint=(
+                    "use eden.run() for non-interactive runs against this "
+                    "provider, or pick no_sandbox / docker / podman for "
+                    "interactive sessions"
+                ),
+            )
+        # The exec runs inside the sandbox, so cwd is the in-container
+        # worktree path (``handle.worktree_path``), not the host path.
+        exit_code = ix(argv, cwd=handle.worktree_path, env=merged_env)
         return InteractiveResult(
             branch=wt.branch,
-            exit_code=proc.returncode,
+            exit_code=exit_code,
             worktree_path=wt.worktree_path,
             cwd=cwd_path,
         )
