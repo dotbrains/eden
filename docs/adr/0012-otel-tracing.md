@@ -30,6 +30,7 @@ Adopt option 2.
   - `eden.agent.exec` — child of `eden.iteration` covering the agent subprocess from spawn to completion.
   - `eden.rest.request` — child span emitted by `RestClient` for each HTTP request, with `http.method`, `http.url`, `http.status_code`, `http.retry_count`.
 - Errors are recorded on the span via `record_exception()` and the span status is set to `ERROR`; eden's typed exceptions surface as the recorded exception type so users filtering on `exception.type == "IdleTimeout"` works without bespoke instrumentation.
+- Every span auto-derives two metrics from its name: a counter (`<span>.count`) and a histogram (`<span>.duration_seconds`). Both carry an `outcome` attribute (`ok` / `error`). Spans answer "what happened in this run?"; metrics answer "how is the loop performing over time?". Users who installed an SDK already get both — no extra wiring.
 
 ## Consequences
 
