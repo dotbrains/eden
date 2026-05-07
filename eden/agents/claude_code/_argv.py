@@ -17,17 +17,21 @@ def build_argv(
     *,
     model: str,
     effort: Literal["low", "medium", "high"] | None,
-    prompt: str,
     extra_args: tuple[str, ...],
+    resume_session: str | None = None,
 ) -> list[str]:
     """Return the argv vector for a single Claude Code invocation.
 
-    The prompt is appended as a positional argument after `--` so the shell
-    does no parsing of its content.
+    The prompt is delivered via stdin (Eden pipes it via ``-p -``) so the
+    Linux 128 KB execve argv limit cannot truncate large prompts.
+    ``resume_session``, when set, appends ``--resume <id>`` to continue a
+    prior conversation captured by ``capture_sessions``.
     """
     argv: list[str] = [*_BASE, "--model", model]
     if effort is not None:
         argv.extend(["--thinking-effort", effort])
+    if resume_session is not None:
+        argv.extend(["--resume", resume_session])
     argv.extend(extra_args)
-    argv.extend(["--", prompt])
+    argv.extend(["-p", "-"])
     return argv

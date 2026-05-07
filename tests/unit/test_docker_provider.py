@@ -92,7 +92,8 @@ def test_create_raises_when_image_missing(tmp_path: Path, fake_subprocess: _Subp
 
 
 def test_create_raises_when_run_fails(tmp_path: Path, fake_subprocess: _SubprocessFake) -> None:
-    fake_subprocess.queue_run(returncode=0)  # image inspect succeeds
+    fake_subprocess.queue_run(returncode=0)  # image inspect (existence)
+    fake_subprocess.queue_run(returncode=0)  # image inspect (UID format) — empty skips check
     fake_subprocess.queue_run(stderr="cannot start", returncode=125)  # docker run fails
     p = docker_mod.provider(image="alpine:3.20")
     with pytest.raises(ContainerStartFailed) as excinfo:
@@ -101,7 +102,8 @@ def test_create_raises_when_run_fails(tmp_path: Path, fake_subprocess: _Subproce
 
 
 def test_create_builds_expected_argv(tmp_path: Path, fake_subprocess: _SubprocessFake) -> None:
-    fake_subprocess.queue_run(returncode=0)  # inspect
+    fake_subprocess.queue_run(returncode=0)  # inspect (existence)
+    fake_subprocess.queue_run(returncode=0)  # inspect (UID format) — empty skips check
     fake_subprocess.queue_run(stdout="cid123\n", returncode=0)  # run
     p = docker_mod.provider(
         image="alpine:3.20",
@@ -111,10 +113,10 @@ def test_create_builds_expected_argv(tmp_path: Path, fake_subprocess: _Subproces
     handle = p.create(_opts(tmp_path))
     assert handle.worktree_path == Path("/workspace")
 
-    run_call = fake_subprocess.calls[1]
+    run_call = fake_subprocess.calls[2]
     assert run_call.argv[:5] == ("docker", "run", "-d", "--rm", "-i")
-    # contains workspace bind
-    assert any(f"{tmp_path}:/workspace" == a for a in run_call.argv)
+    # contains workspace bind (with default :z SELinux relabel)
+    assert any(f"{tmp_path}:/workspace:z" == a for a in run_call.argv)
     # contains both env vars
     joined = " ".join(run_call.argv)
     assert "PROVIDER_KEY=v" in joined
@@ -131,7 +133,8 @@ def test_create_builds_expected_argv(tmp_path: Path, fake_subprocess: _Subproces
 def test_provider_mount_overrides_caller_mount(
     tmp_path: Path, fake_subprocess: _SubprocessFake
 ) -> None:
-    fake_subprocess.queue_run(returncode=0)
+    fake_subprocess.queue_run(returncode=0)  # inspect (existence)
+    fake_subprocess.queue_run(returncode=0)  # inspect (UID format)
     fake_subprocess.queue_run(stdout="cid\n", returncode=0)
     caller_mount = Mount(host=tmp_path / "a", sandbox=Path("/data"))
     provider_mount = Mount(host=tmp_path / "b", sandbox=Path("/data"), read_only=True)
@@ -146,10 +149,10 @@ def test_provider_mount_overrides_caller_mount(
             name_hint=None,
         )
     )
-    run_argv = fake_subprocess.calls[1].argv
+    run_argv = fake_subprocess.calls[2].argv
     # Provider override wins -> /data should map to b, not a.
     bind_strings = [run_argv[i + 1] for i, a in enumerate(run_argv) if a == "-v"]
-    matching = [s for s in bind_strings if s.endswith(":/data:ro")]
+    matching = [s for s in bind_strings if ":/data:" in s and "ro" in s.split(":")[-1]]
     assert matching, f"expected /data bind with ro, got {bind_strings!r}"
     assert any(str(tmp_path / "b") in s for s in matching)
     assert not any(str(tmp_path / "a") in s for s in bind_strings)
@@ -160,7 +163,8 @@ def test_handle_exec_uses_docker_exec(
     fake_subprocess: _SubprocessFake,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fake_subprocess.queue_run(returncode=0)
+    fake_subprocess.queue_run(returncode=0)  # inspect (existence)
+    fake_subprocess.queue_run(returncode=0)  # inspect (UID format)
     fake_subprocess.queue_run(stdout="cid123\n", returncode=0)
     p = docker_mod.provider(image="alpine:3.20")
     handle = p.create(_opts(tmp_path))
@@ -188,13 +192,14 @@ def test_handle_exec_uses_docker_exec(
 
 
 def test_handle_close_calls_docker_kill(tmp_path: Path, fake_subprocess: _SubprocessFake) -> None:
-    fake_subprocess.queue_run(returncode=0)
+    fake_subprocess.queue_run(returncode=0)  # inspect (existence)
+    fake_subprocess.queue_run(returncode=0)  # inspect (UID format)
     fake_subprocess.queue_run(stdout="cid123\n", returncode=0)
     fake_subprocess.queue_run(returncode=0)  # docker kill
     p = docker_mod.provider(image="alpine:3.20")
     handle = p.create(_opts(tmp_path))
     handle.close()
-    kill_call = fake_subprocess.calls[2]
+    kill_call = fake_subprocess.calls[3]
     assert kill_call.argv == ("docker", "kill", "cid123")
 
 
@@ -202,6 +207,7 @@ def test_handle_close_swallows_no_such_container(
     tmp_path: Path, fake_subprocess: _SubprocessFake
 ) -> None:
     fake_subprocess.queue_run(returncode=0)
+    fake_subprocess.queue_run(returncode=0)  # UID inspect
     fake_subprocess.queue_run(stdout="cid123\n", returncode=0)
     fake_subprocess.queue_run(stderr="Error: No such container: cid123", returncode=1)
     p = docker_mod.provider(image="alpine:3.20")
@@ -211,12 +217,13 @@ def test_handle_close_swallows_no_such_container(
 
 def test_handle_copy_in_invokes_docker_cp(tmp_path: Path, fake_subprocess: _SubprocessFake) -> None:
     fake_subprocess.queue_run(returncode=0)
+    fake_subprocess.queue_run(returncode=0)  # UID inspect
     fake_subprocess.queue_run(stdout="cid123\n", returncode=0)
     fake_subprocess.queue_run(returncode=0)  # docker cp
     p = docker_mod.provider(image="alpine:3.20")
     handle = p.create(_opts(tmp_path))
     handle.copy_file_in(tmp_path / "x", Path("/sandbox/y"))
-    cp_call = fake_subprocess.calls[2]
+    cp_call = fake_subprocess.calls[3]
     assert cp_call.argv[0:2] == ("docker", "cp")
     assert cp_call.argv[-1] == "cid123:/sandbox/y"
 
@@ -225,11 +232,12 @@ def test_handle_copy_out_invokes_docker_cp(
     tmp_path: Path, fake_subprocess: _SubprocessFake
 ) -> None:
     fake_subprocess.queue_run(returncode=0)
+    fake_subprocess.queue_run(returncode=0)  # UID inspect
     fake_subprocess.queue_run(stdout="cid123\n", returncode=0)
     fake_subprocess.queue_run(returncode=0)
     p = docker_mod.provider(image="alpine:3.20")
     handle = p.create(_opts(tmp_path))
     handle.copy_file_out(Path("/sandbox/y"), tmp_path / "x")
-    cp_call = fake_subprocess.calls[2]
+    cp_call = fake_subprocess.calls[3]
     assert cp_call.argv[0:2] == ("docker", "cp")
     assert cp_call.argv[2] == "cid123:/sandbox/y"

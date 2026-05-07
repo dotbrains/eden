@@ -22,6 +22,7 @@ def assemble(
     session_id: str | None,
     session_file_path: Path | None,
     usage: Usage | None,
+    output: object | None = None,
 ) -> RunResult:
     return RunResult(
         iterations=iterations,
@@ -39,4 +40,5 @@ def assemble(
         session_id=session_id,
         session_file_path=session_file_path,
         usage=usage,
+        output=output,
     )

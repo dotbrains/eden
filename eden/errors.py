@@ -168,6 +168,41 @@ class Aborted(EdenError):
         super().__init__(f"aborted: {reason}")
 
 
+class StructuredOutputError(EdenError):
+    """Raised when ``run(output=...)`` fails to extract or validate a payload.
+
+    Failure modes:
+    - The configured XML tag was not found in stdout (``raw_matched`` is ``None``).
+    - The tag contents failed ``json.loads`` (``cause`` carries the parse error).
+    - The schema callable raised (``cause`` carries the validation error).
+
+    Carries ``branch`` and ``preserved_worktree_path`` so callers can recover
+    side effects without losing the run's commits and worktree state.
+    """
+
+    def __init__(
+        self,
+        *,
+        code: str = "output.extraction_failed",
+        message: str,
+        hint: str | None = None,
+        cause: Exception | None = None,
+        tag: str,
+        raw_matched: str | None,
+        branch: str,
+        preserved_worktree_path: object = None,
+    ) -> None:
+        self.code = code
+        self.message = message
+        self.hint = hint
+        self.cause = cause
+        self.tag = tag
+        self.raw_matched = raw_matched
+        self.branch = branch
+        self.preserved_worktree_path = preserved_worktree_path
+        super().__init__(_format(code, message, hint))
+
+
 class SessionCaptureFailed(EdenError):
     """Raised when capture_session() can't locate, read, or write the JSONL.
 
