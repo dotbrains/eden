@@ -32,7 +32,7 @@ The blank Dockerfile template is updated to declare `ARG AGENT_UID=1000 AGENT_GI
 - Existing eden setups that built images without the build-arg get a clear `ImageUidMismatch` error pointing at the fix instead of a silent permission drift.
 - The SELinux relabel applies to every bind, including the implicit `/workspace` mount and any user-supplied caches. On non-SELinux hosts the suffix is harmless.
 - Tilde expansion couples the API to the convention "the agent user's home is `/home/agent`". This is enforced by the blank template; users with custom Dockerfiles that pick a different homedir need to either pass absolute paths or override `SANDBOX_HOMEDIR`. Acceptable trade for the ergonomics gain.
-- One gap remains: if a tilde-expanded sandbox path has parent directories that don't exist in the image (e.g. `~/.config/gh/hosts.yml` when `/home/agent/.config` is empty), the bind mount creates them as root-owned. Fix tracked separately — see [`docs/adr/0010-auto-create-mount-parent-dirs.md`](0010-auto-create-mount-parent-dirs.md).
+- File mounts whose tilde-expanded parent didn't exist in the image (e.g. `~/.config/gh/hosts.yml` when `/home/agent/.config` is empty) used to land with a root-owned parent the agent couldn't write into. ADR 0010 closes that gap — eden now `mkdir -p` + `chown` the parent at container start.
 
 ## See also
 
