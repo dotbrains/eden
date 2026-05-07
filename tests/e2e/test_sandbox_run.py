@@ -77,3 +77,45 @@ def test_sandbox_run_with_output_extraction(e2e_git_repo: Path) -> None:
             output=eden.Output.string(tag="answer"),
         )
         assert result.output == "42"
+
+
+def test_sandbox_run_resume_session_threads_into_iteration_context(
+    e2e_git_repo: Path,
+) -> None:
+    """resume_session passed to Sandbox.run reaches the agent's IterationContext."""
+    import sys
+
+    from eden.agents._context import IterationContext
+    from eden.agents.cli import cli_agent
+
+    seen: list[str | None] = []
+
+    def _build(ctx: IterationContext) -> list[str]:
+        seen.append(ctx.resume_session)
+        return [sys.executable, "-c", "print('<promise>COMPLETE</promise>')"]
+
+    agent = cli_agent(name="probe", model="x", binary="ignored", build_argv=_build)
+    with eden.create_sandbox(sandbox=no_sandbox()) as sandbox:
+        sandbox.run(
+            agent=agent,
+            prompt="x",
+            max_iterations=1,
+            completion_signal="<promise>COMPLETE</promise>",
+            idle_timeout=10.0,
+            resume_session="sb-session-99",
+        )
+    assert seen == ["sb-session-99"]
+
+
+def test_sandbox_run_rejects_resume_with_max_iterations_gt_1(
+    e2e_git_repo: Path,
+) -> None:
+    with eden.create_sandbox(sandbox=no_sandbox()) as sandbox:
+        with pytest.raises(eden.InvalidOptions) as ex:
+            sandbox.run(
+                agent=eden.simulated_agent(output="x\n"),
+                prompt="x",
+                max_iterations=2,
+                resume_session="some-id",
+            )
+    assert "max_iterations" in ex.value.message
