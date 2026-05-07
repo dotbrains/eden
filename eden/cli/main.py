@@ -6,6 +6,7 @@ import typer
 
 from eden import __version__
 from eden.cli.init import init_command
+from eden.cli.run import run_command
 
 app = typer.Typer(
     name="eden",
@@ -15,6 +16,10 @@ app = typer.Typer(
 )
 
 app.command(name="init", help="Scaffold .eden/ in the current repo.")(init_command)
+app.command(
+    name="run",
+    help="Run a template's iteration loop in-process via eden.run().",
+)(run_command)
 
 
 @app.command(name="version", help="Print the eden version and exit.")
