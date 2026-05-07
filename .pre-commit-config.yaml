@@ -1,37 +1,38 @@
 # Run on every commit:
 #
-#   pip install -e ".[dev]"   # one-time, gives you pre-commit + pinned tools
+#   pip install -e ".[dev]"   # one-time, gives you pre-commit + pinned mypy
 #   pre-commit install        # one-time, wires the git hook
 #
-# All hooks are `repo: local` so the venv's pinned ruff/mypy are the single
-# source of truth — no second tool-version list to keep in sync.
+# Ruff hooks use astral-sh/ruff-pre-commit so they install ruff into an
+# isolated env — the hooks fire correctly even when your venv is not
+# activated. Bump `rev:` in lockstep with the `ruff==…` pin in pyproject.toml's
+# [dev] extras (single source of truth: bump both, the version is duplicated
+# only because pre-commit needs the version inline to provision its env).
+#
+# The mypy hook uses `language: system` so it picks up the active venv's
+# installed dependencies (typer, rich, requests, opentelemetry, …). That means
+# `git commit` must be run from an activated venv, or with `.venv/bin` on
+# PATH — pre-commit cannot easily replicate the project's full transitive
+# dependency tree inside an isolated env.
 
 repos:
-  - repo: local
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
     hooks:
       - id: ruff-format
-        name: ruff format
-        entry: ruff format
-        language: system
-        types_or: [python, pyi]
-        # ruff format scans the whole tree quickly; pass the dirs explicitly so
-        # the hook gates the same scope as `ruff format --check eden tests` in CI.
-        pass_filenames: false
+        # Match `ruff format --check eden tests` in CI scope.
         args: [eden, tests]
-
-      - id: ruff
-        name: ruff check
-        entry: ruff check --fix
-        language: system
-        types_or: [python, pyi]
         pass_filenames: false
-        args: [eden, tests]
+      - id: ruff-check
+        args: [--fix, eden, tests]
+        pass_filenames: false
 
+  - repo: local
+    hooks:
       - id: mypy
         name: mypy --strict
         entry: mypy --strict
         language: system
         types: [python]
         pass_filenames: false
-        # mypy is incremental; keep it scoped to the same dirs CI checks.
         args: [eden, tests]
