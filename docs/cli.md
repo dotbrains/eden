@@ -21,7 +21,8 @@ Without `--yes`, any flag you omit is collected interactively (with sensible def
 | `--sandbox` | `docker` (interactive prompt default) | `docker`, `podman` | Container runtime for the generated `.eden/main.py`. |
 | `--agent` | `claude-code` (interactive prompt default) | `claude-code`, `codex`, `opencode`, `pi` | Agent factory imported in the generated `.eden/main.py`. |
 | `--model` | per-agent default (see below) | any string | Model identifier passed to the agent factory. |
-| `--template` | `blank` | `blank` | Scaffold template. v0.1 ships `blank` only — see [templates.md](templates.md). |
+| `--template` | `blank` | `blank`, `simple-loop` | Scaffold template — see [templates.md](templates.md). |
+| `--backlog` | `github` (when `--template simple-loop`) | `github`, `beads` | Backlog manager the simple-loop prompt targets; ignored for `blank`. |
 | `--image-name` | `eden:<cwd-basename-lowercase>` | any string | Container image tag referenced from the generated `.eden/main.py` and the suggested `docker build` command. |
 | `--yes` | `false` | flag | Accept all defaults; skip interactive prompts. |
 
@@ -54,7 +55,7 @@ docker build -t <image-name> -f .eden/Dockerfile .
 python .eden/main.py
 ```
 
-Read source: `eden/cli/init.py`, `eden/cli/_templates/blank.py`.
+Read source: `eden/cli/init.py`, `eden/cli/_templates/blank.py`, `eden/cli/_templates/simple_loop.py`, `eden/cli/_templates/_backlog.py`.
 
 ## `eden version`
 
