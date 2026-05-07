@@ -144,9 +144,84 @@ def test_init_unsupported_template_rejected(
 ) -> None:
     result = runner.invoke(
         app,
-        ["init", "--yes", "--template", "simple-loop"],
+        ["init", "--yes", "--template", "non-existent-template"],
     )
     assert result.exit_code != 0
+
+
+def test_init_simple_loop_template_writes_files(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    result = runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
+    )
+    assert result.exit_code == 0, result.output
+    eden_dir = repo_dir / ".eden"
+    expected = {"Dockerfile", "prompt.md", "main.py", ".env.example", ".gitignore"}
+    assert {p.name for p in eden_dir.iterdir()} == expected
+
+
+def test_init_simple_loop_github_threads_gh_commands(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
+    )
+    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
+    assert "gh issue list" in prompt
+    assert "gh issue view <ID>" in prompt
+    assert "gh issue close <ID>" in prompt
+
+
+def test_init_simple_loop_beads_threads_bd_commands(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "beads"],
+    )
+    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
+    assert "bd ready --json" in prompt
+    assert "bd show <ID>" in prompt
+    assert "bd close <ID>" in prompt
+
+
+def test_init_simple_loop_dockerfile_includes_backlog_install(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
+    )
+    dockerfile = (repo_dir / ".eden" / "Dockerfile").read_text(encoding="utf-8")
+    assert "gh" in dockerfile  # gh CLI install line present
+    assert "ARG AGENT_UID=1000" in dockerfile
+    assert "USER ${AGENT_UID}:${AGENT_GID}" in dockerfile
+
+
+def test_init_simple_loop_invalid_backlog_rejected(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    result = runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "jira"],
+    )
+    assert result.exit_code != 0
+
+
+def test_init_simple_loop_default_backlog_is_github(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    """Without --backlog, --yes mode falls back to github."""
+    result = runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop"],
+    )
+    assert result.exit_code == 0, result.output
+    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
+    assert "gh issue list" in prompt
 
 
 def test_init_gitignore_includes_runtime_dirs(
