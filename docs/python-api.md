@@ -764,6 +764,13 @@ Spans emitted:
 
 All spans record exceptions via `Span.record_exception()` and set status to `ERROR` on raise — failures show up in your trace UI without extra wiring.
 
+Every span also emits two metrics derived from its name:
+
+- `<span>.count` — counter, attribute `outcome` ∈ `{ok, error}`.
+- `<span>.duration_seconds` — histogram, same `outcome` attribute.
+
+So `eden.run.count{outcome="error"}` gives you the failure rate across runs, and `eden.agent.exec.duration_seconds` (P50/P95) tells you whether iterations are getting slower over time. Wire up an OTel `MeterProvider` alongside the `TracerProvider` to receive them.
+
 A minimal SDK setup for local debugging:
 
 ```python
