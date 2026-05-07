@@ -11,11 +11,7 @@ def context_window_k(usage: Usage) -> int:
     Sums input + cache-creation + cache-read tokens (matching the formula used
     by upstream's run summary) and rounds up to the nearest 1000.
     """
-    total = (
-        usage.input_tokens
-        + usage.cache_creation_input_tokens
-        + usage.cache_read_input_tokens
-    )
+    total = usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
     return -(-total // 1000)
 
 

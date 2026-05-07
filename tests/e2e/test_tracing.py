@@ -70,9 +70,7 @@ def captured_spans() -> Iterator[InMemorySpanExporter]:
         processor.shutdown()
 
 
-def test_run_emits_run_span(
-    e2e_git_repo: Path, captured_spans: InMemorySpanExporter
-) -> None:
+def test_run_emits_run_span(e2e_git_repo: Path, captured_spans: InMemorySpanExporter) -> None:
     eden.run(
         agent=eden.simulated_agent(output="hi\n<promise>COMPLETE</promise>\n"),
         sandbox=no_sandbox(),
@@ -120,9 +118,7 @@ def test_agent_exec_span_carries_iteration_index(
         completion_signal="NEVER",
         idle_timeout=10.0,
     )
-    exec_spans = [
-        s for s in captured_spans.get_finished_spans() if s.name == "eden.agent.exec"
-    ]
+    exec_spans = [s for s in captured_spans.get_finished_spans() if s.name == "eden.agent.exec"]
     assert len(exec_spans) == 2
     indexes = sorted(int((s.attributes or {})["iteration.index"]) for s in exec_spans)  # type: ignore[arg-type]
     assert indexes == [0, 1]
@@ -142,9 +138,7 @@ def test_hook_emits_eden_hook_span(
         idle_timeout=10.0,
         hooks=hooks,
     )
-    hook_spans = [
-        s for s in captured_spans.get_finished_spans() if s.name == "eden.hook"
-    ]
+    hook_spans = [s for s in captured_spans.get_finished_spans() if s.name == "eden.hook"]
     assert hook_spans, "no eden.hook spans captured"
     attrs = dict(hook_spans[0].attributes or {})
     assert attrs["hook.location"] == "host"
@@ -180,9 +174,7 @@ def test_rest_client_emits_request_span(
     monkeypatch.setattr(client._session, "request", fake_request)
     client.get("/api/x")
 
-    rest_spans = [
-        s for s in captured_spans.get_finished_spans() if s.name == "eden.rest.request"
-    ]
+    rest_spans = [s for s in captured_spans.get_finished_spans() if s.name == "eden.rest.request"]
     assert rest_spans, "no eden.rest.request span captured"
     attrs = dict(rest_spans[0].attributes or {})
     assert attrs["http.method"] == "GET"
@@ -201,8 +193,6 @@ def test_run_span_records_completion_signal_attribute(
         max_iterations=3,
         idle_timeout=10.0,
     )
-    run_span = next(
-        s for s in captured_spans.get_finished_spans() if s.name == "eden.run"
-    )
+    run_span = next(s for s in captured_spans.get_finished_spans() if s.name == "eden.run")
     attrs = dict(run_span.attributes or {})
     assert attrs["completion_signal"] == "<promise>COMPLETE</promise>"

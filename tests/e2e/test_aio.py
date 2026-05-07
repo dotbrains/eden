@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Coroutine
 from pathlib import Path
+from typing import Any, TypeVar
 
 import pytest
 
@@ -14,7 +16,10 @@ from eden.sandboxes.no_sandbox import provider as no_sandbox
 pytestmark = pytest.mark.e2e
 
 
-def _run_async(coro):  # type: ignore[no-untyped-def]
+_T = TypeVar("_T")
+
+
+def _run_async(coro: Coroutine[Any, Any, _T]) -> _T:
     """Execute a coroutine and return its result. Mirrors asyncio.run but
     works in environments that already have a loop policy set up."""
     return asyncio.run(coro)

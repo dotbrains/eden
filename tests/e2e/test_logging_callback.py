@@ -37,8 +37,7 @@ def test_callback_receives_agent_text_only(e2e_git_repo: Path) -> None:
     # Eden's own context-window text event is emitted *outside* the agent stream
     # forwarder, so it must not appear here.
     assert not any(
-        ev.type == "text" and ev.text and ev.text.startswith("Context window:")
-        for ev in captured
+        ev.type == "text" and ev.text and ev.text.startswith("Context window:") for ev in captured
     )
 
 

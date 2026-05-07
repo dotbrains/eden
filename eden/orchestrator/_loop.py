@@ -103,9 +103,7 @@ def _run_loop(
         )
         if not sandbox.supports_strategy(strategy):
             raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
-        wt = create_worktree(
-            host_repo_path=setup.cwd, strategy=strategy, name_hint=name
-        )
+        wt = create_worktree(host_repo_path=setup.cwd, strategy=strategy, name_hint=name)
 
     target_branch = resolve_target_branch(host_repo_path=setup.cwd)
 
@@ -277,21 +275,24 @@ def _run_loop(
                     if callable(stdin_fn)
                     else None
                 )
-                with span(
-                    "eden.agent.exec",
-                    attributes={
-                        "agent.name": agent.name,
-                        "agent.model": getattr(agent, "model", None),
-                        "iteration.index": i,
-                        "branch": wt.branch,
-                    },
-                ), _AgentRunner(
-                    argv=argv,
-                    env=setup.merged_env,
-                    watchdog=wd,
-                    cwd=agent_cwd,
-                    stdin=stdin_payload,
-                ) as runner:
+                with (
+                    span(
+                        "eden.agent.exec",
+                        attributes={
+                            "agent.name": agent.name,
+                            "agent.model": getattr(agent, "model", None),
+                            "iteration.index": i,
+                            "branch": wt.branch,
+                        },
+                    ),
+                    _AgentRunner(
+                        argv=argv,
+                        env=setup.merged_env,
+                        watchdog=wd,
+                        cwd=agent_cwd,
+                        stdin=stdin_payload,
+                    ) as runner,
+                ):
 
                     def _emit_warning(minutes: int, _i: int = i) -> None:
                         ev = StreamEvent(

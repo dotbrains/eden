@@ -308,8 +308,7 @@ _AGENT_CALL: dict[str, str] = {
 
 _BASE_ENV: dict[str, str] = {
     "claude-code": (
-        "# Anthropic API key (required for claude-code)\n"
-        "# ANTHROPIC_API_KEY=sk-ant-...\n"
+        "# Anthropic API key (required for claude-code)\n# ANTHROPIC_API_KEY=sk-ant-...\n"
     ),
     "codex": "# OpenAI API key (required for codex)\n# OPENAI_API_KEY=sk-...\n",
     "opencode": "# Provider key for the model you've configured opencode to use\n",

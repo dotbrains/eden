@@ -48,7 +48,7 @@ def test_object_parses_json_and_validates() -> None:
     out = Output.object(tag="result", schema=schema)
     result = extract_structured_output(
         '<result>{"n": 42}</result>',
-        out,
+        out,  # type: ignore[arg-type]
         branch="b",
     )
     assert result == {"n": 42}
@@ -89,7 +89,7 @@ def test_object_schema_failure_raises_validation_failed() -> None:
 
     out = Output.object(tag="r", schema=schema)
     with pytest.raises(StructuredOutputError) as ex:
-        extract_structured_output('<r>{"n": 1}</r>', out, branch="b")
+        extract_structured_output('<r>{"n": 1}</r>', out, branch="b")  # type: ignore[arg-type]
     assert ex.value.code == "output.validation_failed"
     assert isinstance(ex.value.cause, ValueError)
 

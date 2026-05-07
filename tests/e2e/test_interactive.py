@@ -15,7 +15,7 @@ from eden.sandboxes.no_sandbox import provider as no_sandbox
 pytestmark = pytest.mark.e2e
 
 
-def _exit_zero_agent() -> object:
+def _exit_zero_agent() -> eden.Agent:
     """Build an agent whose argv exits 0 immediately (fast e2e)."""
 
     def _build(_ctx: IterationContext) -> list[str]:
@@ -24,7 +24,7 @@ def _exit_zero_agent() -> object:
     return cli_agent(name="probe", model="x", binary="ignored", build_argv=_build)
 
 
-def _exit_n_agent(n: int) -> object:
+def _exit_n_agent(n: int) -> eden.Agent:
     def _build(_ctx: IterationContext) -> list[str]:
         return [sys.executable, "-c", f"import sys; sys.exit({n})"]
 
@@ -110,9 +110,7 @@ def test_interactive_uses_build_interactive_command_when_present(
     assert log_file.read_text() == "build_interactive_command"
 
 
-def test_interactive_renders_prompt_substitutions(
-    e2e_git_repo: Path, tmp_path: Path
-) -> None:
+def test_interactive_renders_prompt_substitutions(e2e_git_repo: Path, tmp_path: Path) -> None:
     """Agent receives a rendered prompt via build_interactive_command(ctx)."""
     seen: list[str] = []
 
