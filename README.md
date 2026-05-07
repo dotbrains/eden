@@ -67,6 +67,7 @@ Full documentation lives in [`docs/`](docs/README.md):
 
 - [What is Eden?](docs/what-is-eden.md) — positioning and feature matrix
 - [Quick start](docs/quick-start.md) — five-minute tour
+- [Tutorial: build your first agent loop](docs/tutorial-first-loop.md) — 10-minute walkthrough that ends with a real agent fixing a real bug
 - [Python API reference](docs/python-api.md) — every name importable from `eden`
 - [How it works](docs/how-it-works.md) — branch strategies, sandbox lifecycle, iteration loop
 - [Sandbox providers](docs/sandbox-providers.md) — six provider catalog
