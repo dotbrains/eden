@@ -201,7 +201,9 @@ The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_pro
 
 ### `Sandbox.run(...)`
 
-Run an agent against an already-created sandbox. Same arguments as `run()` minus `sandbox=` (already bound) and `branch_strategy=` (would be ignored — the sandbox already owns a branch). Useful for sequential-reviewer / planner-executor patterns where multiple agents share one branch.
+Run an agent against an already-created sandbox. Same arguments as `run()` minus `sandbox=` (already bound) and `branch_strategy=` (would be ignored — the sandbox already owns a branch). All other options carry over: `output=`, `resume_session=`, `logging=`, `on_event=`, `signal=`, `hooks=`, `timeouts=`, etc.
+
+Useful for sequential-reviewer / planner-executor patterns where multiple agents share one branch, and for resuming a captured Claude Code session in a fresh container without re-creating the worktree.
 
 ```python
 with eden.create_sandbox(sandbox=docker_provider(...), branch="eden/feature/x") as s:
@@ -743,6 +745,41 @@ The 17 concrete error classes re-exported from `eden`:
 - `SessionCaptureFailed` — the orchestrator could not locate or read a session JSONL; soft failure surfaced as a warning event.
 - `StepTimeout` — an iteration exceeded `Timeouts.iteration_step`.
 - <a id="structuredoutputerror"></a>`StructuredOutputError` — `output=Output.{object,string}(...)` failed to extract or validate. Carries `tag`, `raw_matched` (the matched contents or `None`), `branch`, and optional `preserved_worktree_path`. Raised on missing tag, invalid JSON, or schema validation failure.
+
+---
+
+## Tracing
+
+Eden emits OpenTelemetry spans for the iteration loop, sandbox lifecycle, hooks, and REST requests. The runtime depends on `opentelemetry-api>=1.20`; without an installed SDK, OTel's no-op tracer makes every span a zero-cost noop. To collect traces in your application, install `opentelemetry-sdk` and configure a provider/exporter — eden picks up whatever provider is set globally.
+
+Spans emitted:
+
+| Span | Where | Key attributes |
+| --- | --- | --- |
+| `eden.run` | one per `eden.run()` / `eden.aio.run()` call | `agent.name`, `agent.model`, `sandbox.name`, `sandbox.kind`, `branch`, `max_iterations`, `caller_managed`, `iterations`, `completion_signal` |
+| `eden.sandbox.create` | wraps `Sandbox.create` + `OnSandboxReady` hooks | `sandbox.name`, `sandbox.kind`, `branch` |
+| `eden.agent.exec` | one per agent invocation (per iteration) | `agent.name`, `agent.model`, `iteration.index`, `branch` |
+| `eden.hook` | one per host or sandbox hook command | `hook.location` (`host`/`sandbox`), `hook.phase`, `hook.command`, `hook.timeout_s` |
+| `eden.rest.request` | one per `RestClient` HTTP request | `http.method`, `http.url`, `http.status_code`, `http.retry_count` |
+
+All spans record exceptions via `Span.record_exception()` and set status to `ERROR` on raise — failures show up in your trace UI without extra wiring.
+
+A minimal SDK setup for local debugging:
+
+```python
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
+
+provider = TracerProvider()
+provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
+trace.set_tracer_provider(provider)
+
+import eden
+eden.run(agent=..., sandbox=..., prompt="...")
+```
+
+See [ADR 0012](adr/0012-otel-tracing.md) for the design rationale and instrumented site list.
 
 ---
 
