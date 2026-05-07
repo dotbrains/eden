@@ -82,13 +82,20 @@ def test_run_rejects_unknown_sandbox(runner: CliRunner, fake_run: MagicMock) -> 
 
 
 def test_run_requires_image_for_docker(runner: CliRunner, fake_run: MagicMock) -> None:
+    import re
+
     result = runner.invoke(
         app,
         ["run", "--template", "simple-loop", "--sandbox", "docker"],
     )
     assert result.exit_code != 0
+    # typer/rich wraps option names in per-character ANSI escapes when stderr
+    # is treated as a tty (CI macOS runners do, local terminals often don't),
+    # which breaks plain substring matches on `--image-name`. Strip ANSI
+    # before asserting.
     combined = (result.output or "") + (result.stderr or "")
-    assert "image-name" in combined.lower()
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", combined).lower()
+    assert "image-name" in plain
     fake_run.assert_not_called()
 
 
