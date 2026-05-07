@@ -38,6 +38,7 @@ from eden.errors import (
 from eden.lifecycle import Hook, HookPhase, Hooks, HostHooks, SandboxHooks
 from eden.logging import Logging
 from eden.orchestrator import create_worktree, run
+from eden.orchestrator._interactive import InteractiveResult, interactive
 from eden.output import Output, OutputDefinition
 from eden.providers._protocols import IsolatedSandboxHandle
 from eden.providers._types import BranchStrategy, FinalizeResult, Mount
@@ -70,6 +71,7 @@ __all__ = [
     "Hooks",
     "HostHooks",
     "IdleTimeout",
+    "InteractiveResult",
     "InvalidOptions",
     "IsolatedSandboxHandle",
     "Iteration",
@@ -99,6 +101,7 @@ __all__ = [
     "codex",
     "create_sandbox",
     "create_worktree",
+    "interactive",
     "opencode",
     # entrypoints
     "pi",

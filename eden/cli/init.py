@@ -14,6 +14,7 @@ from eden.cli._templates._backlog import (
     list_backlog_managers,
 )
 from eden.cli._templates.blank import render_blank
+from eden.cli._templates.parallel_planner import render_parallel_planner
 from eden.cli._templates.sequential_reviewer import render_sequential_reviewer
 from eden.cli._templates.simple_loop import render_simple_loop
 
@@ -22,8 +23,12 @@ console = Console(stderr=True)
 
 _VALID_SANDBOXES = ("docker", "podman")
 _VALID_AGENTS = ("claude-code", "codex", "opencode", "pi")
-_VALID_TEMPLATES = ("blank", "simple-loop", "sequential-reviewer")
-_TEMPLATES_REQUIRING_BACKLOG = {"simple-loop", "sequential-reviewer"}
+_VALID_TEMPLATES = ("blank", "simple-loop", "sequential-reviewer", "parallel-planner")
+_TEMPLATES_REQUIRING_BACKLOG = {
+    "simple-loop",
+    "sequential-reviewer",
+    "parallel-planner",
+}
 _VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
 
 _DEFAULT_MODEL: dict[str, str] = {
@@ -115,9 +120,18 @@ def init_command(
             image_name=image_name,
             backlog=get_backlog_manager(cast(BacklogName, backlog)),
         )
-    else:  # sequential-reviewer
+    elif template == "sequential-reviewer":
         assert backlog is not None
         files = render_sequential_reviewer(
+            sandbox=sandbox,
+            agent=agent,
+            model=model,
+            image_name=image_name,
+            backlog=get_backlog_manager(cast(BacklogName, backlog)),
+        )
+    else:  # parallel-planner
+        assert backlog is not None
+        files = render_parallel_planner(
             sandbox=sandbox,
             agent=agent,
             model=model,
