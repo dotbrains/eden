@@ -472,3 +472,41 @@ def test_expand_sandbox_tilde_raises_when_homedir_missing() -> None:
 
     with pytest.raises(ValueError, match="sandbox_homedir"):
         _expand_sandbox_tilde(Path("~/x"), sandbox_homedir=None)
+
+
+@pytest.mark.parametrize("binary", ["docker", "podman"])
+def test_interactive_exec_builds_exec_it_argv(
+    binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``interactive_exec`` wraps argv in ``<binary> exec -it ...``."""
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    p = make_container_provider(binary=binary, image="alpine")  # type: ignore[arg-type]
+    handle = p.create(_opts(tmp_path))
+
+    rc = handle.interactive_exec(  # type: ignore[attr-defined]
+        ["claude", "--model", "x"],
+        cwd=Path("/workspace"),
+        env={"K": "V"},
+    )
+    assert rc == 0
+
+    # The last captured call is the interactive exec.
+    exec_call = captured[-1]
+    assert exec_call[:3] == [binary, "exec", "-it"]
+    assert "-w" in exec_call
+    assert exec_call[exec_call.index("-w") + 1] == "/workspace"
+    assert "-e" in exec_call
+    assert "K=V" in exec_call
+    # Container id appears before the agent argv.
+    assert "claude" in exec_call
+    assert exec_call.index("claude") > exec_call.index(handle.container_id)  # type: ignore[attr-defined]
