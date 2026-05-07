@@ -206,7 +206,7 @@ def test_init_simple_loop_invalid_backlog_rejected(
 ) -> None:
     result = runner.invoke(
         app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "jira"],
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "trello"],
     )
     assert result.exit_code != 0
 
@@ -222,6 +222,38 @@ def test_init_simple_loop_default_backlog_is_github(
     assert result.exit_code == 0, result.output
     prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
     assert "gh issue list" in prompt
+
+
+def test_init_simple_loop_linear_threads_helpers(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    result = runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "linear"],
+    )
+    assert result.exit_code == 0, result.output
+    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
+    assert "linear-list" in prompt
+    dockerfile = (repo_dir / ".eden" / "Dockerfile").read_text(encoding="utf-8")
+    assert "linear-list" in dockerfile  # helper script baked into image
+    env_ex = (repo_dir / ".eden" / ".env.example").read_text(encoding="utf-8")
+    assert "LINEAR_API_KEY" in env_ex
+
+
+def test_init_simple_loop_jira_threads_jira_cli(
+    runner: CliRunner, repo_dir: Path
+) -> None:
+    result = runner.invoke(
+        app,
+        ["init", "--yes", "--template", "simple-loop", "--backlog", "jira"],
+    )
+    assert result.exit_code == 0, result.output
+    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
+    assert "jira issue list" in prompt
+    dockerfile = (repo_dir / ".eden" / "Dockerfile").read_text(encoding="utf-8")
+    assert "jira-cli" in dockerfile
+    env_ex = (repo_dir / ".eden" / ".env.example").read_text(encoding="utf-8")
+    assert "JIRA_API_TOKEN" in env_ex
 
 
 def test_init_gitignore_includes_runtime_dirs(
