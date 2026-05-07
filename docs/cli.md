@@ -57,6 +57,34 @@ python .eden/main.py
 
 Read source: `eden/cli/init.py`, `eden/cli/_templates/blank.py`, `eden/cli/_templates/simple_loop.py`, `eden/cli/_templates/_backlog.py`.
 
+## `eden run`
+
+Run a template's iteration loop **in-process** via `eden.run()` — no files scaffolded. Useful for quick experiments and CI pipelines where committing a generated `.eden/` directory adds no value.
+
+```bash
+eden run --template simple-loop --sandbox no-sandbox --agent claude-code --backlog github
+```
+
+For docker/podman sandboxes, supply `--image-name` (the image must already be built and align with your host UID/GID — same constraints as the scaffolded `eden init` flow).
+
+### Flags
+
+| Flag | Default | Valid values | Description |
+|---|---|---|---|
+| `--template` | `simple-loop` | `simple-loop` | Template to run. Currently only `simple-loop` is supported in-process. |
+| `--sandbox` | `docker` | `docker`, `podman`, `no-sandbox` | Sandbox provider. `no-sandbox` runs commands directly on the host. |
+| `--agent` | `claude-code` | `claude-code`, `codex`, `opencode`, `pi` | Agent factory. |
+| `--model` | per-agent default | any string | Model identifier passed to the agent factory. |
+| `--backlog` | `github` | `github`, `beads`, `linear`, `jira` | Backlog manager whose `list-tasks`/`view-task`/`close-task` commands get embedded in the prompt. |
+| `--image-name` | _(none)_ | any string | Container image tag — required for `--sandbox docker` / `podman`. |
+| `--max-iterations` | `3` | positive int | Max iteration loop turns. |
+| `--idle-timeout` | `600.0` | seconds | Bail when the agent's stdout has been silent this long. |
+| `--cwd` | current dir | path | Repo to run against. |
+
+The simple-loop prompt is identical to the one written by `eden init --template simple-loop` — see [templates.md](templates.md).
+
+Read source: `eden/cli/run.py`.
+
 ## `eden version`
 
 Print the installed Eden version and exit.
