@@ -66,3 +66,6 @@ Thumbs.db
 .eden/logs/
 .eden/worktrees/
 .eden/.env
+
+# Claude Code internal state (per-clone, not source-controlled)
+.claude/
