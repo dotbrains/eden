@@ -37,14 +37,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
-      - name: Ruff format check
-        run: ruff format --check eden tests
-
-      - name: Ruff lint
-        run: ruff check eden tests
-
-      - name: mypy --strict
-        run: mypy --strict eden tests
+      - name: Run pre-commit hooks (ruff format + lint, mypy --strict)
+        run: pre-commit run --all-files --show-diff-on-failure
 
       - name: pytest (unit + e2e)
         run: pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
