@@ -89,9 +89,7 @@ def test_implement_prompt_threads_backlog_commands() -> None:
     assert "bd close <ID>" in impl
 
 
-def test_init_writes_sequential_reviewer_files(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_writes_sequential_reviewer_files(runner: CliRunner, repo_dir: Path) -> None:
     result = runner.invoke(
         app,
         [

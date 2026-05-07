@@ -121,9 +121,7 @@ class _ContainerHandle:
         return None
 
 
-def _check_image_uid(
-    *, binary: str, image: str, expected_uid: int
-) -> None:
+def _check_image_uid(*, binary: str, image: str, expected_uid: int) -> None:
     """Verify the image's USER UID matches the expected one.
 
     Skips silently when the image has no USER directive or a non-numeric one
@@ -219,9 +217,7 @@ def _mount_spec(
 SANDBOX_HOMEDIR: Path = Path("/home/agent")
 
 
-def _file_mount_parents(
-    mounts: list[Mount], *, sandbox_homedir: Path
-) -> list[Path]:
+def _file_mount_parents(mounts: list[Mount], *, sandbox_homedir: Path) -> list[Path]:
     """Return distinct parent directories that need creating before agents run.
 
     A parent is included when:
@@ -286,8 +282,7 @@ def _ensure_mount_parents(
                 image=container_id,
                 exit_code=proc.returncode,
                 stderr=(
-                    f"failed to prepare mount parent {parent.as_posix()!r}: "
-                    f"{proc.stderr.strip()}"
+                    f"failed to prepare mount parent {parent.as_posix()!r}: {proc.stderr.strip()}"
                 ),
             )
 
@@ -394,9 +389,7 @@ def make_container_provider(
         # Auto-create in-container parent dirs for file mounts targeting
         # paths under SANDBOX_HOMEDIR. Without this, docker bind-creates the
         # chain as root-owned and the agent user (effective_uid) can't write.
-        parents = _file_mount_parents(
-            list(mount_map.values()), sandbox_homedir=SANDBOX_HOMEDIR
-        )
+        parents = _file_mount_parents(list(mount_map.values()), sandbox_homedir=SANDBOX_HOMEDIR)
         if parents:
             try:
                 _ensure_mount_parents(

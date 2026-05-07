@@ -149,9 +149,7 @@ def test_init_unsupported_template_rejected(
     assert result.exit_code != 0
 
 
-def test_init_simple_loop_template_writes_files(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_simple_loop_template_writes_files(runner: CliRunner, repo_dir: Path) -> None:
     result = runner.invoke(
         app,
         ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
@@ -162,9 +160,7 @@ def test_init_simple_loop_template_writes_files(
     assert {p.name for p in eden_dir.iterdir()} == expected
 
 
-def test_init_simple_loop_github_threads_gh_commands(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_simple_loop_github_threads_gh_commands(runner: CliRunner, repo_dir: Path) -> None:
     runner.invoke(
         app,
         ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
@@ -175,9 +171,7 @@ def test_init_simple_loop_github_threads_gh_commands(
     assert "gh issue close <ID>" in prompt
 
 
-def test_init_simple_loop_beads_threads_bd_commands(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_simple_loop_beads_threads_bd_commands(runner: CliRunner, repo_dir: Path) -> None:
     runner.invoke(
         app,
         ["init", "--yes", "--template", "simple-loop", "--backlog", "beads"],
@@ -201,9 +195,7 @@ def test_init_simple_loop_dockerfile_includes_backlog_install(
     assert "USER ${AGENT_UID}:${AGENT_GID}" in dockerfile
 
 
-def test_init_simple_loop_invalid_backlog_rejected(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_simple_loop_invalid_backlog_rejected(runner: CliRunner, repo_dir: Path) -> None:
     result = runner.invoke(
         app,
         ["init", "--yes", "--template", "simple-loop", "--backlog", "trello"],
@@ -211,9 +203,7 @@ def test_init_simple_loop_invalid_backlog_rejected(
     assert result.exit_code != 0
 
 
-def test_init_simple_loop_default_backlog_is_github(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_simple_loop_default_backlog_is_github(runner: CliRunner, repo_dir: Path) -> None:
     """Without --backlog, --yes mode falls back to github."""
     result = runner.invoke(
         app,
@@ -224,9 +214,7 @@ def test_init_simple_loop_default_backlog_is_github(
     assert "gh issue list" in prompt
 
 
-def test_init_simple_loop_linear_threads_helpers(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_simple_loop_linear_threads_helpers(runner: CliRunner, repo_dir: Path) -> None:
     result = runner.invoke(
         app,
         ["init", "--yes", "--template", "simple-loop", "--backlog", "linear"],
@@ -240,9 +228,7 @@ def test_init_simple_loop_linear_threads_helpers(
     assert "LINEAR_API_KEY" in env_ex
 
 
-def test_init_simple_loop_jira_threads_jira_cli(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_simple_loop_jira_threads_jira_cli(runner: CliRunner, repo_dir: Path) -> None:
     result = runner.invoke(
         app,
         ["init", "--yes", "--template", "simple-loop", "--backlog", "jira"],

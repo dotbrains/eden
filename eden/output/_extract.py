@@ -56,9 +56,7 @@ def extract_structured_output(
         if raw is None:
             raise StructuredOutputError(
                 code="output.tag_missing",
-                message=(
-                    f"structured output tag <{definition.tag}> not found in agent output"
-                ),
+                message=(f"structured output tag <{definition.tag}> not found in agent output"),
                 tag=definition.tag,
                 raw_matched=None,
                 branch=branch,
@@ -72,9 +70,7 @@ def extract_structured_output(
     if raw is None:
         raise StructuredOutputError(
             code="output.tag_missing",
-            message=(
-                f"structured output tag <{definition.tag}> not found in agent output"
-            ),
+            message=(f"structured output tag <{definition.tag}> not found in agent output"),
             tag=definition.tag,
             raw_matched=None,
             branch=branch,
@@ -86,9 +82,7 @@ def extract_structured_output(
     except json.JSONDecodeError as exc:
         raise StructuredOutputError(
             code="output.invalid_json",
-            message=(
-                f"structured output tag <{definition.tag}> contains invalid JSON"
-            ),
+            message=(f"structured output tag <{definition.tag}> contains invalid JSON"),
             tag=definition.tag,
             raw_matched=raw,
             branch=branch,
@@ -100,9 +94,7 @@ def extract_structured_output(
     except Exception as exc:
         raise StructuredOutputError(
             code="output.validation_failed",
-            message=(
-                f"structured output tag <{definition.tag}> failed schema validation"
-            ),
+            message=(f"structured output tag <{definition.tag}> failed schema validation"),
             tag=definition.tag,
             raw_matched=raw,
             branch=branch,

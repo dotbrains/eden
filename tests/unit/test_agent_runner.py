@@ -125,11 +125,7 @@ def test_runner_emits_warnings_via_callback() -> None:
 
 def test_runner_pipes_stdin_to_subprocess() -> None:
     """Verify stdin payload is delivered to the subprocess (echoed back via stdout)."""
-    script = (
-        "import sys\n"
-        "data = sys.stdin.read()\n"
-        "sys.stdout.write(f'received:{data!r}\\n')\n"
-    )
+    script = "import sys\ndata = sys.stdin.read()\nsys.stdout.write(f'received:{data!r}\\n')\n"
     argv = [sys.executable, "-u", "-c", script]
     wd = IdleWatchdog(idle_timeout=10.0, idle_warning_interval=None)
     wd.start()
@@ -141,9 +137,7 @@ def test_runner_pipes_stdin_to_subprocess() -> None:
             stdin="hello-from-stdin\n",
         ) as runner:
             ctrl = AbortController()
-            lines = list(
-                runner.iter_lines(signal=ctrl.signal, on_warning=lambda _m: None)
-            )
+            lines = list(runner.iter_lines(signal=ctrl.signal, on_warning=lambda _m: None))
         assert any("hello-from-stdin" in line for line in lines)
     finally:
         wd.stop()
@@ -151,10 +145,7 @@ def test_runner_pipes_stdin_to_subprocess() -> None:
 
 def test_runner_no_stdin_does_not_open_pipe() -> None:
     """Verify default behaviour: no stdin pipe opened, agent inherits null stdin."""
-    script = (
-        "import sys\n"
-        "sys.stdout.write(f'isatty={sys.stdin.isatty()}\\n')\n"
-    )
+    script = "import sys\nsys.stdout.write(f'isatty={sys.stdin.isatty()}\\n')\n"
     argv = [sys.executable, "-u", "-c", script]
     wd = IdleWatchdog(idle_timeout=10.0, idle_warning_interval=None)
     wd.start()

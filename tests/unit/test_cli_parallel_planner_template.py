@@ -99,9 +99,7 @@ def test_merge_prompt_lists_branches_and_tasks_placeholders() -> None:
     assert "{{TASKS}}" in merge
 
 
-def test_init_writes_parallel_planner_files(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_writes_parallel_planner_files(runner: CliRunner, repo_dir: Path) -> None:
     result = runner.invoke(
         app,
         [
@@ -127,9 +125,7 @@ def test_init_writes_parallel_planner_files(
     assert {p.name for p in eden_dir.iterdir()} == expected
 
 
-def test_init_parallel_planner_default_backlog_is_github(
-    runner: CliRunner, repo_dir: Path
-) -> None:
+def test_init_parallel_planner_default_backlog_is_github(runner: CliRunner, repo_dir: Path) -> None:
     result = runner.invoke(
         app,
         ["init", "--yes", "--template", "parallel-planner"],

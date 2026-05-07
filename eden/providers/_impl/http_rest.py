@@ -70,7 +70,7 @@ def _full_jitter_backoff(
 ) -> float:
     """Full-jitter exponential backoff: ``random() * min(cap, base * 2**attempt)``."""
     rng = rand if rand is not None else random.random
-    raw_cap: float = base * float(2 ** attempt)
+    raw_cap: float = base * float(2**attempt)
     bounded = min(cap, raw_cap)
     return float(rng()) * bounded
 

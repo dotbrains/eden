@@ -54,9 +54,7 @@ def test_default_argv_does_not_include_thinking_effort() -> None:
 
 
 def test_resume_session_appends_resume_flag() -> None:
-    argv = build_argv(
-        model="m", effort=None, extra_args=(), resume_session="abc-123"
-    )
+    argv = build_argv(model="m", effort=None, extra_args=(), resume_session="abc-123")
     assert "--resume" in argv
     idx = argv.index("--resume")
     assert argv[idx + 1] == "abc-123"

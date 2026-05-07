@@ -85,9 +85,7 @@ def run_command(
         "--image-name",
         help="Container image (required for docker/podman sandboxes)",
     ),
-    max_iterations: int = typer.Option(
-        3, "--max-iterations", help="Maximum iteration loop turns"
-    ),
+    max_iterations: int = typer.Option(3, "--max-iterations", help="Maximum iteration loop turns"),
     idle_timeout: float = typer.Option(
         600.0, "--idle-timeout", help="Idle-timeout (seconds) before bailing"
     ),

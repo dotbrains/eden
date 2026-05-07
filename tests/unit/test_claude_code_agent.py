@@ -79,7 +79,7 @@ def test_build_command_returns_argv_with_stdin_sigil() -> None:
 def test_stdin_content_returns_prompt() -> None:
     a = claude_code(model="m")
     assert hasattr(a, "stdin_content")
-    payload = a.stdin_content(_ctx(prompt="my-prompt"))  # type: ignore[attr-defined]
+    payload = a.stdin_content(_ctx(prompt="my-prompt"))
     assert payload == "my-prompt"
 
 

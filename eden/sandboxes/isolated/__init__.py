@@ -49,6 +49,7 @@ def _clone_tree(src: Path, dst: Path) -> None:
             pass
     shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*_IGNORED_TOP_LEVEL))
 
+
 _NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 

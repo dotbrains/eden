@@ -242,8 +242,8 @@ def test_user_flag_explicit_overrides_host(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
-    p = make_container_provider(  # type: ignore[arg-type]
-        binary=binary,
+    p = make_container_provider(
+        binary=binary,  # type: ignore[arg-type]
         image="alpine",
         container_uid=5000,
         container_gid=5001,
@@ -276,8 +276,8 @@ def test_image_uid_mismatch_raises(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
-    p = make_container_provider(  # type: ignore[arg-type]
-        binary=binary,
+    p = make_container_provider(
+        binary=binary,  # type: ignore[arg-type]
         image="alpine",
         container_uid=1000,
         container_gid=1000,
@@ -310,8 +310,8 @@ def test_image_uid_check_skipped_for_non_numeric_user(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
-    p = make_container_provider(  # type: ignore[arg-type]
-        binary=binary,
+    p = make_container_provider(
+        binary=binary,  # type: ignore[arg-type]
         image="alpine",
         container_uid=1000,
     )
@@ -360,8 +360,10 @@ def test_selinux_label_can_be_disabled(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
-    p = make_container_provider(  # type: ignore[arg-type]
-        binary=binary, image="alpine", selinux_label=None
+    p = make_container_provider(
+        binary=binary,  # type: ignore[arg-type]
+        image="alpine",
+        selinux_label=None,
     )
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
@@ -386,8 +388,10 @@ def test_selinux_label_uppercase_z(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
-    p = make_container_provider(  # type: ignore[arg-type]
-        binary=binary, image="alpine", selinux_label="Z"
+    p = make_container_provider(
+        binary=binary,  # type: ignore[arg-type]
+        image="alpine",
+        selinux_label="Z",
     )
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
@@ -410,8 +414,11 @@ def test_selinux_label_combines_with_readonly(
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
     extra = (Mount(host=tmp_path / "ro", sandbox=Path("/ro"), read_only=True),)
-    p = make_container_provider(  # type: ignore[arg-type]
-        binary=binary, image="alpine", mounts=extra, selinux_label="z"
+    p = make_container_provider(
+        binary=binary,  # type: ignore[arg-type]
+        image="alpine",
+        mounts=extra,
+        selinux_label="z",
     )
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
@@ -452,18 +459,14 @@ def test_expand_sandbox_tilde_root() -> None:
 def test_expand_sandbox_tilde_with_subpath() -> None:
     from eden.providers._impl.container import _expand_sandbox_tilde
 
-    expanded = _expand_sandbox_tilde(
-        Path("~/.config/x"), sandbox_homedir=Path("/home/agent")
-    )
+    expanded = _expand_sandbox_tilde(Path("~/.config/x"), sandbox_homedir=Path("/home/agent"))
     assert expanded == Path("/home/agent/.config/x")
 
 
 def test_expand_sandbox_tilde_passthrough_for_absolute() -> None:
     from eden.providers._impl.container import _expand_sandbox_tilde
 
-    expanded = _expand_sandbox_tilde(
-        Path("/etc/hosts"), sandbox_homedir=Path("/home/agent")
-    )
+    expanded = _expand_sandbox_tilde(Path("/etc/hosts"), sandbox_homedir=Path("/home/agent"))
     assert expanded == Path("/etc/hosts")
 
 
@@ -600,9 +603,7 @@ def test_create_runs_mkdir_chown_for_file_mount_parent(
     p = make_container_provider(binary=binary, image="alpine", mounts=extra)  # type: ignore[arg-type]
     p.create(_opts(tmp_path))
 
-    helper_calls = [
-        c for c in captured if len(c) >= 6 and c[1] == "exec" and "--user" in c
-    ]
+    helper_calls = [c for c in captured if len(c) >= 6 and c[1] == "exec" and "--user" in c]
     assert helper_calls, f"no helper exec call in captured: {captured!r}"
     helper = helper_calls[0]
     # --user 0:0 to act as root

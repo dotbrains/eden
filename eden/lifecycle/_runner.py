@@ -63,8 +63,7 @@ def run_host_hooks(
             if proc.returncode != 0:
                 raise HookFailed(
                     message=(
-                        f"host hook {hook.cmd!r} failed (exit {proc.returncode})\n"
-                        f"{proc.stderr}"
+                        f"host hook {hook.cmd!r} failed (exit {proc.returncode})\n{proc.stderr}"
                     ),
                 )
 
