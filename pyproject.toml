@@ -96,3 +96,8 @@ select = [
     "UP",  # pyupgrade
     "RUF", # ruff-specific
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Backlog-manager Dockerfile snippets embed shell heredocs whose natural
+# lines exceed 100 cols. Splitting them would break the shell semantics.
+"eden/cli/_templates/_backlog.py" = ["E501"]
