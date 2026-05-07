@@ -12,6 +12,7 @@ from eden._types import Timeouts
 from eden.errors import HookFailed, HookTimeout
 from eden.lifecycle._types import Hook, HookPhase, HostHooks, SandboxHooks
 from eden.providers._protocols import SandboxHandle
+from eden.tracing import span
 
 
 def _phase_attr(phase: HookPhase) -> str:
@@ -34,26 +35,38 @@ def run_host_hooks(
         merged.update(env)
         if hook.env:
             merged.update(hook.env)
-        try:
-            proc = subprocess.run(
-                hook.cmd,
-                shell=True,
-                cwd=str(hook.cwd) if hook.cwd is not None else str(worktree_path),
-                env=merged,
-                capture_output=True,
-                text=True,
-                timeout=deadline,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise HookTimeout(
-                message=f"host hook {hook.cmd!r} timed out after {deadline}s",
-                hint="raise Hook.timeout or Timeouts.hook_step",
-                cause=exc,
-            ) from exc
-        if proc.returncode != 0:
-            raise HookFailed(
-                message=(f"host hook {hook.cmd!r} failed (exit {proc.returncode})\n{proc.stderr}"),
-            )
+        with span(
+            "eden.hook",
+            attributes={
+                "hook.location": "host",
+                "hook.phase": phase.value,
+                "hook.command": hook.cmd,
+                "hook.timeout_s": deadline,
+            },
+        ):
+            try:
+                proc = subprocess.run(
+                    hook.cmd,
+                    shell=True,
+                    cwd=str(hook.cwd) if hook.cwd is not None else str(worktree_path),
+                    env=merged,
+                    capture_output=True,
+                    text=True,
+                    timeout=deadline,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise HookTimeout(
+                    message=f"host hook {hook.cmd!r} timed out after {deadline}s",
+                    hint="raise Hook.timeout or Timeouts.hook_step",
+                    cause=exc,
+                ) from exc
+            if proc.returncode != 0:
+                raise HookFailed(
+                    message=(
+                        f"host hook {hook.cmd!r} failed (exit {proc.returncode})\n"
+                        f"{proc.stderr}"
+                    ),
+                )
 
 
 def run_sandbox_hooks(
@@ -74,18 +87,27 @@ def run_sandbox_hooks(
         if hook.env:
             merged.update(hook.env)
         deadline = hook.timeout if hook.timeout is not None else timeouts.hook_step
-        try:
-            result = handle.exec(
-                hook.cmd,
-                cwd=hook.cwd,
-                env=merged,
-                timeout=deadline,
-            )
-        except Exception as exc:  # ExecTimeout etc.
-            return hook, f"{type(exc).__name__}: {exc}"
-        if result.exit_code != 0:
-            return hook, f"exit {result.exit_code}: {result.stderr.strip()}"
-        return hook, None
+        with span(
+            "eden.hook",
+            attributes={
+                "hook.location": "sandbox",
+                "hook.phase": phase.value,
+                "hook.command": hook.cmd,
+                "hook.timeout_s": deadline,
+            },
+        ):
+            try:
+                result = handle.exec(
+                    hook.cmd,
+                    cwd=hook.cwd,
+                    env=merged,
+                    timeout=deadline,
+                )
+            except Exception as exc:  # ExecTimeout etc.
+                return hook, f"{type(exc).__name__}: {exc}"
+            if result.exit_code != 0:
+                return hook, f"exit {result.exit_code}: {result.stderr.strip()}"
+            return hook, None
 
     with ThreadPoolExecutor(max_workers=max(1, len(hook_list))) as pool:
         results = list(pool.map(_run_one, hook_list))

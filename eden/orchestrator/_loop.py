@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from contextlib import ExitStack
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,6 +34,7 @@ from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.session import capture_session
 from eden.streaming import StreamEvent
+from eden.tracing import set_attributes, span
 from eden.worktree._create import WorktreeHandle, create_worktree
 
 
@@ -119,6 +121,25 @@ def _run_loop(
     captures = bool(getattr(agent, "captures_sessions", False))
     extra_mounts: tuple[Mount, ...] = _claude_projects_mount() if captures else ()
 
+    # Push the outer ``eden.run`` span via ExitStack so we don't have to
+    # re-indent the entire loop body. The span is closed as part of the
+    # try/finally cleanup below.
+    _stack = ExitStack()
+    run_span = _stack.enter_context(
+        span(
+            "eden.run",
+            attributes={
+                "agent.name": agent.name,
+                "agent.model": getattr(agent, "model", None),
+                "sandbox.name": sandbox.name,
+                "sandbox.kind": sandbox.kind,
+                "branch": wt.branch,
+                "max_iterations": max_iterations,
+                "caller_managed": caller_managed,
+            },
+        )
+    )
+
     try:
         if not caller_managed:
             run_host_hooks(
@@ -132,23 +153,31 @@ def _run_loop(
         signal.raise_if_aborted()
 
         if not caller_managed:
-            handle = sandbox.create(
-                CreateOptions(
-                    branch=wt.branch,
-                    worktree_path=wt.worktree_path,
-                    host_repo_path=wt.host_repo_path,
-                    env=setup.merged_env,
-                    mounts=extra_mounts,
-                    name_hint=name,
+            with span(
+                "eden.sandbox.create",
+                attributes={
+                    "sandbox.name": sandbox.name,
+                    "sandbox.kind": sandbox.kind,
+                    "branch": wt.branch,
+                },
+            ):
+                handle = sandbox.create(
+                    CreateOptions(
+                        branch=wt.branch,
+                        worktree_path=wt.worktree_path,
+                        host_repo_path=wt.host_repo_path,
+                        env=setup.merged_env,
+                        mounts=extra_mounts,
+                        name_hint=name,
+                    )
                 )
-            )
-            run_sandbox_hooks(
-                phase=HookPhase.OnSandboxReady,
-                hooks=hooks.sandbox,
-                handle=handle,
-                env=setup.merged_env,
-                timeouts=timeouts,
-            )
+                run_sandbox_hooks(
+                    phase=HookPhase.OnSandboxReady,
+                    hooks=hooks.sandbox,
+                    handle=handle,
+                    env=setup.merged_env,
+                    timeouts=timeouts,
+                )
         assert handle is not None
 
         log_cfg = logging_cfg or Logging.file(
@@ -248,7 +277,15 @@ def _run_loop(
                     if callable(stdin_fn)
                     else None
                 )
-                with _AgentRunner(
+                with span(
+                    "eden.agent.exec",
+                    attributes={
+                        "agent.name": agent.name,
+                        "agent.model": getattr(agent, "model", None),
+                        "iteration.index": i,
+                        "branch": wt.branch,
+                    },
+                ), _AgentRunner(
                     argv=argv,
                     env=setup.merged_env,
                     watchdog=wd,
@@ -463,6 +500,17 @@ def _run_loop(
             close_result = wt.close()
             if close_result.action == "preserved":
                 preserved = wt.worktree_path
+        # Record the final outcome on the eden.run span, then close the
+        # ExitStack (which exits the span). Done after the rest of cleanup
+        # so the span reflects the full lifecycle including hook teardown.
+        set_attributes(
+            run_span,
+            {
+                "iterations": len(iterations),
+                "completion_signal": completion_hit,
+            },
+        )
+        _stack.close()
 
     last = iterations[-1] if iterations else None
     full_stdout = "".join(stdout_chunks)
