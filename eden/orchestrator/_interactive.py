@@ -103,9 +103,7 @@ def interactive(
     elif sandbox.supports_strategy(BranchStrategy.head()):
         strategy = BranchStrategy.head()
     else:
-        strategy = resolve_branch_strategy(
-            branch_strategy=None, sandbox_kind=sandbox.kind
-        )
+        strategy = resolve_branch_strategy(branch_strategy=None, sandbox_kind=sandbox.kind)
     if not sandbox.supports_strategy(strategy):
         from eden.sandboxes.errors import UnsupportedStrategy
 
@@ -165,11 +163,7 @@ def interactive(
             name=name,
         )
         build_interactive = getattr(agent, "build_interactive_command", None)
-        argv = (
-            build_interactive(ctx)
-            if callable(build_interactive)
-            else agent.build_command(ctx)
-        )
+        argv = build_interactive(ctx) if callable(build_interactive) else agent.build_command(ctx)
 
         # Dispatch via the handle's ``interactive_exec`` method when available
         # — bind-mount providers (no_sandbox, docker, podman) implement it; the
@@ -181,10 +175,7 @@ def interactive(
         if not callable(ix):
             raise InvalidOptions(
                 code="config.invalid_options",
-                message=(
-                    f"sandbox={sandbox.name!r} does not expose an interactive "
-                    "TTY"
-                ),
+                message=(f"sandbox={sandbox.name!r} does not expose an interactive TTY"),
                 hint=(
                     "use eden.run() for non-interactive runs against this "
                     "provider, or pick no_sandbox / docker / podman for "

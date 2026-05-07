@@ -42,7 +42,4 @@ def test_output_tokens_excluded() -> None:
 
 def test_format_line_shape() -> None:
     assert format_context_window_line(_u(50_000)) == "Context window: 50k"
-    assert (
-        format_context_window_line(_u(99_999, cc=1, cr=0, output=0))
-        == "Context window: 100k"
-    )
+    assert format_context_window_line(_u(99_999, cc=1, cr=0, output=0)) == "Context window: 100k"

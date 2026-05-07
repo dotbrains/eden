@@ -169,7 +169,7 @@ def test_clone_tree_fallback_when_cp_missing(
     def _run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
         raise FileNotFoundError("simulated missing cp")
 
-    monkeypatch.setattr(isolated_mod.subprocess, "run", _run)
+    monkeypatch.setattr("eden.sandboxes.isolated.subprocess.run", _run)
 
     dst = tmp_path / "dst"
     isolated_mod._clone_tree(src, dst)

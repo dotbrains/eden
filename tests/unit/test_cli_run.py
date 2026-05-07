@@ -70,17 +70,13 @@ def test_run_invokes_eden_run_with_simple_loop_prompt(
 
 
 def test_run_rejects_unknown_template(runner: CliRunner, fake_run: MagicMock) -> None:
-    result = runner.invoke(
-        app, ["run", "--template", "bogus", "--sandbox", "no-sandbox"]
-    )
+    result = runner.invoke(app, ["run", "--template", "bogus", "--sandbox", "no-sandbox"])
     assert result.exit_code != 0
     fake_run.assert_not_called()
 
 
 def test_run_rejects_unknown_sandbox(runner: CliRunner, fake_run: MagicMock) -> None:
-    result = runner.invoke(
-        app, ["run", "--template", "simple-loop", "--sandbox", "bogus"]
-    )
+    result = runner.invoke(app, ["run", "--template", "simple-loop", "--sandbox", "bogus"])
     assert result.exit_code != 0
     fake_run.assert_not_called()
 

@@ -103,10 +103,7 @@ def run(
                     f"output tag {tag_marker} not referenced in prompt; the "
                     "agent must be told which tag to emit"
                 ),
-                hint=(
-                    f"include {tag_marker}...{f'</{output.tag}>'} in the "
-                    "prompt instructions"
-                ),
+                hint=(f"include {tag_marker}...{f'</{output.tag}>'} in the prompt instructions"),
             )
     abort = signal if signal is not None else AbortController().signal
     return _run_loop(
