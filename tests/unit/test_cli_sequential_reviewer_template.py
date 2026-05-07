@@ -117,7 +117,7 @@ def test_init_writes_sequential_reviewer_files(
     assert {p.name for p in eden_dir.iterdir()} == expected
 
 
-def test_init_sequential_reviewer_requires_backlog(
+def test_init_sequential_reviewer_rejects_unknown_backlog(
     runner: CliRunner, repo_dir: Path
 ) -> None:
     result = runner.invoke(
@@ -128,7 +128,7 @@ def test_init_sequential_reviewer_requires_backlog(
             "--template",
             "sequential-reviewer",
             "--backlog",
-            "jira",
+            "trello",
         ],
     )
     assert result.exit_code != 0

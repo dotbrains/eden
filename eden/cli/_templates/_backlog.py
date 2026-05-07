@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-BacklogName = Literal["github", "beads"]
+BacklogName = Literal["github", "beads", "linear", "jira"]
 
 
 @dataclass(frozen=True)
@@ -51,6 +51,81 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
     && rm -rf /var/lib/apt/lists/*"""
 
 
+# Linear has no first-party CLI. We install ``curl`` + ``jq`` and bake three
+# small helper scripts (``linear-list``, ``linear-view``, ``linear-close``)
+# that wrap the GraphQL API. The prompt-side commands stay one-liners.
+_LINEAR_DOCKERFILE = """\
+# Install curl + jq + helper scripts for Linear backlog management.
+# Linear has no first-party CLI, so the helpers wrap the GraphQL API.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates jq \\
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cat > /usr/local/bin/linear-list <<'EOF' \\
+ && chmod +x /usr/local/bin/linear-list
+#!/bin/sh
+# List unblocked open issues assigned to the current user as JSON
+# [{id, title, body, status}]. Requires LINEAR_API_KEY in env.
+set -e
+QUERY='query { viewer { assignedIssues(filter: {state: {type: {nin: ["completed","canceled"]}}}) { nodes { identifier title description state { name } } } } }'
+curl -fsSL -H "Authorization: $LINEAR_API_KEY" -H "Content-Type: application/json" \\
+    -d "$(jq -nc --arg q "$QUERY" '{query: $q}')" \\
+    https://api.linear.app/graphql \\
+  | jq '[.data.viewer.assignedIssues.nodes[] | {id: .identifier, title, body: .description, status: .state.name}]'
+EOF
+
+RUN cat > /usr/local/bin/linear-view <<'EOF' \\
+ && chmod +x /usr/local/bin/linear-view
+#!/bin/sh
+# Show one Linear issue by identifier (e.g. ABC-123). Requires LINEAR_API_KEY.
+set -e
+[ -z "$1" ] && { echo "usage: linear-view <ID>" >&2; exit 2; }
+QUERY='query($id:String!){ issue(id:$id){ identifier title description state{name} team{key} } }'
+curl -fsSL -H "Authorization: $LINEAR_API_KEY" -H "Content-Type: application/json" \\
+    -d "$(jq -nc --arg q "$QUERY" --arg id "$1" '{query: $q, variables: {id: $id}}')" \\
+    https://api.linear.app/graphql \\
+  | jq .data.issue
+EOF
+
+RUN cat > /usr/local/bin/linear-close <<'EOF' \\
+ && chmod +x /usr/local/bin/linear-close
+#!/bin/sh
+# Transition a Linear issue to the team's first 'completed'-type state.
+# Requires LINEAR_API_KEY in env.
+set -e
+[ -z "$1" ] && { echo "usage: linear-close <ID>" >&2; exit 2; }
+ID="$1"
+TEAM_QUERY='query($id:String!){ issue(id:$id){ team{ id } } }'
+TEAM_ID=$(curl -fsSL -H "Authorization: $LINEAR_API_KEY" -H "Content-Type: application/json" \\
+    -d "$(jq -nc --arg q "$TEAM_QUERY" --arg id "$ID" '{query: $q, variables: {id: $id}}')" \\
+    https://api.linear.app/graphql | jq -r .data.issue.team.id)
+STATE_QUERY='query($team:String!){ workflowStates(filter:{team:{id:{eq:$team}},type:{eq:"completed"}}){ nodes{ id } } }'
+STATE_ID=$(curl -fsSL -H "Authorization: $LINEAR_API_KEY" -H "Content-Type: application/json" \\
+    -d "$(jq -nc --arg q "$STATE_QUERY" --arg team "$TEAM_ID" '{query: $q, variables: {team: $team}}')" \\
+    https://api.linear.app/graphql | jq -r .data.workflowStates.nodes[0].id)
+MUTATION='mutation($id:String!,$state:String!){ issueUpdate(id:$id, input:{stateId:$state}){ success } }'
+curl -fsSL -H "Authorization: $LINEAR_API_KEY" -H "Content-Type: application/json" \\
+    -d "$(jq -nc --arg q "$MUTATION" --arg id "$ID" --arg state "$STATE_ID" '{query: $q, variables: {id: $id, state: $state}}')" \\
+    https://api.linear.app/graphql | jq -e .data.issueUpdate.success > /dev/null
+EOF
+"""
+
+
+# jira-cli (ankitpokhrel/jira-cli) is the most-maintained third-party Jira CLI.
+# Eden installs the linux-amd64 release tarball at image-build time. Users on
+# arm64 should adjust the asset suffix — sandcastle takes the same shortcut.
+_JIRA_DOCKERFILE = """\
+# Install jira-cli (ankitpokhrel/jira-cli) for backlog management.
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \\
+    && rm -rf /var/lib/apt/lists/* \\
+    && JIRA_VERSION="$(curl -fsSL -o /dev/null -w '%{redirect_url}' \\
+         https://github.com/ankitpokhrel/jira-cli/releases/latest \\
+         | grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | sed 's/^v//')" \\
+    && curl -fsSL "https://github.com/ankitpokhrel/jira-cli/releases/download/v${JIRA_VERSION}/jira_${JIRA_VERSION}_linux_x86_64.tar.gz" \\
+       | tar -xz -C /tmp \\
+    && find /tmp -name jira -type f -executable -exec mv {} /usr/local/bin/jira \\; \\
+    && chmod +x /usr/local/bin/jira"""
+
+
 _REGISTRY: tuple[BacklogManager, ...] = (
     BacklogManager(
         name="github",
@@ -74,6 +149,36 @@ _REGISTRY: tuple[BacklogManager, ...] = (
         close_task_command='bd close <ID> "Completed by Eden"',
         dockerfile_install=_BEADS_DOCKERFILE,
         env_example_lines="",
+    ),
+    BacklogManager(
+        name="linear",
+        label="Linear",
+        list_tasks_command="linear-list",
+        view_task_command="linear-view <ID>",
+        close_task_command="linear-close <ID>",
+        dockerfile_install=_LINEAR_DOCKERFILE,
+        env_example_lines=(
+            "# Linear personal API key (Settings > Account > Security & access > "
+            "Personal API keys)\n# LINEAR_API_KEY=lin_api_...\n"
+        ),
+    ),
+    BacklogManager(
+        name="jira",
+        label="Jira",
+        list_tasks_command=(
+            'jira issue list -q "assignee = currentUser() AND '
+            'status not in (Done, Closed, Resolved)" --plain '
+            "--columns key,summary,status"
+        ),
+        view_task_command="jira issue view <ID>",
+        close_task_command='jira issue move <ID> "Done"',
+        dockerfile_install=_JIRA_DOCKERFILE,
+        env_example_lines=(
+            "# Jira authentication — see https://github.com/ankitpokhrel/jira-cli\n"
+            "# JIRA_API_TOKEN=\n# JIRA_AUTH_TYPE=basic\n"
+            "# Set JIRA_AUTH_TYPE=bearer for Jira Server / Data Center.\n"
+            "# Run `jira init` once to write ~/.config/.jira/.config.yml.\n"
+        ),
     ),
 )
 

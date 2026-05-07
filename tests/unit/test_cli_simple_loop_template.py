@@ -13,9 +13,10 @@ from eden.cli._templates.simple_loop import render_simple_loop
 pytestmark = pytest.mark.unit
 
 
-def test_backlog_registry_has_github_and_beads() -> None:
+def test_backlog_registry_includes_github_and_beads() -> None:
+    """github and beads are the original two; new entries may be added freely."""
     names = {m.name for m in list_backlog_managers()}
-    assert names == {"github", "beads"}
+    assert {"github", "beads"} <= names
 
 
 def test_get_backlog_manager_returns_known() -> None:
@@ -26,7 +27,7 @@ def test_get_backlog_manager_returns_known() -> None:
 
 def test_get_backlog_manager_unknown_raises() -> None:
     with pytest.raises(KeyError):
-        get_backlog_manager("jira")  # type: ignore[arg-type]
+        get_backlog_manager("trello-with-extra-cheese")  # type: ignore[arg-type]
 
 
 def test_render_simple_loop_files_all_present() -> None:
@@ -103,3 +104,65 @@ def test_render_simple_loop_env_example_includes_backlog_lines() -> None:
     env_ex = files[".env.example"]
     assert "GH_TOKEN" in env_ex
     assert "ANTHROPIC_API_KEY" in env_ex
+
+
+def test_linear_backlog_helpers_referenced_in_commands() -> None:
+    bg = get_backlog_manager("linear")
+    assert bg.label == "Linear"
+    assert bg.list_tasks_command == "linear-list"
+    assert bg.view_task_command == "linear-view <ID>"
+    assert bg.close_task_command == "linear-close <ID>"
+    assert "LINEAR_API_KEY" in bg.env_example_lines
+
+
+def test_linear_dockerfile_installs_helper_scripts() -> None:
+    bg = get_backlog_manager("linear")
+    df = bg.dockerfile_install
+    assert "linear-list" in df
+    assert "linear-view" in df
+    assert "linear-close" in df
+    assert "jq" in df  # GraphQL response parsing
+
+
+def test_jira_backlog_uses_jira_cli() -> None:
+    bg = get_backlog_manager("jira")
+    assert bg.label == "Jira"
+    assert "jira issue list" in bg.list_tasks_command
+    assert bg.view_task_command == "jira issue view <ID>"
+    assert "jira issue move" in bg.close_task_command
+    assert "JIRA_API_TOKEN" in bg.env_example_lines
+
+
+def test_jira_dockerfile_installs_jira_cli() -> None:
+    bg = get_backlog_manager("jira")
+    assert "jira-cli" in bg.dockerfile_install
+
+
+def test_render_simple_loop_with_linear() -> None:
+    bg = get_backlog_manager("linear")
+    files = render_simple_loop(
+        sandbox="docker",
+        agent="claude-code",
+        model="m",
+        image_name="eden:t",
+        backlog=bg,
+    )
+    prompt = files["prompt.md"]
+    assert "linear-list" in prompt
+    assert "linear-view <ID>" in prompt
+    assert "linear-close <ID>" in prompt
+
+
+def test_render_simple_loop_with_jira() -> None:
+    bg = get_backlog_manager("jira")
+    files = render_simple_loop(
+        sandbox="docker",
+        agent="claude-code",
+        model="m",
+        image_name="eden:t",
+        backlog=bg,
+    )
+    prompt = files["prompt.md"]
+    assert "jira issue list" in prompt
+    assert "jira issue view <ID>" in prompt
+    assert "jira issue move" in prompt
