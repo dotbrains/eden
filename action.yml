@@ -1,0 +1,90 @@
+name: "Run an eden agent loop"
+description: "Run an eden iteration loop in-process via `eden run`."
+author: "dotbrains"
+branding:
+  icon: "git-branch"
+  color: "purple"
+
+inputs:
+  template:
+    description: "Template to run (currently: simple-loop)."
+    required: false
+    default: "simple-loop"
+  sandbox:
+    description: "Sandbox provider: docker, podman, or no-sandbox."
+    required: false
+    default: "no-sandbox"
+  agent:
+    description: "Agent factory: claude-code, codex, opencode, or pi."
+    required: false
+    default: "claude-code"
+  model:
+    description: "Model identifier; falls back to the agent's default if empty."
+    required: false
+    default: ""
+  backlog:
+    description: "Backlog manager: github, beads, linear, or jira."
+    required: false
+    default: "github"
+  image-name:
+    description: "Container image (required for sandbox=docker / podman)."
+    required: false
+    default: ""
+  max-iterations:
+    description: "Maximum loop turns."
+    required: false
+    default: "3"
+  idle-timeout:
+    description: "Bail when agent stdout is silent this many seconds."
+    required: false
+    default: "600"
+  python-version:
+    description: "Python version installed before pip-install eden-agent."
+    required: false
+    default: "3.12"
+  eden-version:
+    description: "Pin eden-agent on PyPI; default installs latest."
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install eden-agent
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.eden-version }}" ]; then
+          pip install "eden-agent==${{ inputs.eden-version }}"
+        else
+          pip install eden-agent
+        fi
+
+    - name: Run eden
+      shell: bash
+      env:
+        # Forward common API keys when set in the calling workflow's secrets.
+        ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+        OPENAI_API_KEY: ${{ env.OPENAI_API_KEY }}
+        GH_TOKEN: ${{ env.GH_TOKEN }}
+      run: |
+        args=(
+          run
+          --template "${{ inputs.template }}"
+          --sandbox "${{ inputs.sandbox }}"
+          --agent "${{ inputs.agent }}"
+          --backlog "${{ inputs.backlog }}"
+          --max-iterations "${{ inputs.max-iterations }}"
+          --idle-timeout "${{ inputs.idle-timeout }}"
+        )
+        if [ -n "${{ inputs.model }}" ]; then
+          args+=( --model "${{ inputs.model }}" )
+        fi
+        if [ -n "${{ inputs.image-name }}" ]; then
+          args+=( --image-name "${{ inputs.image-name }}" )
+        fi
+        eden "${args[@]}"

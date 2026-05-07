@@ -12,12 +12,13 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 ## Reference
 
 - [Python API](python-api.md) — every name importable from `eden`.
-- [CLI](cli.md) — `eden init`, `eden version`.
+- [CLI](cli.md) — `eden init`, `eden run`, `eden cost`, `eden clean`, `eden replay`, `eden version`.
+- [GitHub Action](github-action.md) — run an eden iteration loop in any GitHub workflow.
 - [Configuration](configuration.md) — environment variables, `Logging`, `Timeouts`.
 - [Sandbox providers](sandbox-providers.md) — `no_sandbox`, `docker`, `podman`, `isolated`, `daytona`, `vercel`.
 - [Agents](agents.md) — `simulated_agent`, `claude_code`, `codex`, `opencode`, `pi`, `cli_agent`.
 - [Prompts](prompts.md) — `PromptSource`, args, shell blocks, built-ins.
-- [Templates](templates.md) — `blank`, `simple-loop`, `sequential-reviewer`, `parallel-planner`.
+- [Templates](templates.md) — `blank`, `simple-loop`, `sequential-reviewer`, `parallel-planner`, `plan-implement-review`.
 - [Errors](errors.md) — the `EdenError` hierarchy.
 
 ## Concepts
