@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import shutil
+import subprocess
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,6 +46,27 @@ class _NoSandboxHandle:
 
     def copy_file_out(self, sandbox: Path, host: Path) -> None:
         shutil.copy2(sandbox, host)
+
+    def interactive_exec(
+        self,
+        argv: list[str],
+        *,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> int:
+        """Run ``argv`` natively with stdio inherited; return the exit code.
+
+        ``cwd`` defaults to the handle's worktree path. ``env`` is merged onto
+        ``os.environ``; the parent's TTY is preserved (no pipes).
+        """
+        merged_env = {**os.environ, **(env or {})}
+        proc = subprocess.run(
+            argv,
+            cwd=str(cwd) if cwd is not None else str(self.worktree_path),
+            env=merged_env,
+            check=False,
+        )
+        return proc.returncode
 
     def close(self) -> None:
         return None

@@ -103,3 +103,64 @@ def test_handle_close_is_noop(tmp_path: Path) -> None:
     )
     handle.close()
     handle.close()  # idempotent
+
+
+def test_interactive_exec_runs_argv_with_inherited_stdio(tmp_path: Path) -> None:
+    """``interactive_exec`` runs the argv with stdio inherited; returns exit code."""
+    import sys
+
+    handle = provider().create(
+        CreateOptions(
+            branch="main",
+            worktree_path=tmp_path,
+            host_repo_path=tmp_path,
+            env={},
+            mounts=(),
+            name_hint=None,
+        )
+    )
+    try:
+        rc = handle.interactive_exec(  # type: ignore[attr-defined]
+            [sys.executable, "-c", "import sys; sys.exit(0)"],
+        )
+        assert rc == 0
+
+        rc7 = handle.interactive_exec(  # type: ignore[attr-defined]
+            [sys.executable, "-c", "import sys; sys.exit(7)"],
+        )
+        assert rc7 == 7
+    finally:
+        handle.close()
+
+
+def test_interactive_exec_uses_provided_cwd(tmp_path: Path) -> None:
+    """When cwd is given, the subprocess starts there."""
+    import sys
+
+    handle = provider().create(
+        CreateOptions(
+            branch="main",
+            worktree_path=tmp_path,
+            host_repo_path=tmp_path,
+            env={},
+            mounts=(),
+            name_hint=None,
+        )
+    )
+    out = tmp_path / "where.txt"
+    target = tmp_path / "subdir"
+    target.mkdir()
+    try:
+        rc = handle.interactive_exec(  # type: ignore[attr-defined]
+            [
+                sys.executable,
+                "-c",
+                f"import os; open({str(out)!r}, 'w').write(os.getcwd())",
+            ],
+            cwd=target,
+        )
+        assert rc == 0
+        # macOS may resolve symlinks under /private/var, so compare resolved paths.
+        assert Path(out.read_text()).resolve() == target.resolve()
+    finally:
+        handle.close()
