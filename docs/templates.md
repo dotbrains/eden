@@ -1,6 +1,6 @@
 # Templates
 
-`eden init` scaffolds a project from a template. Three templates ship today: `blank` (minimal), `simple-loop` (an iteration-driven worker over a backlog manager), and `sequential-reviewer` (implement-then-review per task on a shared sandbox).
+`eden init` scaffolds a project from a template. Four templates ship today: `blank` (minimal), `simple-loop` (an iteration-driven worker over a backlog manager), `sequential-reviewer` (implement-then-review per task on a shared sandbox), and `parallel-planner` (plan + parallel-execute + merge over the unblocked backlog).
 
 ---
 
@@ -172,3 +172,36 @@ Same `--backlog` flag as `simple-loop` (defaults to `github`; `beads` also suppo
 Drop in your own `CODING_STANDARDS.md`. Tighten the implementer prompt to your codebase's testing conventions. Crank `MAX_ITERATIONS` in `main.py` for longer sessions.
 
 Read source: `eden/cli/_templates/sequential_reviewer.py`.
+
+---
+
+## `parallel-planner`
+
+Three-phase orchestration for parallel-friendly backlogs:
+
+1. **Plan** — a single planner agent reads the backlog, builds a dependency graph, and emits a `<plan>...</plan>` JSON block listing unblocked tasks. Eden's [`Output.object`](python-api.md#output) extracts and validates the JSON, so a malformed plan surfaces as a `StructuredOutputError` with the raw match preserved.
+2. **Execute** — one implementer agent per task, run concurrently via `concurrent.futures.ThreadPoolExecutor`. Each agent gets its own sandbox on its own named branch.
+3. **Merge** — a single merger agent consolidates the branches that produced commits back into the target branch.
+
+```bash
+eden init --template parallel-planner --backlog github --yes
+```
+
+### Files produced
+
+| File                  | Role                                                                                                  |
+|-----------------------|-------------------------------------------------------------------------------------------------------|
+| `Dockerfile`          | Same shape as the other tracker-aware templates.                                                      |
+| `plan-prompt.md`      | Builds the plan; outputs JSON inside `<plan>...</plan>`.                                              |
+| `implement-prompt.md` | Per-task work prompt; templated with `{{TASK_ID}}`, `{{TASK_TITLE}}`, `{{TASK_BRANCH}}`.              |
+| `merge-prompt.md`     | Merges the listed branches; templated with `{{BRANCHES}}` and `{{TASKS}}`.                            |
+| `main.py`             | Outer loop with three `eden.run()` calls per cycle (plan, execute parallel, merge).                  |
+| `.env.example`, `.gitignore` | Same as the other templates.                                                                   |
+
+### Customizing
+
+- Tune `MAX_PARALLEL` in `main.py` to your CPU/IO budget.
+- Swap the planner agent for an opus-class model (`MAX_ITERATIONS=1`, deeper reasoning) and the implementers for a faster sonnet — most users will edit `_agent()` to dispatch by phase.
+- Adjust the planner prompt's "4-6 tasks per cycle" hint to suit your backlog density.
+
+Read source: `eden/cli/_templates/parallel_planner.py`.
