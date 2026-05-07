@@ -88,5 +88,9 @@ def init_command(
     typer.secho(f"✓ scaffolded {target}", fg="green")
     typer.echo("Next steps:")
     typer.echo("  1. cp .eden/.env.example .env  # then fill in your API keys")
-    typer.echo(f"  2. docker build -t {image_name} -f .eden/Dockerfile .")
+    typer.echo(
+        f"  2. docker build "
+        f"--build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) "
+        f"-t {image_name} -f .eden/Dockerfile ."
+    )
     typer.echo("  3. python .eden/main.py")

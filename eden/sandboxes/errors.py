@@ -61,6 +61,25 @@ class ExecTimeout(SandboxError):
         super().__init__(f"command {cmd!r} timed out after {timeout}s")
 
 
+class ImageUidMismatch(SandboxError):
+    """Container image's USER UID does not match the configured ``container_uid``.
+
+    Raised by the docker / podman pre-flight inspection so users find out
+    *before* a container starts and writes files with the wrong owner.
+    """
+
+    def __init__(self, *, image: str, image_uid: int, expected_uid: int) -> None:
+        self.image = image
+        self.image_uid = image_uid
+        self.expected_uid = expected_uid
+        super().__init__(
+            f"image {image!r} was built with UID {image_uid}, "
+            f"but the configured UID is {expected_uid}. "
+            f"Rebuild the image with --build-arg AGENT_UID={expected_uid} "
+            f"AGENT_GID=<gid>, or pass container_uid={image_uid} to match the image."
+        )
+
+
 class UnsupportedStrategy(SandboxError):
     def __init__(self, *, provider: str, strategy: StrategyTag) -> None:
         self.provider = provider

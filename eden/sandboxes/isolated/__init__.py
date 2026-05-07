@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 import secrets
 import shutil
+import subprocess
+import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -14,6 +16,38 @@ from eden.providers._impl import patch_sync
 from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
 from eden.sandboxes._exec import stream_exec
+
+_IGNORED_TOP_LEVEL: tuple[str, ...] = (".git", ".eden")
+
+
+def _clone_tree(src: Path, dst: Path) -> None:
+    """Copy ``src`` to ``dst`` (must not exist), excluding ``.git`` / ``.eden``.
+
+    Uses ``cp -cR`` (APFS clonefile) on macOS so cloning a large worktree is
+    near-instant on APFS-backed volumes. Falls back to ``shutil.copytree`` on
+    non-Darwin or when ``cp`` fails for any reason.
+    """
+    if sys.platform == "darwin":
+        try:
+            subprocess.run(
+                ["cp", "-cR", str(src), str(dst)],
+                check=True,
+                capture_output=True,
+            )
+            for ignored in _IGNORED_TOP_LEVEL:
+                victim = dst / ignored
+                if victim.exists():
+                    shutil.rmtree(victim, ignore_errors=True)
+            return
+        except subprocess.CalledProcessError:
+            # Partial dst may exist — wipe before falling back so copytree's
+            # "destination must not exist" precondition holds.
+            if dst.exists():
+                shutil.rmtree(dst, ignore_errors=True)
+        except FileNotFoundError:
+            # ``cp`` not on PATH (extremely unlikely on macOS) — fall through.
+            pass
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*_IGNORED_TOP_LEVEL))
 
 _NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
@@ -89,11 +123,7 @@ def provider(*, base_dir: Path | None = None) -> SandboxProvider:
         isolated_root = base / f"{_sanitize_seed(seed)}-{suffix}"
 
         baseline = patch_sync.snapshot(opts.worktree_path)
-        shutil.copytree(
-            opts.worktree_path,
-            isolated_root,
-            ignore=shutil.ignore_patterns(".git", ".eden"),
-        )
+        _clone_tree(opts.worktree_path, isolated_root)
 
         return _IsolatedHandle(
             worktree_path=isolated_root,

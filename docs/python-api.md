@@ -75,6 +75,8 @@ def run(
     on_event: Callable[[StreamEvent], None] | None = None,
     logging: Logging | None = None,
     signal: AbortSignal | None = None,
+    output: OutputDefinition | None = None,
+    resume_session: str | None = None,
 ) -> RunResult: ...
 ```
 
@@ -94,8 +96,10 @@ Parameters:
 - `hooks` — `Hooks(host=..., sandbox=...)` lifecycle bundle. Default `Hooks()`.
 - `timeouts` — `Timeouts(...)` per-step deadlines. Default `Timeouts()`.
 - `on_event` — callback invoked with every `StreamEvent`. Use to forward to UIs, logs, or queues.
-- `logging` — `Logging.file(path)` to mirror events as JSONL.
+- `logging` — `Logging.file(path, on_agent_stream_event=...)` to mirror events to a log file; the optional callback fires for agent-emitted text/tool/usage events only and swallows exceptions.
 - `signal` — `AbortSignal` for cooperative cancellation. If omitted, `run` allocates its own (unused) signal.
+- `output` — `Output.object(...)` / `Output.string(...)` to extract a typed payload from a `<tag>` block in stdout. Requires `max_iterations=1` and that `<tag>` literally appear in the prompt. Failure raises [`StructuredOutputError`](#structuredoutputerror).
+- `resume_session` — Claude Code session id to resume; appends `--resume <id>` to the agent argv. Requires `max_iterations=1`.
 
 Returns a `RunResult`.
 
@@ -134,7 +138,7 @@ class Timeouts:
 
 ### `Logging`
 
-JSONL file sink for `StreamEvent`s.
+File sink for `StreamEvent`s. Each call to `run()` opens the file in append mode and prepends a `--- Run started: <UTC ISO ts> ---` delimiter so a shared log file remains readable.
 
 ```python
 @dataclass(frozen=True)
@@ -142,12 +146,19 @@ class Logging:
     type: Literal["file"]
     path: Path
     level: Literal["debug", "info", "warn", "error"] = "info"
+    on_agent_stream_event: Callable[[StreamEvent], None] | None = None
 
     @staticmethod
-    def file(path: str | Path, level: ... = "info") -> Logging: ...
+    def file(
+        path: str | Path,
+        level: ... = "info",
+        on_agent_stream_event: Callable[[StreamEvent], None] | None = None,
+    ) -> Logging: ...
 ```
 
-Use `Logging.file("run.jsonl")` to capture every event the orchestrator emits.
+Use `Logging.file("run.log")` to capture every event the orchestrator emits.
+
+`on_agent_stream_event` (optional) is invoked for every agent-derived event (`text`, `tool_call`, `usage`) in addition to file output. Intended for forwarding the agent's stream to external observability. Idle warnings and orchestrator-internal text are NOT forwarded — use the top-level `on_event` argument to `run()` for those. Errors raised by the callback are swallowed so a broken forwarder cannot kill the run.
 
 ### `Mount`
 
@@ -210,9 +221,10 @@ class RunResult:
     session_id: str | None
     session_file_path: Path | None
     usage: Usage | None
+    output: object | None = None
 ```
 
-`completion_signal` is the matched signal that stopped the loop (or `None` if all iterations ran to completion). `merged_to_target_branch` is set when a `merge_to_head` strategy successfully merged. `usage` is the final iteration's token usage.
+`completion_signal` is the matched signal that stopped the loop (or `None` if all iterations ran to completion). `merged_to_target_branch` is set when a `merge_to_head` strategy successfully merged. `usage` is the final iteration's token usage. `output` is the validated payload extracted by `output=Output.object(...)` / `Output.string(...)`, or `None` when no `output=` is configured.
 
 ### `Iteration`
 
@@ -264,6 +276,44 @@ class FinalizeResult:
 ```
 
 `applied=False` means at least one copy or unlink failed; the orchestrator logs failures and continues.
+
+---
+
+## Structured output
+
+### `Output`
+
+Helpers for declaring schema-validated payloads on `run()`.
+
+```python
+from eden import Output, run
+
+# String tag — extracts trimmed contents of <answer>...</answer>
+result = run(..., output=Output.string(tag="answer"), max_iterations=1, prompt="...<answer>...</answer>...")
+print(result.output)  # str
+
+# Object tag — JSON-parses contents (with code-fence unwrap) and runs schema()
+def parse(raw: object) -> Plan:
+    assert isinstance(raw, dict)
+    return Plan(**raw)
+
+result = run(..., output=Output.object(tag="plan", schema=parse), max_iterations=1, prompt="...<plan>...</plan>...")
+plan = result.output  # whatever schema returned
+```
+
+`Output.object(tag, schema)` extracts the **last** `<tag>...</tag>` pair, strips an optional Markdown code fence (`` ```json ... ``` ``), `json.loads` it, and calls `schema(parsed)`. `schema` is any `Callable[[object], T]` that returns a validated value or raises — works with pydantic `Model.model_validate`, dataclass factories, msgspec, or hand-rolled validators.
+
+`Output.string(tag)` extracts the contents and `.strip()`s them — no JSON, no validation.
+
+Validation at entry:
+- `max_iterations == 1` is required (raises `InvalidOptions` otherwise).
+- `<tag>` must literally appear in the prompt source (raises `InvalidOptions` otherwise).
+
+Failures during extraction raise [`StructuredOutputError`](#structuredoutputerror) with `tag`, `raw_matched`, `branch`, and optional `preserved_worktree_path` so callers can recover commits and worktree state.
+
+### `OutputDefinition`
+
+Type alias for the union of `Output.object(...)` and `Output.string(...)` return values. Use this in helper signatures that accept either shape.
 
 ---
 
@@ -566,7 +616,7 @@ A `SandboxHandle` whose state replicates back to the host on close via `finalize
 
 Every error eden raises descends from `EdenError`. Each concrete class accepts a `cause` keyword argument and carries `code`, `message`, and `hint` attributes for structured logging. `EdenTimeoutError` additionally subclasses the built-in `TimeoutError` for mixed-`except` ergonomics. See [errors.md](errors.md) for the full taxonomy with `code` strings, raise sites, and recovery guidance.
 
-The 16 concrete error classes re-exported from `eden`:
+The 17 concrete error classes re-exported from `eden`:
 
 - `EdenError` — base class for everything.
 - `ConfigError` — bad arguments, env, or cwd; raised before any side-effect.
@@ -585,6 +635,7 @@ The 16 concrete error classes re-exported from `eden`:
 - `RestRateLimited` — 429 after retries were exhausted.
 - `SessionCaptureFailed` — the orchestrator could not locate or read a session JSONL; soft failure surfaced as a warning event.
 - `StepTimeout` — an iteration exceeded `Timeouts.iteration_step`.
+- <a id="structuredoutputerror"></a>`StructuredOutputError` — `output=Output.{object,string}(...)` failed to extract or validate. Carries `tag`, `raw_matched` (the matched contents or `None`), `branch`, and optional `preserved_worktree_path`. Raised on missing tag, invalid JSON, or schema validation failure.
 
 ---
 

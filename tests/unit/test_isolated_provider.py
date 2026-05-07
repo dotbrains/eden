@@ -126,3 +126,51 @@ def test_explicit_base_dir(tmp_path: Path) -> None:
         assert custom in handle.worktree_path.parents
     finally:
         handle.close()
+
+
+def test_clone_tree_excludes_git_and_eden(tmp_path: Path) -> None:
+    """``_clone_tree`` always excludes top-level .git and .eden directories."""
+    from eden.sandboxes.isolated import _clone_tree
+
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "code.py").write_text("x = 1\n")
+    (src / ".git").mkdir()
+    (src / ".git" / "HEAD").write_text("ref: refs/heads/main\n")
+    (src / ".eden").mkdir()
+    (src / ".eden" / "log.txt").write_text("entry\n")
+    (src / "src").mkdir()
+    (src / "src" / "deep.py").write_text("y = 2\n")
+
+    dst = tmp_path / "dst"
+    _clone_tree(src, dst)
+
+    assert (dst / "code.py").read_text() == "x = 1\n"
+    assert (dst / "src" / "deep.py").read_text() == "y = 2\n"
+    assert not (dst / ".git").exists()
+    assert not (dst / ".eden").exists()
+
+
+def test_clone_tree_fallback_when_cp_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Forcing the cp branch to fail still succeeds via copytree fallback."""
+    import subprocess
+
+    from eden.sandboxes import isolated as isolated_mod
+
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "x.txt").write_text("hello\n")
+
+    # Pretend we're on macOS so the cp branch is taken.
+    monkeypatch.setattr(isolated_mod, "sys", type("S", (), {"platform": "darwin"}))
+
+    def _run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        raise FileNotFoundError("simulated missing cp")
+
+    monkeypatch.setattr(isolated_mod.subprocess, "run", _run)
+
+    dst = tmp_path / "dst"
+    isolated_mod._clone_tree(src, dst)
+    assert (dst / "x.txt").read_text() == "hello\n"

@@ -93,7 +93,37 @@ def test_file_sink_appends_newlines(tmp_path: Path) -> None:
     finally:
         sink.close()
     lines = log_path.read_text().splitlines()
-    assert len(lines) == 3
+    # First line is the "--- Run started: ... ---" delimiter; then 3 events.
+    assert len(lines) == 4
+    assert lines[0].startswith("--- Run started: ")
+    assert lines[1:] == [
+        "2026-05-01T12:00:00Z info [0] text: line0",
+        "2026-05-01T12:00:00Z info [1] text: line1",
+        "2026-05-01T12:00:00Z info [2] text: line2",
+    ]
+
+
+def test_file_sink_writes_run_started_delimiter(tmp_path: Path) -> None:
+    log_path = tmp_path / "x.log"
+    sink = FileLogSink.open(log_path, level="info", env_values=())
+    sink.close()
+    body = log_path.read_text()
+    assert body.startswith("--- Run started: ")
+    assert "T" in body  # ISO-8601 datetime
+    assert body.rstrip().endswith("---")
+
+
+def test_file_sink_appends_delimiter_per_run(tmp_path: Path) -> None:
+    """Each ``open()`` of the same path appends a fresh delimiter."""
+    log_path = tmp_path / "x.log"
+    s1 = FileLogSink.open(log_path, level="info", env_values=())
+    s1.close()
+    s2 = FileLogSink.open(log_path, level="info", env_values=())
+    s2.close()
+    delimiters = [
+        line for line in log_path.read_text().splitlines() if line.startswith("--- Run started: ")
+    ]
+    assert len(delimiters) == 2
 
 
 def test_file_sink_creates_parent_dirs(tmp_path: Path) -> None:

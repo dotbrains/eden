@@ -25,9 +25,13 @@ class _ClaudeCodeAgent:
         return build_argv(
             model=self.model,
             effort=self._effort,
-            prompt=ctx.prompt,
             extra_args=self._extra_args,
+            resume_session=ctx.resume_session,
         )
+
+    def stdin_content(self, ctx: IterationContext) -> str | None:
+        """Deliver the prompt via stdin to dodge the Linux 128 KB execve limit."""
+        return ctx.prompt
 
     def parse_stream(self, line: str) -> StreamEvent | None:
         return parse_line(line, agent_name=self.name, iteration=0)

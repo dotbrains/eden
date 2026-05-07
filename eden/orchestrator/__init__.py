@@ -10,10 +10,12 @@ from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.abort._signal import AbortController
 from eden.agents._protocol import Agent
+from eden.errors import InvalidOptions
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.orchestrator._loop import _run_loop
 from eden.orchestrator._setup import resolve_setup
+from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy
 from eden.streaming import StreamEvent
@@ -53,6 +55,8 @@ def run(
     on_event: Callable[[StreamEvent], None] | None = None,
     logging: Logging | None = None,
     signal: AbortSignal | None = None,
+    output: OutputDefinition | None = None,
+    resume_session: str | None = None,
 ) -> RunResult:
     """Run an agent against a sandbox in a managed worktree, returning RunResult."""
     cwd_path = Path(cwd) if cwd is not None else None
@@ -66,6 +70,44 @@ def run(
         provider_env=provider_env,
         sandbox_kind=sandbox.kind,
     )
+    if resume_session is not None and max_iterations != 1:
+        raise InvalidOptions(
+            code="config.invalid_options",
+            message=(
+                "resume_session= is only valid with max_iterations=1; got "
+                f"max_iterations={max_iterations}"
+            ),
+            hint=(
+                "resuming a prior session implies a single follow-up turn; "
+                "use max_iterations=1 or omit resume_session"
+            ),
+        )
+    if output is not None:
+        if max_iterations != 1:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "output= is only valid with max_iterations=1; got "
+                    f"max_iterations={max_iterations}"
+                ),
+                hint=(
+                    "structured output is extracted from the final stdout; "
+                    "looping iterations would discard intermediate matches"
+                ),
+            )
+        tag_marker = f"<{output.tag}>"
+        if tag_marker not in setup.prompt_text:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    f"output tag {tag_marker} not referenced in prompt; the "
+                    "agent must be told which tag to emit"
+                ),
+                hint=(
+                    f"include {tag_marker}...{f'</{output.tag}>'} in the "
+                    "prompt instructions"
+                ),
+            )
     abort = signal if signal is not None else AbortController().signal
     return _run_loop(
         agent=agent,
@@ -83,6 +125,8 @@ def run(
         logging_cfg=logging,
         signal=abort,
         prompt_args=prompt_args,
+        output=output,
+        resume_session=resume_session,
     )
 
 
