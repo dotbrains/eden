@@ -186,4 +186,19 @@ def render_simple_loop(
     }
 
 
-__all__ = ["render_simple_loop"]
+def render_simple_loop_prompt(backlog: BacklogManager) -> str:
+    """Return the simple-loop prompt as a string, without scaffolding files.
+
+    Used by ``eden run --template simple-loop`` to feed the same prompt into
+    an in-process ``eden.run()`` call. Mirrors the ``prompt.md`` produced by
+    :func:`render_simple_loop`, so behaviour stays identical between the
+    scaffolded and in-process forms.
+    """
+    return _PROMPT_MD.format(
+        list_tasks_command=backlog.list_tasks_command,
+        view_task_command=backlog.view_task_command,
+        close_task_command=backlog.close_task_command,
+    )
+
+
+__all__ = ["render_simple_loop", "render_simple_loop_prompt"]
