@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from eden.errors import CopyToWorktreeError
 from eden.providers._helpers import make_isolated_provider
 from eden.providers._impl import patch_sync
 from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
@@ -18,14 +19,17 @@ from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
 from eden.sandboxes._exec import stream_exec
 
 _IGNORED_TOP_LEVEL: tuple[str, ...] = (".git", ".eden")
+_DEFAULT_COPY_TIMEOUT_SECONDS: float = 60.0
 
 
-def _clone_tree(src: Path, dst: Path) -> None:
+def _clone_tree(src: Path, dst: Path, *, timeout: float | None) -> None:
     """Copy ``src`` to ``dst`` (must not exist), excluding ``.git`` / ``.eden``.
 
     Uses ``cp -cR`` (APFS clonefile) on macOS so cloning a large worktree is
     near-instant on APFS-backed volumes. Falls back to ``shutil.copytree`` on
-    non-Darwin or when ``cp`` fails for any reason.
+    non-Darwin or when ``cp`` fails for any reason. Raises
+    ``CopyToWorktreeError`` (with ``timed_out=True``) if the copy doesn't
+    complete within ``timeout`` seconds; ``timeout=None`` disables the budget.
     """
     if sys.platform == "darwin":
         try:
@@ -33,12 +37,29 @@ def _clone_tree(src: Path, dst: Path) -> None:
                 ["cp", "-cR", str(src), str(dst)],
                 check=True,
                 capture_output=True,
+                timeout=timeout,
             )
             for ignored in _IGNORED_TOP_LEVEL:
                 victim = dst / ignored
                 if victim.exists():
                     shutil.rmtree(victim, ignore_errors=True)
             return
+        except subprocess.TimeoutExpired as exc:
+            if dst.exists():
+                shutil.rmtree(dst, ignore_errors=True)
+            raise CopyToWorktreeError(
+                code="copy.to_worktree_timeout",
+                message=(f"copying worktree {src} → {dst} did not complete within {timeout}s"),
+                hint=(
+                    "increase Timeouts.copy_to_worktree or shrink the worktree "
+                    "(check for accidentally-tracked build artefacts)"
+                ),
+                cause=exc,
+                source=src,
+                target=dst,
+                timeout=timeout,
+                timed_out=True,
+            ) from exc
         except subprocess.CalledProcessError:
             # Partial dst may exist — wipe before falling back so copytree's
             # "destination must not exist" precondition holds.
@@ -47,7 +68,19 @@ def _clone_tree(src: Path, dst: Path) -> None:
         except FileNotFoundError:
             # ``cp`` not on PATH (extremely unlikely on macOS) — fall through.
             pass
-    shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*_IGNORED_TOP_LEVEL))
+    try:
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*_IGNORED_TOP_LEVEL))
+    except OSError as exc:
+        if dst.exists():
+            shutil.rmtree(dst, ignore_errors=True)
+        raise CopyToWorktreeError(
+            message=f"copying worktree {src} → {dst} failed: {exc}",
+            hint="check disk space, permissions, and that ``src`` is readable",
+            cause=exc,
+            source=src,
+            target=dst,
+            timeout=timeout,
+        ) from exc
 
 
 _NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
@@ -104,13 +137,22 @@ class _IsolatedHandle:
             shutil.rmtree(self.worktree_path, ignore_errors=True)
 
 
-def provider(*, base_dir: Path | None = None) -> SandboxProvider:
+def provider(
+    *,
+    base_dir: Path | None = None,
+    copy_timeout: float | None = _DEFAULT_COPY_TIMEOUT_SECONDS,
+) -> SandboxProvider:
     """Local isolated provider: copy worktree to a tmp dir, run agent there,
     finalize by patch-syncing changes back to the host worktree.
 
     ``base_dir`` defaults to ``<host_repo_path>/.eden/isolated/`` (sibling of
     ``.eden/worktrees/`` and ``.eden/sessions/``). Each ``create()`` call
     carves a fresh subdirectory there.
+
+    ``copy_timeout`` bounds the worktree clone (``cp -cR`` on macOS,
+    ``shutil.copytree`` elsewhere). On exceedance the partial copy is wiped
+    and a ``CopyToWorktreeError`` with ``timed_out=True`` is raised. Set
+    ``None`` to disable the budget (large monorepos on slow disks).
     """
     fixed_base = base_dir
 
@@ -124,7 +166,7 @@ def provider(*, base_dir: Path | None = None) -> SandboxProvider:
         isolated_root = base / f"{_sanitize_seed(seed)}-{suffix}"
 
         baseline = patch_sync.snapshot(opts.worktree_path)
-        _clone_tree(opts.worktree_path, isolated_root)
+        _clone_tree(opts.worktree_path, isolated_root, timeout=copy_timeout)
 
         return _IsolatedHandle(
             worktree_path=isolated_root,

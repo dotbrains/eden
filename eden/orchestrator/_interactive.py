@@ -86,10 +86,11 @@ def interactive(
         )
 
     prompt_text = ""
+    prompt_is_literal = False
     if prompt is not None or prompt_file is not None:
-        prompt_text = resolve_source(
-            prompt=prompt, prompt_file=prompt_file, prompt_args=prompt_args
-        )
+        source = resolve_source(prompt=prompt, prompt_file=prompt_file, prompt_args=prompt_args)
+        prompt_text = source.text
+        prompt_is_literal = source.is_literal
 
     merged_env = merge_env({}, env or {})
 
@@ -143,17 +144,20 @@ def interactive(
             timeouts=timeouts,
         )
 
-        rendered = (
-            render_prompt(
+        if not prompt_text:
+            rendered = ""
+        elif prompt_is_literal:
+            # Inline prompts are passed to the agent verbatim — no
+            # substitution, no shell expansion, no built-in injection.
+            rendered = prompt_text
+        else:
+            rendered = render_prompt(
                 text=prompt_text,
                 args=prompt_args or {},
                 source_branch=wt.branch,
                 target_branch=target_branch,
                 handle=handle,
             )
-            if prompt_text
-            else ""
-        )
         ctx = IterationContext(
             iteration=0,
             prompt=rendered,
