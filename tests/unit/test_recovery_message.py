@@ -95,24 +95,27 @@ def test_includes_next_steps_block(tmp_path: Path) -> None:
     assert "eden clean" in out
 
 
-def test_quotes_path_with_spaces() -> None:
-    """A worktree path containing spaces is single-quoted in the cd command."""
+def test_quotes_path_with_spaces(tmp_path: Path) -> None:
+    """A worktree path containing spaces is shell-quoted in the cd command."""
+    wt = tmp_path / "Foo Bar" / "worktree"
     out = format_agent_error_recovery(
         error=_err(parsed="boom"),
         branch="feat/x",
-        worktree_path=Path("/Users/Foo Bar/repo/.eden/worktrees/x"),
+        worktree_path=wt,
         log_path=None,
     )
-    # ``shlex.quote`` wraps a path with spaces in single quotes.
-    assert "cd '/Users/Foo Bar/repo/.eden/worktrees/x'" in out
+    # Sanity-check the test setup actually exercises the spaces case.
+    assert " " in str(wt)
+    # ``shlex.quote`` wraps the platform-native path repr.
+    assert f"cd {shlex.quote(str(wt))}" in out
 
 
-def test_quotes_branch_with_special_chars() -> None:
+def test_quotes_branch_with_special_chars(tmp_path: Path) -> None:
     """A branch name with shell metacharacters is quoted in ``git diff``."""
     out = format_agent_error_recovery(
         error=_err(parsed="boom"),
         branch="feat/x;rm -rf /",
-        worktree_path=Path("/wt"),
+        worktree_path=tmp_path / "wt",
         log_path=None,
     )
     assert "git diff 'feat/x;rm -rf /'" in out
