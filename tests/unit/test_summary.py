@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from eden._types import Usage
-from eden.orchestrator._summary import context_window_k, format_context_window_line
+from eden.orchestrator._summary import (
+    context_window_k,
+    format_context_window_line,
+    format_finalize_line,
+)
+from eden.providers._types import FinalizeResult
 
 pytestmark = pytest.mark.unit
 
@@ -43,3 +50,32 @@ def test_output_tokens_excluded() -> None:
 def test_format_line_shape() -> None:
     assert format_context_window_line(_u(50_000)) == "Context window: 50k"
     assert format_context_window_line(_u(99_999, cc=1, cr=0, output=0)) == "Context window: 100k"
+
+
+def _fr(*, applied: bool, n_files: int, bytes_: int) -> FinalizeResult:
+    files: tuple[Path, ...] = tuple(Path(f"f{i}.py") for i in range(n_files))
+    return FinalizeResult(applied=applied, files_changed=files, patch_size_bytes=bytes_)
+
+
+def test_finalize_line_no_changes() -> None:
+    assert format_finalize_line(_fr(applied=True, n_files=0, bytes_=0)) == (
+        "[eden] no changes to sync"
+    )
+
+
+def test_finalize_line_single_file_pluralization() -> None:
+    assert format_finalize_line(_fr(applied=True, n_files=1, bytes_=42)) == (
+        "[eden] syncing 1 file to host (42 bytes)"
+    )
+
+
+def test_finalize_line_multiple_files_pluralization() -> None:
+    assert format_finalize_line(_fr(applied=True, n_files=3, bytes_=128)) == (
+        "[eden] syncing 3 files to host (128 bytes)"
+    )
+
+
+def test_finalize_line_partial_failure() -> None:
+    assert format_finalize_line(_fr(applied=False, n_files=2, bytes_=64)) == (
+        "[eden] sync incomplete: 2 files attempted (64 bytes)"
+    )

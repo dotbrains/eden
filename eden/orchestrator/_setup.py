@@ -23,6 +23,7 @@ _KIND_DEFAULT_STRATEGY: dict[str, BranchStrategy] = {
 @dataclass(frozen=True)
 class SetupResult:
     prompt_text: str
+    prompt_is_literal: bool
     cwd: Path
     merged_env: dict[str, str]
 
@@ -37,10 +38,15 @@ def resolve_setup(
     provider_env: Mapping[str, str],
     sandbox_kind: Literal["none", "bind_mount", "isolated"],
 ) -> SetupResult:
-    text = resolve_source(prompt=prompt, prompt_file=prompt_file, prompt_args=prompt_args)
+    source = resolve_source(prompt=prompt, prompt_file=prompt_file, prompt_args=prompt_args)
     merged = merge_env(provider_env, env or {})
     resolved_cwd = _resolve_cwd(cwd)
-    return SetupResult(prompt_text=text, cwd=resolved_cwd, merged_env=merged)
+    return SetupResult(
+        prompt_text=source.text,
+        prompt_is_literal=source.is_literal,
+        cwd=resolved_cwd,
+        merged_env=merged,
+    )
 
 
 def _resolve_cwd(cwd: Path | None) -> Path:
