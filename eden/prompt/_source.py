@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
 
 from eden.errors import InvalidOptions, PromptError
@@ -10,12 +11,28 @@ from eden.errors import InvalidOptions, PromptError
 _RESERVED_KEYS = frozenset({"SOURCE_BRANCH", "TARGET_BRANCH"})
 
 
+@dataclass(frozen=True)
+class PromptSource:
+    """Resolved prompt text plus a flag for whether to skip preprocessing.
+
+    ``is_literal`` is ``True`` for inline ``prompt="..."`` strings: callers
+    must pass them to the agent verbatim, with no ``{{KEY}}`` substitution,
+    no ``!`cmd``` shell expansion, and no built-in branch injection. Inline
+    strings are typically short, dynamic, and constructed by callers — any
+    accidental shell-block-shaped substring would be a footgun. File-sourced
+    prompts (``is_literal=False``) go through the full render pipeline.
+    """
+
+    text: str
+    is_literal: bool
+
+
 def resolve_source(
     *,
     prompt: str | None,
     prompt_file: str | Path | None,
     prompt_args: Mapping[str, str] | None,
-) -> str:
+) -> PromptSource:
     if prompt is None and prompt_file is None:
         raise InvalidOptions(
             code="config.invalid_options",
@@ -44,12 +61,12 @@ def resolve_source(
             )
 
     if prompt is not None:
-        return prompt
+        return PromptSource(text=prompt, is_literal=True)
 
     assert prompt_file is not None
     path = Path(prompt_file)
     try:
-        return path.read_text(encoding="utf-8")
+        return PromptSource(text=path.read_text(encoding="utf-8"), is_literal=False)
     except FileNotFoundError as exc:
         raise PromptError(
             code="prompt.file_missing",

@@ -33,3 +33,21 @@ def render(
         return table[key]
 
     return _KEY_RE.sub(_sub, text)
+
+
+def render_known(text: str, *, table: Mapping[str, str]) -> str:
+    """Substitute only {{KEY}} placeholders present in ``table``.
+
+    Unknown keys pass through verbatim instead of raising — used as a
+    pre-pass so built-ins can be substituted inside shell-block bodies
+    while user-supplied arg placeholders remain untouched until after
+    shell expansion runs.
+    """
+
+    def _sub(match: re.Match[str]) -> str:
+        key = match.group("key")
+        if key in table:
+            return table[key]
+        return match.group(0)
+
+    return _KEY_RE.sub(_sub, text)

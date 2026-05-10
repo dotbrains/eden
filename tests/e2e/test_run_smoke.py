@@ -13,6 +13,10 @@ pytestmark = pytest.mark.e2e
 
 def test_simulated_agent_full_run(e2e_git_repo: Path) -> None:
     events: list[eden.StreamEvent] = []
+    # File-sourced prompt so {{SOURCE_BRANCH}} / {{TARGET_BRANCH}} substitute
+    # — inline ``prompt="..."`` strings are passed to the agent verbatim.
+    prompt_path = e2e_git_repo / "prompt.md"
+    prompt_path.write_text("branch={{SOURCE_BRANCH}} target={{TARGET_BRANCH}}")
     # delay_per_line / idle_warning_interval ratio is 10x — generous enough
     # that the watchdog reliably emits at least one warning even on slow,
     # loaded CI VMs (a 3x ratio flaked on macOS hosted runners).
@@ -25,7 +29,7 @@ def test_simulated_agent_full_run(e2e_git_repo: Path) -> None:
             "eden.sandboxes.no_sandbox",
             fromlist=["provider"],
         ).provider(),
-        prompt="branch={{SOURCE_BRANCH}} target={{TARGET_BRANCH}}",
+        prompt_file=prompt_path,
         max_iterations=1,
         completion_signal="<promise>COMPLETE</promise>",
         idle_timeout=10.0,

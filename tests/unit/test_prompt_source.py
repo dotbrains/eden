@@ -13,15 +13,17 @@ pytestmark = pytest.mark.unit
 
 
 def test_inline_prompt_returns_text() -> None:
-    text = resolve_source(prompt="hello", prompt_file=None, prompt_args=None)
-    assert text == "hello"
+    src = resolve_source(prompt="hello", prompt_file=None, prompt_args=None)
+    assert src.text == "hello"
+    assert src.is_literal is True
 
 
 def test_file_prompt_reads_file(tmp_path: Path) -> None:
     f = tmp_path / "p.md"
     f.write_text("from file", encoding="utf-8")
-    text = resolve_source(prompt=None, prompt_file=f, prompt_args=None)
-    assert text == "from file"
+    src = resolve_source(prompt=None, prompt_file=f, prompt_args=None)
+    assert src.text == "from file"
+    assert src.is_literal is False
 
 
 def test_neither_supplied_raises_invalid_options() -> None:
@@ -66,5 +68,6 @@ def test_missing_file_raises_prompt_error(tmp_path: Path) -> None:
 def test_path_str_accepted(tmp_path: Path) -> None:
     f = tmp_path / "p.md"
     f.write_text("ok", encoding="utf-8")
-    text = resolve_source(prompt=None, prompt_file=str(f), prompt_args=None)
-    assert text == "ok"
+    src = resolve_source(prompt=None, prompt_file=str(f), prompt_args=None)
+    assert src.text == "ok"
+    assert src.is_literal is False
