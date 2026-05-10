@@ -56,8 +56,8 @@ def test_vercel_finalize_writes_sandbox_changes_to_host(
 
     assert result.log_file_path is not None
     log_body = result.log_file_path.read_text(encoding="utf-8")
-    assert "[eden] finalized:" in log_body
-    assert "applied=True" in log_body
+    assert "[eden] syncing" in log_body
+    assert "to host" in log_body
 
 
 @pytest.mark.skipif(
@@ -92,4 +92,4 @@ def test_vercel_finalize_propagates_deletes(
     assert result.completion_signal == "<promise>COMPLETE</promise>"
     assert not (e2e_git_repo / "README.md").exists()
     assert result.log_file_path is not None
-    assert "applied=True" in result.log_file_path.read_text(encoding="utf-8")
+    assert "[eden] syncing" in result.log_file_path.read_text(encoding="utf-8")

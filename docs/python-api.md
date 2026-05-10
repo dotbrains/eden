@@ -240,10 +240,12 @@ Frozen dataclass capping per-step durations.
 class Timeouts:
     hook_step: float = 60.0
     iteration_step: float | None = None
+    copy_to_worktree: float = 60.0
 ```
 
 - `hook_step` — seconds budget for any individual hook command. Exceeded → `HookTimeout`.
 - `iteration_step` — seconds budget for one agent iteration. `None` defers to `idle_timeout`. Exceeded → `StepTimeout`.
+- `copy_to_worktree` — seconds budget for the isolated provider's worktree clone. Exceeded → `CopyToWorktreeError(timed_out=True)`. Set the provider's own `copy_timeout` to override per-call; pass `None` to disable the budget.
 
 ### `Logging`
 
@@ -725,10 +727,12 @@ A `SandboxHandle` whose state replicates back to the host on close via `finalize
 
 Every error eden raises descends from `EdenError`. Each concrete class accepts a `cause` keyword argument and carries `code`, `message`, and `hint` attributes for structured logging. `EdenTimeoutError` additionally subclasses the built-in `TimeoutError` for mixed-`except` ergonomics. See [errors.md](errors.md) for the full taxonomy with `code` strings, raise sites, and recovery guidance.
 
-The 17 concrete error classes re-exported from `eden`:
+The 19 concrete error classes re-exported from `eden`:
 
 - `EdenError` — base class for everything.
+- `AgentError` — the agent subprocess exited non-zero without hitting the completion signal. Carries `agent_name`, `exit_code`, `stderr`, and `parsed_error` (extracted from stdout for Codex / Pi / OpenCode, which surface errors there rather than on stderr).
 - `ConfigError` — bad arguments, env, or cwd; raised before any side-effect.
+- `CopyToWorktreeError` — the isolated provider's worktree clone failed or exceeded `Timeouts.copy_to_worktree`. Carries `source`, `target`, `timeout`, and `timed_out` (true on budget overrun, false on permission/disk failure).
 - `CwdError` — invalid `cwd=` (missing, not a directory, not in a git repo).
 - `EdenTimeoutError` — base for time-budget exceedances; subclasses `TimeoutError`.
 - `EnvMergeError` — conflicting `env` overrides between caller, agent, and provider.
