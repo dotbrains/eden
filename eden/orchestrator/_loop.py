@@ -20,6 +20,7 @@ from eden.logging._config import Logging
 from eden.logging._file import FileLogSink, default_log_path
 from eden.orchestrator._completion import match
 from eden.orchestrator._idle import IdleWatchdog
+from eden.orchestrator._recovery import format_agent_error_recovery
 from eden.orchestrator._result import assemble
 from eden.orchestrator._runner import _AgentRunner
 from eden.orchestrator._setup import (
@@ -267,6 +268,8 @@ def _run_loop(
             wd.start()
             try:
                 iter_completion: str | None = None
+                agent_exit_code: int | None = None
+                agent_stderr: str = ""
                 agent_cwd = handle.worktree_path if handle.worktree_path.exists() else None
                 # Optional stdin payload — agents that override prompt
                 # delivery (e.g. claude_code, to dodge the 128 KB execve
@@ -367,6 +370,11 @@ def _run_loop(
                                     _forward_agent_event(tev)
                             runner.terminate()
                             break
+                    # Capture exit code BEFORE the with-block's __exit__ runs
+                    # ``terminate()`` and nulls the process handle. Only used
+                    # when ``iter_completion`` stays ``None`` below.
+                    agent_exit_code = runner.exit_code()
+                    agent_stderr = runner.stderr_text
             finally:
                 wd.stop()
 
@@ -377,14 +385,13 @@ def _run_loop(
             # message body for Codex / Pi / OpenCode, which emit error
             # events on stdout instead of stderr.
             if iter_completion is None:
-                rc = runner.exit_code()
-                if rc is not None and rc != 0:
+                if agent_exit_code is not None and agent_exit_code != 0:
                     parsed_stdout: str | None = parse_stdout_error("".join(stdout_chunks))
-                    stderr_text = runner.stderr_text.strip()
+                    stderr_text = agent_stderr.strip()
                     body = parsed_stdout or stderr_text or "(no output)"
-                    raise AgentError(
+                    err = AgentError(
                         message=(
-                            f"agent {agent.name!r} exited with code {rc} "
+                            f"agent {agent.name!r} exited with code {agent_exit_code} "
                             f"on iteration {i} without a completion signal: {body}"
                         ),
                         hint=(
@@ -393,10 +400,31 @@ def _run_loop(
                             "<promise>COMPLETE</promise> tag"
                         ),
                         agent_name=agent.name,
-                        exit_code=rc,
+                        exit_code=agent_exit_code,
                         stderr=stderr_text,
                         parsed_error=parsed_stdout,
                     )
+                    # Emit a copy-pastable recovery hint via the sink so it
+                    # lands in the run log even if the caller catches the
+                    # exception silently.
+                    recovery_text = format_agent_error_recovery(
+                        error=err,
+                        branch=wt.branch,
+                        worktree_path=wt.worktree_path,
+                        log_path=log_path,
+                    )
+                    recovery_ev = StreamEvent(
+                        type="text",
+                        agent_name=agent.name,
+                        iteration=i,
+                        timestamp=_utcnow(),
+                        text=recovery_text,
+                    )
+                    if sink is not None:
+                        sink.write(recovery_ev)
+                    if on_event is not None:
+                        on_event(recovery_ev)
+                    raise err
 
             if iter_session_id is not None and captures:
                 try:
