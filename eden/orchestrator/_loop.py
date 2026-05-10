@@ -11,8 +11,9 @@ from pathlib import Path
 from eden._types import Iteration, RunResult, Timeouts, Usage
 from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
+from eden.agents._errors import parse_stdout_error
 from eden.agents._protocol import Agent
-from eden.errors import SessionCaptureFailed
+from eden.errors import AgentError, SessionCaptureFailed
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
@@ -26,7 +27,12 @@ from eden.orchestrator._setup import (
     resolve_branch_strategy,
     resolve_target_branch,
 )
-from eden.orchestrator._summary import format_context_window_line
+from eden.orchestrator._summary import (
+    format_context_window_line,
+)
+from eden.orchestrator._summary import (
+    format_finalize_line as _format_finalize_line,
+)
 from eden.output import OutputDefinition, extract_structured_output
 from eden.prompt import render_prompt
 from eden.providers._protocols import SandboxHandle, SandboxProvider
@@ -228,13 +234,19 @@ def _run_loop(
                 timeouts=timeouts,
             )
 
-            rendered_prompt = render_prompt(
-                text=setup.prompt_text,
-                args=prompt_args or {},
-                source_branch=wt.branch,
-                target_branch=target_branch,
-                handle=handle,
-            )
+            if setup.prompt_is_literal:
+                # Inline prompts (``prompt="..."``) are passed to the agent
+                # verbatim — no ``{{KEY}}`` substitution, no ``!`cmd``` shell
+                # expansion, no built-in branch injection.
+                rendered_prompt = setup.prompt_text
+            else:
+                rendered_prompt = render_prompt(
+                    text=setup.prompt_text,
+                    args=prompt_args or {},
+                    source_branch=wt.branch,
+                    target_branch=target_branch,
+                    handle=handle,
+                )
 
             argv = agent.build_command(
                 IterationContext(
@@ -358,6 +370,34 @@ def _run_loop(
             finally:
                 wd.stop()
 
+            # Agent process EOFed without matching the completion signal.
+            # If it exited non-zero, surface the failure as a typed
+            # ``AgentError`` rather than letting the loop wait for an
+            # idle/iteration timeout. ``parse_stdout_error`` extracts the
+            # message body for Codex / Pi / OpenCode, which emit error
+            # events on stdout instead of stderr.
+            if iter_completion is None:
+                rc = runner.exit_code()
+                if rc is not None and rc != 0:
+                    parsed_stdout: str | None = parse_stdout_error("".join(stdout_chunks))
+                    stderr_text = runner.stderr_text.strip()
+                    body = parsed_stdout or stderr_text or "(no output)"
+                    raise AgentError(
+                        message=(
+                            f"agent {agent.name!r} exited with code {rc} "
+                            f"on iteration {i} without a completion signal: {body}"
+                        ),
+                        hint=(
+                            "check the agent's stdout/stderr in the run log; for "
+                            "claude-code, ensure the prompt requests a "
+                            "<promise>COMPLETE</promise> tag"
+                        ),
+                        agent_name=agent.name,
+                        exit_code=rc,
+                        stderr=stderr_text,
+                        parsed_error=parsed_stdout,
+                    )
+
             if iter_session_id is not None and captures:
                 try:
                     # ``sandbox_cwd`` is the working directory Claude Code sees
@@ -448,11 +488,7 @@ def _run_loop(
                             agent_name=agent.name,
                             iteration=len(iterations),
                             timestamp=_utcnow(),
-                            text=(
-                                f"[eden] finalized: applied={fr.applied} "
-                                f"files={len(fr.files_changed)} "
-                                f"bytes={fr.patch_size_bytes}"
-                            ),
+                            text=_format_finalize_line(fr),
                         )
                     )
             except Exception as exc:

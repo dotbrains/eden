@@ -147,3 +147,26 @@ class _AgentRunner:
             proc.kill()
             proc.wait()
         self._proc = None
+
+    def exit_code(self, *, wait_timeout: float = _GRACE_SECONDS) -> int | None:
+        """Return the agent process's exit code, or ``None`` if still running.
+
+        Called after ``iter_lines`` returns naturally (queue sentinel reached
+        on EOF) so the caller can distinguish a clean ``0`` from a non-zero
+        exit before deciding whether to raise ``AgentError``.
+        """
+        proc = self._proc
+        if proc is None:
+            return None
+        rc = proc.poll()
+        if rc is not None:
+            return rc
+        try:
+            return proc.wait(timeout=wait_timeout)
+        except subprocess.TimeoutExpired:
+            return None
+
+    @property
+    def stderr_text(self) -> str:
+        """Return the captured stderr accumulated so far. Safe after EOF."""
+        return "".join(self._stderr_chunks)

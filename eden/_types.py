@@ -40,6 +40,7 @@ class Iteration:
 class Timeouts:
     hook_step: float = 60.0
     iteration_step: float | None = None
+    copy_to_worktree: float = 60.0
 
 
 @dataclass(frozen=True)

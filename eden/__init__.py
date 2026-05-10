@@ -16,7 +16,9 @@ from eden.agents import (
     simulated_agent,
 )
 from eden.errors import (
+    AgentError,
     ConfigError,
+    CopyToWorktreeError,
     CwdError,
     EdenError,
     EdenTimeoutError,
@@ -52,10 +54,12 @@ __all__ = [
     "Aborted",
     # agent
     "Agent",
+    "AgentError",
     # provider re-exports
     "BranchStrategy",
     "Commit",
     "ConfigError",
+    "CopyToWorktreeError",
     "CwdError",
     # errors
     "EdenError",

@@ -203,6 +203,70 @@ class StructuredOutputError(EdenError):
         super().__init__(_format(code, message, hint))
 
 
+class CopyToWorktreeError(EdenError):
+    """Raised when the isolated provider's worktree clone fails or times out.
+
+    Wraps the underlying ``OSError`` / ``CalledProcessError`` / ``TimeoutExpired``
+    so callers can branch on a typed error rather than swallowing failures
+    deep inside ``provider.create()``. ``timed_out`` distinguishes a budget
+    overrun from a "real" copy failure.
+    """
+
+    def __init__(
+        self,
+        *,
+        code: str = "copy.to_worktree_failed",
+        message: str,
+        hint: str | None = None,
+        cause: Exception | None = None,
+        source: object = None,
+        target: object = None,
+        timeout: float | None = None,
+        timed_out: bool = False,
+    ) -> None:
+        self.code = code
+        self.message = message
+        self.hint = hint
+        self.cause = cause
+        self.source = source
+        self.target = target
+        self.timeout = timeout
+        self.timed_out = timed_out
+        super().__init__(_format(code, message, hint))
+
+
+class AgentError(EdenError):
+    """Raised when the agent subprocess exits non-zero without a completion signal.
+
+    Carries the exit code, captured stderr, and an optional ``parsed_error``
+    extracted from the agent's stdout (used by Codex / Pi / OpenCode, which
+    emit error events on stdout rather than stderr). When stderr is empty the
+    parsed-stdout text is used as the message body so the failure isn't silent.
+    """
+
+    def __init__(
+        self,
+        *,
+        code: str = "agent.failed",
+        message: str,
+        hint: str | None = None,
+        cause: Exception | None = None,
+        agent_name: str = "",
+        exit_code: int | None = None,
+        stderr: str = "",
+        parsed_error: str | None = None,
+    ) -> None:
+        self.code = code
+        self.message = message
+        self.hint = hint
+        self.cause = cause
+        self.agent_name = agent_name
+        self.exit_code = exit_code
+        self.stderr = stderr
+        self.parsed_error = parsed_error
+        super().__init__(_format(code, message, hint))
+
+
 class SessionCaptureFailed(EdenError):
     """Raised when capture_session() can't locate, read, or write the JSONL.
 
