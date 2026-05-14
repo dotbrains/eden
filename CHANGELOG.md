@@ -9,6 +9,30 @@ ships.
 
 ### Added
 
+- **`base_branch` parameter** on `run()`, `create_sandbox()`, `create_worktree()`,
+  `interactive()`, and their `eden.aio.*` async wrappers. Overrides the fork
+  point of the default `merge_to_head` strategy without forcing the caller to
+  construct a `BranchStrategy` by hand. Mutually exclusive with
+  `branch_strategy=` (the strategy already owns `base`). _(Upstream 0.5.6)._
+- **`eden docker build-image` / `eden docker remove-image`** (and `eden podman
+  build-image` / `eden podman remove-image`) — Typer sub-apps that wrap the
+  `docker`/`podman` CLI against the Dockerfile scaffolded by `eden init`.
+  `--image-name` overrides the default `eden:<repo-dir-name>` tag.
+  _(Upstream 0.4.6)._
+- **`Hook(sudo=True)`** — sandbox hooks (`SandboxHooks.on_sandbox_ready` etc.)
+  can now elevate their command via `sudo -E -- sh -c …`, useful for in-container
+  `apt-get install` setup steps when the sandbox runs as a non-root user. Host
+  hooks reject `sudo=True` (upstream parity — host hooks never elevate).
+  _(Upstream 0.4.3)._
+- **`parallel-planner-with-review` template** — combines `parallel-planner`'s
+  one-planner / N-implementer fan-out with per-branch review running in the
+  same `Sandbox` as the implementer (via `create_sandbox` + two `sandbox.run`
+  calls). Selectable via `eden init --template parallel-planner-with-review`.
+  _(Upstream 0.4.1)._
+- **Vercel + Daytona `copy_file_in` directory support** — when the host path
+  is a directory, the helper tars+gzips it, base64-encodes, ships via a single
+  `exec`, and untars at the target. Files still take the fast path. _(Upstream
+  vercel `copyIn` parity.)_
 - **`AgentError`** — typed error raised when an agent subprocess exits
   non-zero without matching the completion signal. Carries `agent_name`,
   `exit_code`, `stderr`, and `parsed_error` (extracted from stdout for Codex

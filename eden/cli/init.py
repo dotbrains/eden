@@ -15,6 +15,9 @@ from eden.cli._templates._backlog import (
 )
 from eden.cli._templates.blank import render_blank
 from eden.cli._templates.parallel_planner import render_parallel_planner
+from eden.cli._templates.parallel_planner_with_review import (
+    render_parallel_planner_with_review,
+)
 from eden.cli._templates.plan_implement_review import render_plan_implement_review
 from eden.cli._templates.sequential_reviewer import render_sequential_reviewer
 from eden.cli._templates.simple_loop import render_simple_loop
@@ -29,12 +32,14 @@ _VALID_TEMPLATES = (
     "simple-loop",
     "sequential-reviewer",
     "parallel-planner",
+    "parallel-planner-with-review",
     "plan-implement-review",
 )
 _TEMPLATES_REQUIRING_BACKLOG = {
     "simple-loop",
     "sequential-reviewer",
     "parallel-planner",
+    "parallel-planner-with-review",
     "plan-implement-review",
 }
 _VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
@@ -140,6 +145,15 @@ def init_command(
     elif template == "parallel-planner":
         assert backlog is not None
         files = render_parallel_planner(
+            sandbox=sandbox,
+            agent=agent,
+            model=model,
+            image_name=image_name,
+            backlog=get_backlog_manager(cast(BacklogName, backlog)),
+        )
+    elif template == "parallel-planner-with-review":
+        assert backlog is not None
+        files = render_parallel_planner_with_review(
             sandbox=sandbox,
             agent=agent,
             model=model,

@@ -23,6 +23,7 @@ from pathlib import Path
 from eden.errors import RestNotFoundError
 from eden.providers._helpers import make_isolated_provider
 from eden.providers._impl import patch_sync
+from eden.providers._impl.dir_upload import upload_dir_via_tar as _upload_dir_via_tar
 from eden.providers._impl.http_rest import RestClient
 from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
@@ -176,6 +177,17 @@ class _VercelHandle:
         return ExecResult(stdout=stdout, stderr=stderr, exit_code=exit_code)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
+        # Directories are tarred → base64 → exec to untar, mirroring upstream's
+        # ``copyIn`` semantics. Single files take the cheap path: read → b64 →
+        # decode into the target.
+        if host.is_dir():
+            result = _upload_dir_via_tar(self.exec, host=host, sandbox=sandbox)
+            if result.exit_code != 0:
+                raise ExecFailed(
+                    result=result,
+                    argv_or_cmd=f"copy_file_in (dir) {host} -> {sandbox}",
+                )
+            return
         data = host.read_bytes()
         b64 = base64.b64encode(data).decode("ascii")
         result = self.exec(

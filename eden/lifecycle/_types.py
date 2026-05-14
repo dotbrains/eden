@@ -14,6 +14,7 @@ class Hook:
     cwd: Path | None = None
     env: Mapping[str, str] | None = None
     timeout: float | None = None
+    sudo: bool = False
 
 
 @dataclass(frozen=True)
