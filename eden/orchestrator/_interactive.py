@@ -46,6 +46,7 @@ def interactive(
     cwd: str | Path | None = None,
     env: Mapping[str, str] | None = None,
     branch_strategy: BranchStrategy | None = None,
+    base_branch: str | None = None,
     name: str | None = None,
     hooks: Hooks | None = None,
 ) -> InteractiveResult:
@@ -99,12 +100,27 @@ def interactive(
     # directly. ``resolve_branch_strategy`` defaults bind_mount providers to
     # ``merge_to_head`` (right for ``run()`` loops) which is the wrong default
     # here. Fall back to ``merge_to_head`` only when ``head`` is unsupported.
+    if branch_strategy is not None and base_branch is not None:
+        raise InvalidOptions(
+            code="config.invalid_options",
+            message=(
+                "base_branch is mutually exclusive with branch_strategy; the "
+                "strategy's own `base` controls the fork point"
+            ),
+            hint=(
+                "pass base via BranchStrategy.merge_to_head(base=...) or .named(branch, base=...)"
+            ),
+        )
     if branch_strategy is not None:
         strategy = branch_strategy
     elif sandbox.supports_strategy(BranchStrategy.head()):
         strategy = BranchStrategy.head()
     else:
-        strategy = resolve_branch_strategy(branch_strategy=None, sandbox_kind=sandbox.kind)
+        strategy = resolve_branch_strategy(
+            branch_strategy=None,
+            sandbox_kind=sandbox.kind,
+            base_branch=base_branch,
+        )
     if not sandbox.supports_strategy(strategy):
         from eden.sandboxes.errors import UnsupportedStrategy
 

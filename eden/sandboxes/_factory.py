@@ -155,23 +155,34 @@ def create_sandbox(
     sandbox: SandboxProvider,
     branch: str | None = None,
     branch_strategy: BranchStrategy | None = None,
+    base_branch: str | None = None,
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
 ) -> Sandbox:
-    """Resolve branch/strategy, carve a worktree, and create the sandbox handle."""
+    """Resolve branch/strategy, carve a worktree, and create the sandbox handle.
+
+    ``base_branch`` overrides the fork point of the default ``merge_to_head``
+    strategy. It is mutually exclusive with ``branch_strategy``.
+    """
     if branch is not None and branch_strategy is not None:
         raise ValueError("branch and branch_strategy are mutually exclusive")
+    if branch_strategy is not None and base_branch is not None:
+        raise ValueError(
+            "base_branch is mutually exclusive with branch_strategy; "
+            "set base via BranchStrategy.merge_to_head(base=...) or .named(branch, base=...)"
+        )
 
+    base = base_branch or "main"
     if branch is not None:
-        strategy = BranchStrategy.named(branch)
+        strategy = BranchStrategy.named(branch, base=base)
     elif branch_strategy is not None:
         strategy = branch_strategy
     elif sandbox.kind == "none":
         strategy = BranchStrategy.head()
     else:
-        strategy = BranchStrategy.merge_to_head()
+        strategy = BranchStrategy.merge_to_head(base=base)
 
     if not sandbox.supports_strategy(strategy):
         raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)

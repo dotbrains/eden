@@ -5,6 +5,7 @@ from __future__ import annotations
 import typer
 
 from eden import __version__
+from eden.cli._image import make_image_app
 from eden.cli.clean import clean_command
 from eden.cli.cost import cost_command
 from eden.cli.init import init_command
@@ -35,6 +36,8 @@ app.command(
     name="replay",
     help="Pretty-print a captured session JSONL transcript.",
 )(replay_command)
+app.add_typer(make_image_app(binary="docker"), name="docker")
+app.add_typer(make_image_app(binary="podman"), name="podman")
 
 
 @app.command(name="version", help="Print the eden version and exit.")

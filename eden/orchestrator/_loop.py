@@ -69,6 +69,7 @@ def _run_loop(
     sandbox: SandboxProvider,
     setup: SetupResult,
     branch_strategy: BranchStrategy | None,
+    base_branch: str | None = None,
     max_iterations: int,
     completion_signal: str | list[str],
     idle_timeout: float,
@@ -107,6 +108,7 @@ def _run_loop(
         strategy = resolve_branch_strategy(
             branch_strategy=branch_strategy,
             sandbox_kind=sandbox.kind,
+            base_branch=base_branch,
         )
         if not sandbox.supports_strategy(strategy):
             raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)

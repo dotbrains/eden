@@ -45,6 +45,7 @@ def run(
     cwd: str | Path | None = None,
     env: Mapping[str, str] | None = None,
     branch_strategy: BranchStrategy | None = None,
+    base_branch: str | None = None,
     max_iterations: int = 1,
     completion_signal: str | list[str] = "<promise>COMPLETE</promise>",
     idle_timeout: float | timedelta = 600.0,
@@ -111,6 +112,7 @@ def run(
         sandbox=sandbox,
         setup=setup,
         branch_strategy=branch_strategy,
+        base_branch=base_branch,
         max_iterations=max_iterations,
         completion_signal=completion_signal,
         idle_timeout=_seconds(idle_timeout),
@@ -131,20 +133,30 @@ def create_worktree(
     *,
     branch: str | None = None,
     branch_strategy: BranchStrategy | None = None,
+    base_branch: str | None = None,
     name: str | None = None,
 ) -> WorktreeHandle:
     """Carve a worktree using Phase 2's create_worktree, with sugar for branch/strategy.
 
     Returns a WorktreeHandle (context manager) with `.branch`, `.worktree_path`, `.close()`.
+
+    ``base_branch`` overrides the fork point of the default ``merge_to_head``
+    strategy; it is mutually exclusive with ``branch_strategy`` (whose own
+    ``base`` field already controls the fork point).
     """
     if branch is not None and branch_strategy is not None:
         raise ValueError("branch and branch_strategy are mutually exclusive")
+    if branch_strategy is not None and base_branch is not None:
+        raise ValueError(
+            "base_branch is mutually exclusive with branch_strategy; "
+            "set base via BranchStrategy.merge_to_head(base=...) or .named(branch, base=...)"
+        )
     if branch is not None:
-        strategy = BranchStrategy.named(branch)
+        strategy = BranchStrategy.named(branch, base=base_branch or "main")
     elif branch_strategy is not None:
         strategy = branch_strategy
     else:
-        strategy = BranchStrategy.merge_to_head()
+        strategy = BranchStrategy.merge_to_head(base=base_branch or "main")
     return _carve_worktree(
         host_repo_path=Path.cwd(),
         strategy=strategy,
