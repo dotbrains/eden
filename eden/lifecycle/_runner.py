@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -13,6 +14,10 @@ from eden.errors import HookFailed, HookTimeout
 from eden.lifecycle._types import Hook, HookPhase, HostHooks, SandboxHooks
 from eden.providers._protocols import SandboxHandle
 from eden.tracing import span
+
+
+def _shell_quote(cmd: str) -> str:
+    return shlex.quote(cmd)
 
 
 def _phase_attr(phase: HookPhase) -> str:
@@ -30,6 +35,13 @@ def run_host_hooks(
     attr = _phase_attr(phase)
     hook_list: tuple[Hook, ...] = getattr(hooks, attr, ())
     for hook in hook_list:
+        if hook.sudo:
+            raise HookFailed(
+                message=(
+                    f"host hook {hook.cmd!r} sets sudo=True; sudo is only "
+                    "supported on sandbox hooks (sandcastle parity)"
+                ),
+            )
         deadline = hook.timeout if hook.timeout is not None else timeouts.hook_step
         merged: dict[str, str] = dict(os.environ)
         merged.update(env)
@@ -86,6 +98,12 @@ def run_sandbox_hooks(
         if hook.env:
             merged.update(hook.env)
         deadline = hook.timeout if hook.timeout is not None else timeouts.hook_step
+        # ``sudo=True`` (sandbox hooks only) elevates the command inside the
+        # container — useful for ``apt-get install`` style setup steps when
+        # the sandbox normally runs as a non-root user. We pass ``-E`` so the
+        # caller-supplied env survives, and ``sh -c`` so shell metacharacters
+        # in ``hook.cmd`` keep their meaning.
+        argv = f"sudo -E -- sh -c {_shell_quote(hook.cmd)}" if hook.sudo else hook.cmd
         with span(
             "eden.hook",
             attributes={
@@ -93,11 +111,12 @@ def run_sandbox_hooks(
                 "hook.phase": phase.value,
                 "hook.command": hook.cmd,
                 "hook.timeout_s": deadline,
+                "hook.sudo": hook.sudo,
             },
         ):
             try:
                 result = handle.exec(
-                    hook.cmd,
+                    argv,
                     cwd=hook.cwd,
                     env=merged,
                     timeout=deadline,

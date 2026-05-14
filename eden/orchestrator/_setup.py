@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import subprocess
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
 from eden.env import merge_env
-from eden.errors import CwdError
+from eden.errors import CwdError, InvalidOptions
 from eden.prompt._source import resolve_source
 from eden.providers._types import BranchStrategy
 
@@ -68,10 +68,23 @@ def resolve_branch_strategy(
     *,
     branch_strategy: BranchStrategy | None,
     sandbox_kind: Literal["none", "bind_mount", "isolated"],
+    base_branch: str | None = None,
 ) -> BranchStrategy:
+    if branch_strategy is not None and base_branch is not None:
+        raise InvalidOptions(
+            code="config.invalid_options",
+            message=(
+                "base_branch is mutually exclusive with branch_strategy; the "
+                "strategy's own `base` controls the fork point"
+            ),
+            hint="pass base via BranchStrategy.merge_to_head(base=...) or .named(branch, base=...)",
+        )
     if branch_strategy is not None:
         return branch_strategy
-    return _KIND_DEFAULT_STRATEGY[sandbox_kind]
+    default = _KIND_DEFAULT_STRATEGY[sandbox_kind]
+    if base_branch is None or default.tag == "head":
+        return default
+    return replace(default, base=base_branch)
 
 
 def resolve_target_branch(*, host_repo_path: Path) -> str:

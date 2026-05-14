@@ -155,6 +155,50 @@ def test_sandbox_hook_failures_aggregated(tmp_path: Path) -> None:
     assert "Y" in excinfo.value.message
 
 
+def test_sandbox_hook_sudo_wraps_command(tmp_path: Path) -> None:
+    seen: list[str] = []
+    handle = _FakeHandle(worktree_path=tmp_path, seen=seen)
+    hooks = SandboxHooks(
+        on_sandbox_ready=(Hook(cmd="apt-get install -y ffmpeg", sudo=True),),
+    )
+    run_sandbox_hooks(
+        phase=HookPhase.OnSandboxReady,
+        hooks=hooks,
+        handle=handle,
+        env={},
+        timeouts=Timeouts(),
+    )
+    assert len(seen) == 1
+    assert seen[0].startswith("sudo -E -- sh -c ")
+    assert "apt-get install -y ffmpeg" in seen[0]
+
+
+def test_sandbox_hook_no_sudo_leaves_command_alone(tmp_path: Path) -> None:
+    seen: list[str] = []
+    handle = _FakeHandle(worktree_path=tmp_path, seen=seen)
+    hooks = SandboxHooks(on_sandbox_ready=(Hook(cmd="echo hi"),))
+    run_sandbox_hooks(
+        phase=HookPhase.OnSandboxReady,
+        hooks=hooks,
+        handle=handle,
+        env={},
+        timeouts=Timeouts(),
+    )
+    assert seen == ["echo hi"]
+
+
+def test_host_hook_sudo_rejected(tmp_path: Path) -> None:
+    hooks = HostHooks(on_worktree_ready=(Hook(cmd="echo hi", sudo=True),))
+    with pytest.raises(HookFailed, match="sudo"):
+        run_host_hooks(
+            phase=HookPhase.OnWorktreeReady,
+            hooks=hooks,
+            worktree_path=tmp_path,
+            env={},
+            timeouts=Timeouts(),
+        )
+
+
 def test_empty_hooks_noop(tmp_path: Path) -> None:
     run_host_hooks(
         phase=HookPhase.OnWorktreeReady,
