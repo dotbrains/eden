@@ -25,7 +25,12 @@ def _seed_dockerfile(repo: Path) -> None:
 
 
 def test_docker_build_image_missing_dockerfile(runner: CliRunner, tmp_path: Path) -> None:
-    with patch("eden.cli._image.Path.cwd", return_value=tmp_path):
+    # Mock shutil.which so the test isolates the missing-Dockerfile path
+    # regardless of whether docker happens to be installed on the CI runner.
+    with (
+        patch("eden.cli._image.Path.cwd", return_value=tmp_path),
+        patch("eden.cli._image.shutil.which", return_value="/usr/bin/docker"),
+    ):
         result = runner.invoke(app, ["docker", "build-image"])
     assert result.exit_code == 1
     assert "no .eden/Dockerfile" in (result.output or "") + (result.stderr or "")

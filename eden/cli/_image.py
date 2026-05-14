@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import typer
@@ -40,10 +41,20 @@ def _dockerfile_path() -> Path:
     return path
 
 
+def _build_uid_gid() -> tuple[int, int]:
+    # Windows lacks os.getuid/getgid; the scaffolded Dockerfile defaults its
+    # ARG AGENT_UID/AGENT_GID anyway, so a sentinel matching the scaffold
+    # default is fine for Windows build invocations.
+    if sys.platform == "win32":
+        return 1000, 1000
+    return os.getuid(), os.getgid()
+
+
 def build_image(*, binary: str, image_name: str | None) -> None:
     bin_path = _resolve_binary(binary)
     dockerfile = _dockerfile_path()
     tag = image_name or _default_image_name()
+    uid, gid = _build_uid_gid()
     # Inherit caller UID/GID into the build args so the scaffolded
     # ``ARG AGENT_UID`` / ``ARG AGENT_GID`` lines pick them up — same default
     # eden's ``eden init`` next-steps tells the user to use.
@@ -51,9 +62,9 @@ def build_image(*, binary: str, image_name: str | None) -> None:
         bin_path,
         "build",
         "--build-arg",
-        f"AGENT_UID={os.getuid()}",
+        f"AGENT_UID={uid}",
         "--build-arg",
-        f"AGENT_GID={os.getgid()}",
+        f"AGENT_GID={gid}",
         "-t",
         tag,
         "-f",
