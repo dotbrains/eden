@@ -36,7 +36,9 @@ def test_docker_build_image_invokes_docker(
     tmp_path: Path,
 ) -> None:
     _seed_dockerfile(tmp_path)
-    completed = subprocess.CompletedProcess(args=[], returncode=0)
+    completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
+        args=[], returncode=0
+    )
     with (
         patch("eden.cli._image.Path.cwd", return_value=tmp_path),
         patch("eden.cli._image.shutil.which", return_value="/usr/bin/docker"),
@@ -54,7 +56,9 @@ def test_docker_build_image_invokes_docker(
 
 
 def test_docker_remove_image_invokes_docker(runner: CliRunner, tmp_path: Path) -> None:
-    completed = subprocess.CompletedProcess(args=[], returncode=0)
+    completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
+        args=[], returncode=0
+    )
     with (
         patch("eden.cli._image.Path.cwd", return_value=tmp_path),
         patch("eden.cli._image.shutil.which", return_value="/usr/bin/docker"),
@@ -68,7 +72,9 @@ def test_docker_remove_image_invokes_docker(runner: CliRunner, tmp_path: Path) -
 
 def test_podman_build_image_invokes_podman(runner: CliRunner, tmp_path: Path) -> None:
     _seed_dockerfile(tmp_path)
-    completed = subprocess.CompletedProcess(args=[], returncode=0)
+    completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
+        args=[], returncode=0
+    )
     with (
         patch("eden.cli._image.Path.cwd", return_value=tmp_path),
         patch("eden.cli._image.shutil.which", return_value="/usr/bin/podman"),
@@ -97,7 +103,9 @@ def test_docker_build_image_binary_missing(runner: CliRunner, tmp_path: Path) ->
 
 def test_docker_build_image_propagates_nonzero(runner: CliRunner, tmp_path: Path) -> None:
     _seed_dockerfile(tmp_path)
-    completed = subprocess.CompletedProcess(args=[], returncode=42)
+    completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
+        args=[], returncode=42
+    )
     with (
         patch("eden.cli._image.Path.cwd", return_value=tmp_path),
         patch("eden.cli._image.shutil.which", return_value="/usr/bin/docker"),
