@@ -69,7 +69,11 @@ def test_plan_prompt_threads_list_tasks_command() -> None:
         image_name="eden:t",
         backlog=get_backlog_manager("github"),
     )
-    assert "gh issue list" in files["plan-prompt.md"]
+    plan = files["plan-prompt.md"]
+    assert "gh issue list" in plan
+    # The "already filtered" hint keeps the planner from re-querying the
+    # tracker and picking up tasks outside the configured filter.
+    assert "already been filtered" in plan
 
 
 def test_implement_prompt_substitutes_id_placeholder() -> None:
