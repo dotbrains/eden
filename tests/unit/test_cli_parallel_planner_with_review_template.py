@@ -71,6 +71,13 @@ def test_review_prompt_references_source_and_target_branches() -> None:
     assert "{{TARGET_BRANCH}}" in review
 
 
+def test_plan_prompt_marks_task_list_as_already_filtered() -> None:
+    # Keeps the planner from re-querying the tracker and picking up tasks
+    # outside the configured filter.
+    plan = _files()["plan-prompt.md"]
+    assert "already been filtered" in plan
+
+
 def test_implement_prompt_substitutes_id_placeholder() -> None:
     impl = _files()["implement-prompt.md"]
     assert "gh issue view {{TASK_ID}}" in impl
