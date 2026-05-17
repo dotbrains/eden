@@ -67,6 +67,10 @@ def test_multiple_blocks_spliced_in_source_order() -> None:
 
 
 def test_multiple_blocks_run_concurrently() -> None:
+    # Both blocks sleep so the elapsed-time check actually proves concurrency:
+    # sequential would be ~0.4s, concurrent should be ~0.2s.
+    sleep_per_block = 0.2
+
     class _SlowHandle(_FakeHandle):
         def exec(
             self,
@@ -78,8 +82,7 @@ def test_multiple_blocks_run_concurrently() -> None:
             timeout: float | None = None,
         ) -> ExecResult:
             self.calls.append(cmd)
-            if cmd == "slow":
-                time.sleep(0.2)
+            time.sleep(sleep_per_block)
             return self._results[cmd]
 
     h = _SlowHandle(
@@ -92,7 +95,9 @@ def test_multiple_blocks_run_concurrently() -> None:
     out = expand_shell_blocks("!`slow`-!`fast`", handle=h)
     elapsed = time.perf_counter() - start
     assert out == "S-F"
-    assert elapsed < 0.35
+    # Concurrent ~= sleep_per_block; sequential would be 2x. The 1.5x bound
+    # gives slow CI runners headroom while still failing if blocks serialize.
+    assert elapsed < sleep_per_block * 1.5
 
 
 def test_failure_raises_prompt_error() -> None:
