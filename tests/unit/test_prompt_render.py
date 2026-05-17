@@ -15,6 +15,22 @@ def test_substitutes_user_key() -> None:
     assert out == "Hi Ada!"
 
 
+def test_substitutes_key_with_inner_whitespace() -> None:
+    out = render("Hi {{ NAME }}!", args={"NAME": "Ada"}, source_branch="b", target_branch="main")
+    assert out == "Hi Ada!"
+
+
+def test_unused_prompt_arg_warns() -> None:
+    with pytest.warns(UserWarning, match="unused prompt_args keys: UNUSED"):
+        out = render(
+            "Hi {{NAME}}!",
+            args={"NAME": "Ada", "UNUSED": "x"},
+            source_branch="b",
+            target_branch="main",
+        )
+    assert out == "Hi Ada!"
+
+
 def test_substitutes_source_branch() -> None:
     out = render("on {{SOURCE_BRANCH}}", args={}, source_branch="feat/x", target_branch="main")
     assert out == "on feat/x"

@@ -32,7 +32,7 @@ The file is read as UTF-8 each iteration, so editing it between iterations updat
 
 ## `{{KEY}}` substitution
 
-Eden substitutes `{{KEY}}` placeholders inside the prompt body. Substitution runs before shell-block expansion. Keys must match `[A-Za-z_][A-Za-z0-9_]*`. Read source: `eden/prompt/_render.py`.
+Eden substitutes `{{KEY}}` placeholders inside the prompt body. Substitution runs before shell-block expansion. Keys must match `[A-Za-z_][A-Za-z0-9_]*`; whitespace inside the braces is accepted, so `{{KEY}}` and `{{ KEY }}` are equivalent. Read source: `eden/prompt/_render.py`.
 
 ```python
 run(
@@ -47,7 +47,7 @@ run(
 Add tests for {{MODULE}} in {{TARGET}}.
 ```
 
-Unknown placeholders raise `PromptError` with `code="prompt.unknown_key"` — the hint lists the keys that _are_ defined.
+Unknown placeholders raise `PromptError` with `code="prompt.unknown_key"` — the hint lists the keys that _are_ defined. Extra `prompt_args` keys that are not referenced by the prompt emit a warning.
 
 ### Built-in keys
 
@@ -64,7 +64,7 @@ Built-ins win over user args if a name collides — but the collision is rejecte
 
 ## Shell blocks (`` !`cmd` ``)
 
-Eden expands `` !`cmd` `` blocks **after** placeholder substitution by running each command via the sandbox handle's `exec()`. The command's stdout (with one trailing newline stripped) is spliced into the prompt. Read source: `eden/prompt/_shell.py`.
+Eden expands `` !`cmd` `` blocks **after** placeholder substitution by running each command via the sandbox handle's `exec()`. Multiple blocks in one prompt run concurrently, then their stdout (with one trailing newline stripped) is spliced back into the prompt in source order. Read source: `eden/prompt/_shell.py`.
 
 ```markdown
 Current branch state:
@@ -74,7 +74,7 @@ Failing tests:
 !`pytest -q 2>&1 | tail -20`
 ```
 
-Blocks run sequentially in source order. A non-zero exit raises `PromptError` with `code="prompt.shell_block_failed"`; the command's stderr (if any) becomes the error hint.
+A non-zero exit raises `PromptError` with `code="prompt.shell_block_failed"`; the command's stderr (if any) becomes the error hint.
 
 Because shell blocks execute through the sandbox handle, they observe the sandbox's filesystem and environment — not the host's. For bind-mount providers (`no_sandbox`, `docker`, `podman`) the two are effectively the same; for `isolated`/`daytona`/`vercel` the block runs against the synced sandbox state.
 

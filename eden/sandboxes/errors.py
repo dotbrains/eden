@@ -80,6 +80,21 @@ class ImageUidMismatch(SandboxError):
         )
 
 
+class MountConfigError(SandboxError):
+    """Invalid bind-mount configuration detected before container startup."""
+
+    def __init__(self, *, sandbox_path: object, parent: object, sandbox_homedir: object) -> None:
+        self.sandbox_path = sandbox_path
+        self.parent = parent
+        self.sandbox_homedir = sandbox_homedir
+        super().__init__(
+            f"cannot mount file to {sandbox_path!r}: parent directory {parent!r} "
+            f"is outside the sandbox home directory ({sandbox_homedir!r}). "
+            "Mount the parent directory instead, or rebuild the image with that "
+            "parent directory pre-created."
+        )
+
+
 class UnsupportedStrategy(SandboxError):
     def __init__(self, *, provider: str, strategy: StrategyTag) -> None:
         self.provider = provider

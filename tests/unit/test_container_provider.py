@@ -17,6 +17,7 @@ from eden.sandboxes.errors import (
     ContainerStartFailed,
     ImageNotFound,
     ImageUidMismatch,
+    MountConfigError,
     ProviderUnavailable,
 )
 
@@ -155,7 +156,8 @@ def test_implicit_workspace_mount(
     p = make_container_provider(binary=binary, image="alpine")  # type: ignore[arg-type]
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
-    assert any(f"{tmp_path}:/workspace:z" in arg for arg in run_cmd)
+    bind_specs = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "-v"]
+    assert any(f"{tmp_path}:/workspace:z" == arg for arg in bind_specs)
 
 
 @pytest.mark.parametrize("binary", ["docker", "podman"])
@@ -178,7 +180,8 @@ def test_provider_mounts_threaded(
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
     # default selinux_label="z" → ":ro,z"
-    assert any(f"{tmp_path / 'extra'}:/extra:ro,z" in arg for arg in run_cmd)
+    bind_specs = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "-v"]
+    assert any(f"{tmp_path / 'extra'}:/extra:ro,z" == arg for arg in bind_specs)
 
 
 @pytest.mark.parametrize("binary", ["docker", "podman"])
@@ -368,7 +371,8 @@ def test_selinux_label_can_be_disabled(
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
     # Workspace mount has no SELinux suffix when disabled.
-    assert any(f"{tmp_path}:/workspace" == arg for arg in run_cmd)
+    bind_specs = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "-v"]
+    assert any(f"{tmp_path}:/workspace" == arg for arg in bind_specs)
     assert not any(arg.endswith(":z") for arg in run_cmd)
     assert not any(arg.endswith(":Z") for arg in run_cmd)
 
@@ -540,14 +544,42 @@ def test_file_mount_parents_skips_directory_mounts(tmp_path: Path) -> None:
 
 
 def test_file_mount_parents_skips_paths_outside_homedir(tmp_path: Path) -> None:
-    """Mounts to /etc/... are user-knows-best — eden won't auto-create them."""
+    """File mounts outside the agent home fail with a clear config error."""
     from eden.providers._impl.container import _file_mount_parents
 
     f = tmp_path / "secret"
     f.write_text("x")
     mounts = [Mount(host=f, sandbox=Path("/etc/foo/bar.conf"))]
-    parents = _file_mount_parents(mounts, sandbox_homedir=Path("/home/agent"))
-    assert parents == []
+    with pytest.raises(MountConfigError) as ex:
+        _file_mount_parents(mounts, sandbox_homedir=Path("/home/agent"))
+    assert "/etc/foo" in str(ex.value)
+
+
+@pytest.mark.parametrize("binary", ["docker", "podman"])
+def test_windows_host_paths_use_mount_flag(
+    binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    extra = (
+        Mount(host=Path("C:/Users/me/cache"), sandbox=Path("/home/agent/.cache"), read_only=True),
+    )
+    p = make_container_provider(binary=binary, image="alpine", mounts=extra)  # type: ignore[arg-type]
+    p.create(_opts(tmp_path))
+
+    run_cmd = _find_run(captured)
+    mount_specs = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "--mount"]
+    assert "type=bind,source=C:/Users/me/cache,target=/home/agent/.cache,readonly" in mount_specs
 
 
 def test_file_mount_parents_dedupes(tmp_path: Path) -> None:

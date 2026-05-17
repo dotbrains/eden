@@ -73,6 +73,7 @@ classDiagram
     SandboxError <|-- ContainerStartFailed
     SandboxError <|-- ExecFailed
     SandboxError <|-- ExecTimeout
+    SandboxError <|-- MountConfigError
     SandboxError <|-- UnsupportedStrategy
 
     WorktreeError <|-- WorktreeLocked
@@ -241,6 +242,12 @@ Examples: `docker`/`podman` binary not on `PATH`; `DAYTONA_API_KEY` unset; `VERC
 
 **Recovery:** raise the per-call timeout, or shorten the command.
 
+### `MountConfigError`
+
+Docker / Podman rejected a bind-mount configuration before container startup. The current typed case is a single-file mount whose sandbox-side parent is outside `/home/agent`; Eden only auto-creates missing file-mount parents under the agent home.
+
+**Recovery:** mount the parent directory instead, or rebuild the image with that parent directory pre-created.
+
 ### `UnsupportedStrategy`
 
 The chosen `BranchStrategy` is not supported by this provider. Carries `provider: str` and `strategy: StrategyTag`.
@@ -296,6 +303,7 @@ A `git` subprocess invoked by `eden.worktree` exited non-zero. Carries `argv: tu
 | `ImageNotFound` | Build or pull the image. |
 | `ContainerStartFailed` | Inspect `e.stderr`; fix the image. |
 | `ExecFailed` / `ExecTimeout` | Inspect `e.result.stderr`; fix the command or raise the timeout. |
+| `MountConfigError` | Mount the parent directory or pre-create the target parent in the image. |
 | `UnsupportedStrategy` | Pick a supported `BranchStrategy` or switch providers. |
 | `WorktreeLocked` | Wait, kill the holder, or change branch. |
 | `DirtyHostBlocked` | Commit / stash / discard, or switch branch strategy. |

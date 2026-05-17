@@ -23,6 +23,7 @@ from eden.sandboxes.errors import (
     ContainerStartFailed,
     ImageNotFound,
     ImageUidMismatch,
+    MountConfigError,
     ProviderUnavailable,
 )
 
@@ -212,6 +213,45 @@ def _mount_spec(
     return spec
 
 
+def _is_windows_host_path(path: Path) -> bool:
+    raw = str(path)
+    return bool(re.match(r"^[A-Za-z]:[\\/]", raw)) or "\\" in raw
+
+
+def _mount_argv(
+    *,
+    host: Path,
+    sandbox: Path,
+    read_only: bool,
+    selinux: SelinuxLabel | None,
+    sandbox_homedir: Path | None = None,
+) -> list[str]:
+    """Return container-runtime argv for a bind mount.
+
+    Windows-shaped host paths use ``--mount`` to avoid ``-v C:\\...:/target``
+    colon ambiguity. POSIX paths keep ``-v`` so SELinux relabel suffixes remain
+    available on Linux hosts.
+    """
+    expanded = _expand_sandbox_tilde(sandbox, sandbox_homedir=sandbox_homedir)
+    if _is_windows_host_path(host):
+        source = str(host).replace("\\", "/")
+        target = expanded.as_posix()
+        spec = f"type=bind,source={source},target={target}"
+        if read_only:
+            spec += ",readonly"
+        return ["--mount", spec]
+    return [
+        "-v",
+        _mount_spec(
+            host=host,
+            sandbox=sandbox,
+            read_only=read_only,
+            selinux=selinux,
+            sandbox_homedir=sandbox_homedir,
+        ),
+    ]
+
+
 # Default in-container home directory used by tilde-expansion. Matches the
 # ``agent`` user created by eden's blank-template Dockerfile.
 SANDBOX_HOMEDIR: Path = Path("/home/agent")
@@ -232,13 +272,19 @@ def _file_mount_parents(mounts: list[Mount], *, sandbox_homedir: Path) -> list[P
         if not m.host.is_file():
             continue
         expanded = _expand_sandbox_tilde(m.sandbox, sandbox_homedir=sandbox_homedir)
+        parent = expanded.parent
+        if parent == sandbox_homedir:
+            continue
         # ``is_relative_to`` requires the same root; both are absolute POSIX paths.
         try:
-            expanded.relative_to(sandbox_homedir)
-        except ValueError:
-            continue
-        parent = expanded.parent
-        if parent == sandbox_homedir or parent in seen:
+            parent.relative_to(sandbox_homedir)
+        except ValueError as exc:
+            raise MountConfigError(
+                sandbox_path=expanded.as_posix(),
+                parent=parent.as_posix(),
+                sandbox_homedir=sandbox_homedir.as_posix(),
+            ) from exc
+        if parent in seen:
             continue
         seen.append(parent)
     return seen
@@ -363,14 +409,15 @@ def make_container_provider(
             "sleep",
         ]
         for m in mount_map.values():
-            spec = _mount_spec(
-                host=m.host,
-                sandbox=m.sandbox,
-                read_only=m.read_only,
-                selinux=selinux_label,
-                sandbox_homedir=SANDBOX_HOMEDIR,
+            argv.extend(
+                _mount_argv(
+                    host=m.host,
+                    sandbox=m.sandbox,
+                    read_only=m.read_only,
+                    selinux=selinux_label,
+                    sandbox_homedir=SANDBOX_HOMEDIR,
+                )
             )
-            argv.extend(["-v", spec])
         for k, v in merged_env.items():
             argv.extend(["-e", f"{k}={v}"])
         if network:

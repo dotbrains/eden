@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import re
+import warnings
 from collections.abc import Mapping
 
 from eden.errors import PromptError
 
-_KEY_RE = re.compile(r"\{\{(?P<key>[A-Za-z_][A-Za-z0-9_]*)\}\}")
+_KEY_RE = re.compile(r"\{\{\s*(?P<key>[A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
 
 
 def render(
@@ -20,6 +21,7 @@ def render(
     """Substitute {{KEY}} placeholders. Built-ins win over args."""
     built_ins = {"SOURCE_BRANCH": source_branch, "TARGET_BRANCH": target_branch}
     table: dict[str, str] = {**dict(args), **built_ins}
+    used: set[str] = set()
 
     def _sub(match: re.Match[str]) -> str:
         key = match.group("key")
@@ -30,9 +32,18 @@ def render(
                 message=f"unknown placeholder {{{{{key}}}}} in prompt",
                 hint=f"known keys: {known}",
             )
+        used.add(key)
         return table[key]
 
-    return _KEY_RE.sub(_sub, text)
+    rendered = _KEY_RE.sub(_sub, text)
+    unused = sorted(set(args) - used)
+    if unused:
+        warnings.warn(
+            f"unused prompt_args keys: {', '.join(unused)}",
+            UserWarning,
+            stacklevel=2,
+        )
+    return rendered
 
 
 def render_known(text: str, *, table: Mapping[str, str]) -> str:

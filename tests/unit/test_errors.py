@@ -13,6 +13,7 @@ from eden.sandboxes.errors import (
     ExecFailed,
     ExecTimeout,
     ImageNotFound,
+    MountConfigError,
     ProviderUnavailable,
     SandboxError,
     UnsupportedStrategy,
@@ -102,6 +103,18 @@ def test_exec_timeout_carries_partial_buffers() -> None:
     assert err.timeout == 1.0
     assert err.partial_stdout == "hello"
     assert err.partial_stderr == "warn"
+
+
+def test_mount_config_error_carries_paths() -> None:
+    err = MountConfigError(
+        sandbox_path="/etc/foo/bar.conf",
+        parent="/etc/foo",
+        sandbox_homedir="/home/agent",
+    )
+    assert err.sandbox_path == "/etc/foo/bar.conf"
+    assert err.parent == "/etc/foo"
+    assert err.sandbox_homedir == "/home/agent"
+    assert "/etc/foo" in str(err)
 
 
 def test_unsupported_strategy_carries_provider_and_tag() -> None:
