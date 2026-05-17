@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import time
+import threading
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
@@ -67,11 +67,12 @@ def test_multiple_blocks_spliced_in_source_order() -> None:
 
 
 def test_multiple_blocks_run_concurrently() -> None:
-    # Both blocks sleep so the elapsed-time check actually proves concurrency:
-    # sequential would be ~0.4s, concurrent should be ~0.2s.
-    sleep_per_block = 0.2
+    # Deterministic concurrency check: a barrier requires both blocks to be
+    # in-flight at the same time to release. If they ran serially the barrier
+    # would deadlock and the test would hit the 5s timeout.
+    barrier = threading.Barrier(parties=2, timeout=5.0)
 
-    class _SlowHandle(_FakeHandle):
+    class _BarrierHandle(_FakeHandle):
         def exec(
             self,
             cmd: str,
@@ -82,22 +83,17 @@ def test_multiple_blocks_run_concurrently() -> None:
             timeout: float | None = None,
         ) -> ExecResult:
             self.calls.append(cmd)
-            time.sleep(sleep_per_block)
+            barrier.wait()
             return self._results[cmd]
 
-    h = _SlowHandle(
+    h = _BarrierHandle(
         {
-            "slow": ExecResult(stdout="S\n", stderr="", exit_code=0),
-            "fast": ExecResult(stdout="F\n", stderr="", exit_code=0),
+            "a": ExecResult(stdout="A\n", stderr="", exit_code=0),
+            "b": ExecResult(stdout="B\n", stderr="", exit_code=0),
         }
     )
-    start = time.perf_counter()
-    out = expand_shell_blocks("!`slow`-!`fast`", handle=h)
-    elapsed = time.perf_counter() - start
-    assert out == "S-F"
-    # Concurrent ~= sleep_per_block; sequential would be 2x. The 1.5x bound
-    # gives slow CI runners headroom while still failing if blocks serialize.
-    assert elapsed < sleep_per_block * 1.5
+    out = expand_shell_blocks("!`a`-!`b`", handle=h)
+    assert out == "A-B"
 
 
 def test_failure_raises_prompt_error() -> None:
