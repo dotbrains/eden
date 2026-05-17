@@ -6,6 +6,7 @@ All subprocess calls are mocked; no docker/podman binary required to run.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -22,6 +23,12 @@ from eden.sandboxes.errors import (
 )
 
 pytestmark = pytest.mark.unit
+
+_skip_on_windows = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="asserts POSIX `-v` argv shape; Windows host paths use `--mount` "
+    "(covered by test_windows_host_paths_use_mount_flag)",
+)
 
 
 def _opts(tmp_path: Path) -> CreateOptions:
@@ -138,6 +145,7 @@ def test_container_start_failed(
     assert excinfo.value.exit_code == 125
 
 
+@_skip_on_windows
 @pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_implicit_workspace_mount(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -160,6 +168,7 @@ def test_implicit_workspace_mount(
     assert any(f"{tmp_path}:/workspace:z" == arg for arg in bind_specs)
 
 
+@_skip_on_windows
 @pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_provider_mounts_threaded(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -348,6 +357,7 @@ def test_image_uid_check_skipped_when_user_directive_empty(
     p.create(_opts(tmp_path))
 
 
+@_skip_on_windows
 @pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_selinux_label_can_be_disabled(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -377,6 +387,7 @@ def test_selinux_label_can_be_disabled(
     assert not any(arg.endswith(":Z") for arg in run_cmd)
 
 
+@_skip_on_windows
 @pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_selinux_label_uppercase_z(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -402,6 +413,7 @@ def test_selinux_label_uppercase_z(
     assert any(arg.endswith(":Z") for arg in run_cmd)
 
 
+@_skip_on_windows
 @pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_selinux_label_combines_with_readonly(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -429,6 +441,7 @@ def test_selinux_label_combines_with_readonly(
     assert any(f"{tmp_path / 'ro'}:/ro:ro,z" == arg for arg in run_cmd)
 
 
+@_skip_on_windows
 @pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_tilde_in_sandbox_path_expands_to_sandbox_homedir(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
