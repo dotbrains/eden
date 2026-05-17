@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,12 @@ from eden.sandboxes.errors import (
 )
 
 pytestmark = pytest.mark.unit
+
+_skip_on_windows = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="asserts POSIX `-v` argv shape; Windows host paths use `--mount` "
+    "(covered by test_windows_host_paths_use_mount_flag)",
+)
 
 
 @dataclass
@@ -101,6 +108,7 @@ def test_create_raises_when_run_fails(tmp_path: Path, fake_subprocess: _Subproce
     assert excinfo.value.exit_code == 125
 
 
+@_skip_on_windows
 def test_create_builds_expected_argv(tmp_path: Path, fake_subprocess: _SubprocessFake) -> None:
     fake_subprocess.queue_run(returncode=0)  # inspect (existence)
     fake_subprocess.queue_run(returncode=0)  # inspect (UID format) — empty skips check
@@ -130,6 +138,7 @@ def test_create_builds_expected_argv(tmp_path: Path, fake_subprocess: _Subproces
     assert run_call.argv[-1] == "infinity"
 
 
+@_skip_on_windows
 def test_provider_mount_overrides_caller_mount(
     tmp_path: Path, fake_subprocess: _SubprocessFake
 ) -> None:
