@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
@@ -53,7 +54,7 @@ def test_single_block_substituted() -> None:
     assert out == "status: ?? a.py"
 
 
-def test_multiple_blocks_run_sequentially() -> None:
+def test_multiple_blocks_spliced_in_source_order() -> None:
     h = _FakeHandle(
         {
             "echo a": ExecResult(stdout="A\n", stderr="", exit_code=0),
@@ -62,7 +63,36 @@ def test_multiple_blocks_run_sequentially() -> None:
     )
     out = expand_shell_blocks("!`echo a`-!`echo b`", handle=h)
     assert out == "A-B"
-    assert h.calls == ["echo a", "echo b"]
+    assert set(h.calls) == {"echo a", "echo b"}
+
+
+def test_multiple_blocks_run_concurrently() -> None:
+    class _SlowHandle(_FakeHandle):
+        def exec(
+            self,
+            cmd: str,
+            *,
+            on_line: Callable[[str], None] | None = None,
+            cwd: Path | None = None,
+            env: Mapping[str, str] | None = None,
+            timeout: float | None = None,
+        ) -> ExecResult:
+            self.calls.append(cmd)
+            if cmd == "slow":
+                time.sleep(0.2)
+            return self._results[cmd]
+
+    h = _SlowHandle(
+        {
+            "slow": ExecResult(stdout="S\n", stderr="", exit_code=0),
+            "fast": ExecResult(stdout="F\n", stderr="", exit_code=0),
+        }
+    )
+    start = time.perf_counter()
+    out = expand_shell_blocks("!`slow`-!`fast`", handle=h)
+    elapsed = time.perf_counter() - start
+    assert out == "S-F"
+    assert elapsed < 0.35
 
 
 def test_failure_raises_prompt_error() -> None:
