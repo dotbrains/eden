@@ -143,6 +143,37 @@ def test_passes_env_and_mounts_to_provider(
         s.close()
 
 
+def test_create_sandbox_loads_dot_eden_env(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    eden_dir = tmp_git_repo / ".eden"
+    eden_dir.mkdir()
+    (eden_dir / ".env").write_text("FROM_FILE=value\n")
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    s = create_sandbox(sandbox=p, env={"EXPLICIT": "override"})
+    try:
+        opts = p.seen_opts[0]
+        assert opts.env == {"FROM_FILE": "value", "EXPLICIT": "override"}
+    finally:
+        s.close()
+
+
+def test_create_sandbox_explicit_env_overrides_dot_env(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    eden_dir = tmp_git_repo / ".eden"
+    eden_dir.mkdir()
+    (eden_dir / ".env").write_text("KEY=from_file\n")
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    s = create_sandbox(sandbox=p, env={"KEY": "from_caller"})
+    try:
+        assert p.seen_opts[0].env == {"KEY": "from_caller"}
+    finally:
+        s.close()
+
+
 def test_close_closes_handle_then_worktree(
     tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

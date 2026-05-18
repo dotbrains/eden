@@ -26,11 +26,13 @@ MANIFEST
 .env
 .venv
 env/
-!eden/env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+!eden/env/
+!eden/env/**
+eden/env/__pycache__/
 
 # Testing / coverage
 .tox/

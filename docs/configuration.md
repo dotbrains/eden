@@ -19,11 +19,26 @@ Eden itself reads environment variables only inside the **cloud sandbox provider
 
 Read source: `eden/sandboxes/daytona/__init__.py`, `eden/sandboxes/vercel/__init__.py`.
 
+### `.eden/.env` auto-loading
+
+If `<cwd>/.eden/.env` exists, `run()`, `create_sandbox()`, and `interactive()` parse it and merge its values into the env passed to the sandbox. The file is optional — projects opt in by creating it. Precedence is:
+
+1. `.eden/.env` (lowest) — declared values flow in.
+2. `env={...}` keyword argument on the call (highest) — silently overrides keys also set in the file.
+
+A collision between `.eden/.env` and a provider's fixed env still raises `EnvMergeError`, so a mis-wired provider is loud, not silent.
+
+Escape sequences in double-quoted values (`\n`, `\r`, `\t`, `\\`) are unescaped via [`python-dotenv`](https://pypi.org/project/python-dotenv/), so gateway tokens with embedded newlines forward into the container correctly. Single-quoted values are literal.
+
+The `eden init` blank template seeds `.eden/.env.example` listing the variables the chosen agent expects (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, …). Copy it to `.eden/.env` and fill in your keys.
+
+Read source: `eden/env/_dotenv.py`, `eden/orchestrator/_setup.py`.
+
 ### Variables Eden does not read
 
-The agent CLIs that Eden orchestrates (e.g. `claude-code`, `codex`) read their own env vars — `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Those are the agent's contract, not Eden's. The `eden init` blank template includes a `.env.example` listing them as a convenience; see [templates.md](templates.md).
+The agent CLIs that Eden orchestrates (e.g. `claude-code`, `codex`) read their own env vars — `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Those are the agent's contract, not Eden's.
 
-When `run()` invokes a hook or an agent process, it merges the host process environment with any per-run / per-hook `env=` mapping. Eden does not interpret the merged environment beyond passing it through.
+When `run()` invokes a hook or an agent process, it merges the host process environment with any per-run / per-hook `env=` mapping (which already includes the `.eden/.env` values described above). Eden does not interpret the merged environment beyond passing it through.
 
 ## `Timeouts`
 

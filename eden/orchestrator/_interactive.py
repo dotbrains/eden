@@ -8,7 +8,7 @@ from pathlib import Path
 
 from eden.agents._context import IterationContext
 from eden.agents._protocol import Agent
-from eden.env import merge_env
+from eden.env import load_eden_env, merge_env
 from eden.errors import InvalidOptions
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
@@ -93,7 +93,9 @@ def interactive(
         prompt_text = source.text
         prompt_is_literal = source.is_literal
 
-    merged_env = merge_env({}, env or {})
+    # .eden/.env values flow into the sandbox; explicit env= overrides them.
+    caller_env = {**load_eden_env(cwd_path), **(dict(env) if env else {})}
+    merged_env = merge_env({}, caller_env)
 
     # Interactive sessions default to ``head`` when the provider supports it
     # — interactive UX expects the agent's writes to land in the host repo
