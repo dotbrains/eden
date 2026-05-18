@@ -8,7 +8,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
-from eden.env import merge_env
+from eden.env import load_eden_env, merge_env
 from eden.errors import CwdError, InvalidOptions
 from eden.prompt._source import resolve_source
 from eden.providers._types import BranchStrategy
@@ -39,8 +39,12 @@ def resolve_setup(
     sandbox_kind: Literal["none", "bind_mount", "isolated"],
 ) -> SetupResult:
     source = resolve_source(prompt=prompt, prompt_file=prompt_file, prompt_args=prompt_args)
-    merged = merge_env(provider_env, env or {})
     resolved_cwd = _resolve_cwd(cwd)
+    # .eden/.env values flow into the sandbox; explicit env= overrides them
+    # silently (last write wins) so call-sites stay predictable. Provider env
+    # still collides loudly via merge_env to catch mis-wired providers.
+    caller_env = {**load_eden_env(resolved_cwd), **(dict(env) if env else {})}
+    merged = merge_env(provider_env, caller_env)
     return SetupResult(
         prompt_text=source.text,
         prompt_is_literal=source.is_literal,

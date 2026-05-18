@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.abort._signal import AbortController
+from eden.env import load_eden_env
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.providers._protocols import SandboxHandle, SandboxProvider
@@ -187,11 +188,19 @@ def create_sandbox(
     if not sandbox.supports_strategy(strategy):
         raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
 
+    host_repo_path = Path.cwd()
     wt = create_worktree(
-        host_repo_path=Path.cwd(),
+        host_repo_path=host_repo_path,
         strategy=strategy,
         name_hint=name,
     )
+
+    # .eden/.env values flow into the container at create time so entrypoints
+    # and on_sandbox_ready hooks see them; explicit env= still wins. The file
+    # is looked up under the host process's CWD (where ``create_worktree``
+    # carves from), not the agent's ``cwd=`` — those have different meanings
+    # in this factory.
+    combined_env = {**load_eden_env(host_repo_path), **(dict(env) if env else {})}
 
     try:
         handle = sandbox.create(
@@ -199,7 +208,7 @@ def create_sandbox(
                 branch=wt.branch,
                 worktree_path=wt.worktree_path,
                 host_repo_path=wt.host_repo_path,
-                env=env or {},
+                env=combined_env,
                 mounts=mounts or (),
                 name_hint=name,
             )
