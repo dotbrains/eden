@@ -42,8 +42,20 @@ from eden.logging import Logging
 from eden.orchestrator import create_worktree, run
 from eden.orchestrator._interactive import InteractiveResult, interactive
 from eden.output import Output, OutputDefinition
-from eden.providers._protocols import IsolatedSandboxHandle
-from eden.providers._types import BranchStrategy, FinalizeResult, Mount
+from eden.providers import make_bind_mount_provider, make_isolated_provider
+from eden.providers._protocols import (
+    BindMountSandboxHandle,
+    IsolatedSandboxHandle,
+    SandboxHandle,
+    SandboxProvider,
+)
+from eden.providers._types import (
+    BranchStrategy,
+    CreateOptions,
+    ExecResult,
+    FinalizeResult,
+    Mount,
+)
 from eden.sandboxes import Sandbox, create_sandbox
 from eden.streaming import StreamEvent
 
@@ -55,16 +67,19 @@ __all__ = [
     # agent
     "Agent",
     "AgentError",
+    "BindMountSandboxHandle",
     # provider re-exports
     "BranchStrategy",
     "Commit",
     "ConfigError",
     "CopyToWorktreeError",
+    "CreateOptions",
     "CwdError",
     # errors
     "EdenError",
     "EdenTimeoutError",
     "EnvMergeError",
+    "ExecResult",
     "FinalizeResult",
     # lifecycle
     "Hook",
@@ -92,7 +107,9 @@ __all__ = [
     "RestRateLimited",
     "RunResult",
     "Sandbox",
+    "SandboxHandle",
     "SandboxHooks",
+    "SandboxProvider",
     "SessionCaptureFailed",
     "StepTimeout",
     "StreamEvent",
@@ -106,6 +123,8 @@ __all__ = [
     "create_sandbox",
     "create_worktree",
     "interactive",
+    "make_bind_mount_provider",
+    "make_isolated_provider",
     "opencode",
     # entrypoints
     "pi",
