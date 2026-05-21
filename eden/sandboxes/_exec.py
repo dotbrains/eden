@@ -34,11 +34,16 @@ def stream_exec(
     env: Mapping[str, str] | None = None,
     on_line: Callable[[str], None] | None = None,
     timeout: float | None = None,
+    stdin: str | None = None,
 ) -> ExecResult:
     """Run a subprocess with line-buffered stdout+stderr drained via threads.
 
     On `timeout`: SIGTERM, then SIGKILL after a 5s grace, then raise
     `ExecTimeout` carrying whatever was captured.
+
+    ``stdin``, when given, is written to the process's stdin on a daemon
+    thread. The write is offloaded so a large payload can't deadlock
+    against a slow-consuming child (the parent stays in the drain loop).
     """
     merged_env: dict[str, str] = dict(os.environ)
     if env:
@@ -49,6 +54,7 @@ def stream_exec(
         shell=shell,
         cwd=str(cwd) if cwd is not None else None,
         env=merged_env,
+        stdin=subprocess.PIPE if stdin is not None else None,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -57,6 +63,22 @@ def stream_exec(
 
     assert proc.stdout is not None
     assert proc.stderr is not None
+
+    if stdin is not None:
+        stdin_stream = proc.stdin
+        stdin_payload = stdin
+        assert stdin_stream is not None
+
+        def _write_stdin() -> None:
+            try:
+                stdin_stream.write(stdin_payload)
+            finally:
+                try:
+                    stdin_stream.close()
+                except Exception:
+                    pass
+
+        threading.Thread(target=_write_stdin, daemon=True).start()
 
     stdout_q: Queue[Any] = Queue()
     stderr_q: Queue[Any] = Queue()

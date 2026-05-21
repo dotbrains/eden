@@ -107,6 +107,7 @@ class _IsolatedHandle:
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult:
         merged_cwd = cwd if cwd is not None else self.worktree_path
         return stream_exec(
@@ -117,6 +118,7 @@ class _IsolatedHandle:
             env=env,
             on_line=on_line,
             timeout=timeout,
+            stdin=stdin,
         )
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:

@@ -23,6 +23,7 @@ class _StubHandle:
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult:
         return ExecResult(stdout="", stderr="", exit_code=0)
 

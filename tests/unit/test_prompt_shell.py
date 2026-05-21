@@ -29,6 +29,7 @@ class _FakeHandle:
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult:
         self.calls.append(cmd)
         return self._results[cmd]
@@ -81,6 +82,7 @@ def test_multiple_blocks_run_concurrently() -> None:
             cwd: Path | None = None,
             env: Mapping[str, str] | None = None,
             timeout: float | None = None,
+            stdin: str | None = None,
         ) -> ExecResult:
             self.calls.append(cmd)
             barrier.wait()

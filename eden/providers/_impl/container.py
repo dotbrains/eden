@@ -50,7 +50,11 @@ class _ContainerHandle:
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult:
+        # ``-i`` keeps the container's stdin attached to ours; with
+        # ``stdin=None`` the pipe is never opened so the previous default
+        # behaviour is preserved (sh just sees EOF and exits its command).
         argv: list[str] = [self.binary, "exec", "-i"]
         if cwd is not None:
             argv.extend(["-w", cwd.as_posix()])
@@ -64,6 +68,7 @@ class _ContainerHandle:
             shell=False,
             on_line=on_line,
             timeout=timeout,
+            stdin=stdin,
         )
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:

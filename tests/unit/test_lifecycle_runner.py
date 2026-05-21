@@ -36,6 +36,7 @@ class _FakeHandle:
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult:
         if self.sleep_per_call:
             time.sleep(self.sleep_per_call)
