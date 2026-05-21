@@ -52,11 +52,28 @@ classDiagram
 
 The factory side. Your `provider(...)` factory must return an instance satisfying this Protocol — use [`make_bind_mount_provider`](#make_bind_mount_provider) or [`make_isolated_provider`](#make_isolated_provider) instead of writing a bespoke class unless you have a reason.
 
+All four Protocols, both factories, and every supporting type are re-exported from the top-level `eden` package, so out-of-tree providers can import them without depending on `eden.providers._protocols` directly:
+
+```python
+from eden import (
+    BindMountSandboxHandle,
+    BranchStrategy,
+    CreateOptions,
+    ExecResult,
+    FinalizeResult,
+    IsolatedSandboxHandle,
+    Mount,
+    SandboxHandle,
+    SandboxProvider,
+    make_bind_mount_provider,
+    make_isolated_provider,
+)
+```
+
 ```python
 from typing import Literal, Protocol
 
-from eden.providers._types import BranchStrategy, CreateOptions
-from eden.providers._protocols import SandboxHandle
+from eden import BranchStrategy, CreateOptions, SandboxHandle
 
 
 class SandboxProvider(Protocol):
@@ -83,7 +100,7 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from eden.providers._types import ExecResult
+from eden import ExecResult
 
 
 @runtime_checkable
@@ -127,7 +144,7 @@ class BindMountSandboxHandle(SandboxHandle, Protocol):
 The handle Protocol for detached / patch-sync / cloud sandboxes. Adds one method.
 
 ```python
-from eden.providers._types import FinalizeResult
+from eden import FinalizeResult
 
 
 @runtime_checkable
@@ -199,15 +216,19 @@ See [python-api.md#configuration-types](python-api.md#configuration-types) for t
 
 ## Factory helpers
 
-`eden/providers/_helpers.py` ships two factories that wrap a `create` callable into a `SandboxProvider` so you do not have to write the boilerplate yourself.
+Eden ships two factories that wrap a `create` callable into a `SandboxProvider` so you do not have to write the boilerplate yourself. Both are re-exported from the top-level `eden` package.
 
 ### `make_bind_mount_provider`
 
 ```python
 from collections.abc import Callable
-from eden.providers._helpers import make_bind_mount_provider
-from eden.providers._protocols import BindMountSandboxHandle, SandboxProvider
-from eden.providers._types import CreateOptions, StrategyTag
+from eden import (
+    BindMountSandboxHandle,
+    CreateOptions,
+    SandboxProvider,
+    make_bind_mount_provider,
+)
+from eden.providers import StrategyTag
 
 
 def make_bind_mount_provider(
@@ -225,8 +246,7 @@ Use for any provider where the host worktree is the sandbox (host == sandbox fil
 ### `make_isolated_provider`
 
 ```python
-from eden.providers._helpers import make_isolated_provider
-from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
+from eden import IsolatedSandboxHandle, SandboxProvider, make_isolated_provider
 
 
 def make_isolated_provider(
@@ -254,9 +274,14 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from eden.providers._helpers import make_isolated_provider
-from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
-from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
+from eden import (
+    CreateOptions,
+    ExecResult,
+    FinalizeResult,
+    IsolatedSandboxHandle,
+    SandboxProvider,
+    make_isolated_provider,
+)
 
 
 @dataclass

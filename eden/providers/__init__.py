@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from eden.providers._helpers import make_bind_mount_provider
+from eden.providers._helpers import make_bind_mount_provider, make_isolated_provider
 from eden.providers._protocols import (
     BindMountSandboxHandle,
+    IsolatedSandboxHandle,
     SandboxHandle,
     SandboxProvider,
 )
@@ -12,6 +13,7 @@ from eden.providers._types import (
     BranchStrategy,
     CreateOptions,
     ExecResult,
+    FinalizeResult,
     Mount,
     StrategyTag,
 )
@@ -21,9 +23,12 @@ __all__ = [
     "BranchStrategy",
     "CreateOptions",
     "ExecResult",
+    "FinalizeResult",
+    "IsolatedSandboxHandle",
     "Mount",
     "SandboxHandle",
     "SandboxProvider",
     "StrategyTag",
     "make_bind_mount_provider",
+    "make_isolated_provider",
 ]
