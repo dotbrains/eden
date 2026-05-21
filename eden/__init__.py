@@ -16,6 +16,13 @@ from eden.agents import (
     pi,
     simulated_agent,
 )
+from eden.display import (
+    Display,
+    DisplayEntry,
+    FileDisplay,
+    RichDisplay,
+    SilentDisplay,
+)
 from eden.errors import (
     AgentError,
     ConfigError,
@@ -79,11 +86,14 @@ __all__ = [
     "CopyToWorktreeError",
     "CreateOptions",
     "CwdError",
+    "Display",
+    "DisplayEntry",
     # errors
     "EdenError",
     "EdenTimeoutError",
     "EnvMergeError",
     "ExecResult",
+    "FileDisplay",
     "FinalizeResult",
     # lifecycle
     "Hook",
@@ -109,6 +119,7 @@ __all__ = [
     "RestError",
     "RestNotFoundError",
     "RestRateLimited",
+    "RichDisplay",
     "RunResult",
     "Sandbox",
     "SandboxHandle",
@@ -116,6 +127,7 @@ __all__ = [
     "SandboxProvider",
     "SessionCaptureFailed",
     "SessionStorage",
+    "SilentDisplay",
     "StepTimeout",
     "StreamEvent",
     "StructuredOutputError",
