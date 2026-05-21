@@ -7,8 +7,12 @@ from contextlib import ExitStack
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from eden._types import Iteration, RunResult, Timeouts, Usage
+
+if TYPE_CHECKING:
+    from eden.session._protocol import SessionStorage
 from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
 from eden.agents._errors import parse_stdout_error
@@ -39,7 +43,6 @@ from eden.prompt import render_prompt
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
-from eden.session import capture_session
 from eden.streaming import StreamEvent
 from eden.tracing import set_attributes, span
 from eden.worktree._create import WorktreeHandle, create_worktree
@@ -49,18 +52,24 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
-def _claude_projects_mount() -> tuple[Mount, ...]:
-    """Inject ~/.claude/projects/ → /root/.claude/projects/ when the agent
-    needs session capture inside a containerized sandbox.
+def _resolve_session_storage(agent: Agent) -> SessionStorage | None:
+    """Return the agent's ``session_storage`` attribute, or fall back to the
+    legacy ``captures_sessions`` boolean (claude_code only).
 
-    no_sandbox ignores the mount; docker honors it. If ~/.claude/projects/
-    doesn't exist on the host yet, return () — Claude Code will create it
-    on first use, but Eden cannot mount a non-existent path.
+    ADR-0012-style: agents that ship a ``session_storage`` get fully custom
+    transcript capture (mounts + host_capture + sandbox_transfer). Agents
+    that only expose ``captures_sessions=True`` get the
+    :class:`ClaudeSessionStorage` default, matching the pre-ADR behaviour.
     """
-    host_dir = Path.home() / ".claude" / "projects"
-    if not host_dir.exists():
-        return ()
-    return (Mount(host=host_dir, sandbox=Path("/root/.claude/projects")),)
+    storage: SessionStorage | None = getattr(agent, "session_storage", None)
+    if storage is not None:
+        return storage
+    if getattr(agent, "captures_sessions", False):
+        # Lazy import to avoid module-load cycle with eden.session.
+        from eden.session._claude import ClaudeSessionStorage
+
+        return ClaudeSessionStorage()
+    return None
 
 
 def _run_loop(
@@ -125,8 +134,10 @@ def _run_loop(
     log_path: Path | None = None
     preserved: Path | None = None
 
-    captures = bool(getattr(agent, "captures_sessions", False))
-    extra_mounts: tuple[Mount, ...] = _claude_projects_mount() if captures else ()
+    session_storage = _resolve_session_storage(agent)
+    extra_mounts: tuple[Mount, ...] = (
+        session_storage.extra_mounts() if session_storage is not None else ()
+    )
 
     # Push the outer ``eden.run`` span via ExitStack so we don't have to
     # re-indent the entire loop body. The span is closed as part of the
@@ -428,28 +439,18 @@ def _run_loop(
                         on_event(recovery_ev)
                     raise err
 
-            if iter_session_id is not None and captures:
+            if iter_session_id is not None and session_storage is not None:
                 try:
-                    # ``sandbox_cwd`` is the working directory Claude Code sees
-                    # when it writes its session JSONL.  For no_sandbox the
-                    # agent subprocess inherits the host CWD (host_repo_path);
-                    # for container-based sandboxes, handle.worktree_path holds
-                    # the in-container path (e.g. /workspace).  Use
-                    # host_repo_path when the handle's worktree_path lives
-                    # inside host_repo_path (i.e. no_sandbox / native
-                    # execution), otherwise use the handle's own path.
-                    if (
-                        wt.host_repo_path in handle.worktree_path.parents
-                        or handle.worktree_path == wt.host_repo_path
-                    ):
-                        effective_sandbox_cwd = wt.host_repo_path
-                    else:
-                        effective_sandbox_cwd = handle.worktree_path
-                    # Store session files under the target branch name so all
-                    # iterations for a given target are co-located.
-                    iter_session_file = capture_session(
+                    # Delegate to the agent's session storage. Each agent
+                    # knows where its own transcript lives; the orchestrator
+                    # only knows the metadata (id, branch, iteration).
+                    # ``target_branch`` is preferred over ``wt.branch`` so
+                    # all iterations for one target land under the same
+                    # directory regardless of which intermediate branch the
+                    # worktree carved.
+                    iter_session_file = session_storage.host_capture(
+                        handle=handle,
                         session_id=iter_session_id,
-                        sandbox_cwd=effective_sandbox_cwd,
                         host_repo_path=setup.cwd,
                         branch=target_branch,
                         iteration=i,
