@@ -61,12 +61,14 @@ class _TestIsolatedHandle:
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult:
         call = ExecCall(
             cmd=cmd,
             cwd=cwd,
             env_keys=tuple(sorted(env.keys())) if env else (),
             timeout=timeout,
+            stdin=stdin,
         )
         self._log.exec_calls.append(call)
 
@@ -85,6 +87,7 @@ class _TestIsolatedHandle:
             env=env,
             on_line=on_line,
             timeout=timeout,
+            stdin=stdin,
         )
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:

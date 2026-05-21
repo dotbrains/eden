@@ -148,7 +148,11 @@ class _VercelHandle:
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult:
+        if stdin is not None:
+            b64 = base64.b64encode(stdin.encode("utf-8")).decode("ascii")
+            cmd = f"printf '%s' {b64} | base64 -d | ({cmd})"
         payload: dict[str, object] = {"command": cmd}
         if cwd is not None:
             payload["cwd"] = cwd.as_posix()

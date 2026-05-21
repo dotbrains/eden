@@ -21,7 +21,18 @@ class SandboxHandle(Protocol):
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
-    ) -> ExecResult: ...
+        stdin: str | None = None,
+    ) -> ExecResult:
+        """Run ``cmd`` in the sandbox and return its captured result.
+
+        ``stdin``, when given, is written to the command's stdin. Providers
+        that talk to the host or to a container runtime pipe it directly;
+        cloud / REST providers (daytona, vercel) wrap the command in
+        ``echo <base64> | base64 -d | (cmd)`` so the payload survives the
+        REST round-trip. Useful for delivering large agent prompts that
+        exceed the 128 KB Linux execve argv limit.
+        """
+        ...
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None: ...
 

@@ -115,6 +115,7 @@ class SandboxHandle(Protocol):
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
         timeout: float | None = None,
+        stdin: str | None = None,
     ) -> ExecResult: ...
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None: ...
@@ -125,7 +126,7 @@ class SandboxHandle(Protocol):
 ```
 
 - `worktree_path` — sandbox-side path the orchestrator passes to the agent as `cwd`. For bind-mount providers this is the host worktree; for isolated providers it is a sandbox-local path (e.g. `/workspace`).
-- `exec(cmd, *, on_line, cwd, env, timeout)` — run a shell command. `cmd` is a string (not argv); the provider chooses how to evaluate it (`/bin/sh -c`, REST shell, etc.). `on_line` is invoked once per stdout line as the command runs (use it to forward to the orchestrator's streaming layer).
+- `exec(cmd, *, on_line, cwd, env, timeout, stdin)` — run a shell command. `cmd` is a string (not argv); the provider chooses how to evaluate it (`/bin/sh -c`, REST shell, etc.). `on_line` is invoked once per stdout line as the command runs (use it to forward to the orchestrator's streaming layer). `stdin`, when given, is written to the command's stdin so the caller can deliver payloads larger than the 128KB Linux execve argv limit; bind-mount providers pipe directly, REST providers (daytona, vercel) wrap the command with `printf <base64> | base64 -d | (cmd)`.
 - `copy_file_in` / `copy_file_out` — single-file transfers between host and sandbox. Used by hooks and session capture.
 - `close()` — release resources. Called in a `finally` block; should not raise.
 
