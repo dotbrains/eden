@@ -29,6 +29,8 @@ def claude_code(
         extra_args: Escape hatch for unsurfaced Claude CLI flags. Inserted
             before the ``--`` prompt separator.
     """
+    from eden.session._claude import ClaudeSessionStorage
+
     return _ClaudeCodeAgent(
         name=name,
         model=model,
@@ -36,6 +38,7 @@ def claude_code(
         _effort=effort,
         _env=dict(env) if env is not None else {},
         _extra_args=tuple(extra_args),
+        _session_storage=ClaudeSessionStorage() if capture_sessions else None,
     )
 
 

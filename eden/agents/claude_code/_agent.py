@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from eden.agents._context import IterationContext
 from eden.agents.claude_code._argv import build_argv
 from eden.agents.claude_code._stream import parse_line
 from eden.streaming import StreamEvent
+
+if TYPE_CHECKING:
+    from eden.session._protocol import SessionStorage
 
 
 @dataclass(frozen=True)
@@ -20,6 +23,17 @@ class _ClaudeCodeAgent:
     _effort: Literal["low", "medium", "high"] | None = None
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
+    _session_storage: SessionStorage | None = None
+
+    @property
+    def session_storage(self) -> SessionStorage | None:
+        """Per-agent session capture hook (ADR-0012-style).
+
+        Returns ``None`` when ``capture_sessions=False`` was passed to
+        :func:`claude_code`. Otherwise returns a :class:`ClaudeSessionStorage`
+        configured for the default ``~/.claude/projects`` location.
+        """
+        return self._session_storage
 
     def build_command(self, ctx: IterationContext) -> list[str]:
         return build_argv(

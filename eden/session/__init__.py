@@ -69,4 +69,15 @@ def capture_session(
     return dest
 
 
+def _default_claude_session_storage() -> object:
+    """Late-bound import of :class:`ClaudeSessionStorage`.
+
+    Avoids the module-load cycle ``eden.session.__init__`` →
+    ``eden.session._claude`` → ``eden.session.capture_session``.
+    """
+    from eden.session._claude import ClaudeSessionStorage
+
+    return ClaudeSessionStorage()
+
+
 __all__ = ["capture_session"]

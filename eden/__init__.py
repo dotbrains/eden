@@ -58,6 +58,8 @@ from eden.providers._types import (
     Mount,
 )
 from eden.sandboxes import Sandbox, create_sandbox
+from eden.session._claude import ClaudeSessionStorage
+from eden.session._protocol import SessionStorage
 from eden.streaming import StreamEvent
 
 __all__ = [
@@ -71,6 +73,7 @@ __all__ = [
     "BindMountSandboxHandle",
     # provider re-exports
     "BranchStrategy",
+    "ClaudeSessionStorage",
     "Commit",
     "ConfigError",
     "CopyToWorktreeError",
@@ -112,6 +115,7 @@ __all__ = [
     "SandboxHooks",
     "SandboxProvider",
     "SessionCaptureFailed",
+    "SessionStorage",
     "StepTimeout",
     "StreamEvent",
     "StructuredOutputError",

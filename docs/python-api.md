@@ -529,6 +529,8 @@ def claude_code(
 
 Wraps the Claude Code CLI; sets `captures_sessions=True` so the orchestrator preserves session JSONLs under `.eden/sessions/`. Pass `extra_args` for any CLI flag eden does not yet surface.
 
+When `capture_sessions=True`, the agent ships a [`session_storage`](#session-storage) attribute of type `ClaudeSessionStorage` that the orchestrator delegates transcript capture to. Out-of-tree agents (codex, pi, opencode wrappers, etc.) can mirror this pattern to plug in their own transcript layout — see the `SessionStorage` Protocol below.
+
 #### `codex(...)`
 
 ```python
@@ -594,6 +596,30 @@ def cli_agent(
 - `captures_sessions` — opt-in session post-processing.
 - `env` — per-agent env additions (merged by the orchestrator).
 - `extra_args` — appended between binary and prompt by the default `build_argv`.
+
+### <a id="session-storage"></a>`SessionStorage` Protocol
+
+```python
+@runtime_checkable
+class SessionStorage(Protocol):
+    def extra_mounts(self) -> tuple[Mount, ...]: ...
+    def host_capture(
+        self, *, handle, session_id, host_repo_path, branch, iteration
+    ) -> Path | None: ...
+    def sandbox_transfer(self, *, handle, host_session_file, session_id) -> None: ...
+```
+
+Per-agent transcript capture, ADR-0012 style. Eden's default Claude Code agent ships a `ClaudeSessionStorage` instance on its `session_storage` attribute (set when `capture_sessions=True`), which the orchestrator delegates to instead of doing the work in `_run_loop`. Out-of-tree agents (codex, pi, opencode wrappers) can ship their own `SessionStorage` implementation to plug in custom transcript layouts without forking the orchestrator. Legacy agents that only expose `captures_sessions: bool` still work — the orchestrator falls back to `ClaudeSessionStorage` for them.
+
+### `ClaudeSessionStorage`
+
+```python
+@dataclass(frozen=True)
+class ClaudeSessionStorage:
+    home: Path | None = None
+```
+
+The default `SessionStorage` implementation, used by `claude_code()`. Mounts `~/.claude/projects` into containerized sandboxes and locates Claude's per-iteration JSONL by the project-slug convention. `home=` overrides `~` for tests.
 
 ---
 
