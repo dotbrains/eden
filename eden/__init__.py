@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from eden._error_format import format_error_message
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
 from eden._version import __version__
 from eden.abort import AbortController, Aborted, AbortSignal
@@ -122,6 +123,7 @@ __all__ = [
     "codex",
     "create_sandbox",
     "create_worktree",
+    "format_error_message",
     "interactive",
     "make_bind_mount_provider",
     "make_isolated_provider",

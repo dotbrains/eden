@@ -809,6 +809,25 @@ Same idea, but the returned handle must expose `finalize(target) -> FinalizeResu
 
 Every error eden raises descends from `EdenError`. Each concrete class accepts a `cause` keyword argument and carries `code`, `message`, and `hint` attributes for structured logging. `EdenTimeoutError` additionally subclasses the built-in `TimeoutError` for mixed-`except` ergonomics. See [errors.md](errors.md) for the full taxonomy with `code` strings, raise sites, and recovery guidance.
 
+### `format_error_message(error)`
+
+```python
+from eden import EdenError, format_error_message, run
+
+try:
+    run(agent=..., sandbox=..., prompt="...")
+except EdenError as e:
+    print(format_error_message(e))
+```
+
+Maps any `EdenError` (including the sandbox / worktree subclasses) to a single multi-line user-friendly string of the form:
+
+    <kind-prefix>: <message>
+      code: <code>
+      hint: <hint>
+
+`hint` is preserved when the error already carries one (e.g. `InvalidOptions(..., hint=...)`). For tagged provider errors that don't carry a hint — `ProviderUnavailable`, `ImageNotFound`, `ContainerStartFailed`, `ExecTimeout`, etc. — the formatter synthesises a context-aware suggestion ("Is Docker running?", "Build the image first: `docker build ...`", "Increase `Timeouts.iteration_step`"). Use this in CLI surfaces so users get the same recovery message regardless of which error subclass surfaced.
+
 The 19 concrete error classes re-exported from `eden`:
 
 - `EdenError` — base class for everything.
