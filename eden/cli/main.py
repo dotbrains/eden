@@ -6,11 +6,14 @@ import typer
 
 from eden import __version__
 from eden.cli._image import make_image_app
+from eden.cli._terminal_cleanup import setup_terminal_cleanup
 from eden.cli.clean import clean_command
 from eden.cli.cost import cost_command
 from eden.cli.init import init_command
 from eden.cli.replay import replay_command
 from eden.cli.run import run_command
+
+setup_terminal_cleanup()
 
 app = typer.Typer(
     name="eden",
