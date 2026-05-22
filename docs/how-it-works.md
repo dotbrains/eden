@@ -88,6 +88,7 @@ sequenceDiagram
 
     Caller->>Run: run(...)
     Run->>Run: create_worktree()
+    Run->>Run: copy_to_worktree (if set)
     Run->>Host: on_worktree_ready
     Run->>Sandbox: create sandbox
     Sandbox->>SandboxHooks: on_sandbox_ready
