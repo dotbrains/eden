@@ -14,6 +14,7 @@ from eden.abort._signal import AbortController
 from eden.env import load_eden_env
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
+from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
@@ -161,11 +162,16 @@ def create_sandbox(
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> Sandbox:
     """Resolve branch/strategy, carve a worktree, and create the sandbox handle.
 
     ``base_branch`` overrides the fork point of the default ``merge_to_head``
     strategy. It is mutually exclusive with ``branch_strategy``.
+
+    ``copy_to_worktree`` is a list of host-relative file/directory paths to
+    copy from the host repo into the freshly-carved worktree before the
+    sandbox boots. Incompatible with the ``head`` branch strategy.
     """
     if branch is not None and branch_strategy is not None:
         raise ValueError("branch and branch_strategy are mutually exclusive")
@@ -188,6 +194,21 @@ def create_sandbox(
     if not sandbox.supports_strategy(strategy):
         raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
 
+    if copy_to_worktree and strategy.tag == "head":
+        from eden.errors import InvalidOptions
+
+        raise InvalidOptions(
+            code="config.invalid_options",
+            message=(
+                "copy_to_worktree= is incompatible with branch_strategy 'head'; "
+                "the worktree IS the host repo, so copying would overwrite it"
+            ),
+            hint=(
+                "drop copy_to_worktree or pick a branch strategy that carves "
+                "a separate worktree (merge_to_head or named)"
+            ),
+        )
+
     host_repo_path = Path.cwd()
     wt = create_worktree(
         host_repo_path=host_repo_path,
@@ -203,6 +224,11 @@ def create_sandbox(
     combined_env = {**load_eden_env(host_repo_path), **(dict(env) if env else {})}
 
     try:
+        apply_copy_to_worktree(
+            paths=copy_to_worktree,
+            source_root=host_repo_path,
+            worktree_path=wt.worktree_path,
+        )
         handle = sandbox.create(
             CreateOptions(
                 branch=wt.branch,

@@ -58,6 +58,7 @@ def run(
     signal: AbortSignal | None = None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> RunResult:
     """Run an agent against a sandbox in a managed worktree, returning RunResult."""
     cwd_path = Path(cwd) if cwd is not None else None
@@ -106,6 +107,26 @@ def run(
                 ),
                 hint=(f"include {tag_marker}...{f'</{output.tag}>'} in the prompt instructions"),
             )
+    if copy_to_worktree:
+        from eden.orchestrator._setup import resolve_branch_strategy
+
+        effective_strategy = resolve_branch_strategy(
+            branch_strategy=branch_strategy,
+            sandbox_kind=sandbox.kind,
+            base_branch=base_branch,
+        )
+        if effective_strategy.tag == "head":
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "copy_to_worktree= is incompatible with branch_strategy 'head'; "
+                    "the worktree IS the host repo, so copying would overwrite it"
+                ),
+                hint=(
+                    "drop copy_to_worktree or pick a branch strategy that carves "
+                    "a separate worktree (merge_to_head or named)"
+                ),
+            )
     abort = signal if signal is not None else AbortController().signal
     return _run_loop(
         agent=agent,
@@ -126,6 +147,7 @@ def run(
         prompt_args=prompt_args,
         output=output,
         resume_session=resume_session,
+        copy_to_worktree=copy_to_worktree,
     )
 
 

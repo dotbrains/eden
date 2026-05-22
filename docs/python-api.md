@@ -77,6 +77,7 @@ def run(
     signal: AbortSignal | None = None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> RunResult: ...
 ```
 
@@ -100,6 +101,7 @@ Parameters:
 - `signal` — `AbortSignal` for cooperative cancellation. If omitted, `run` allocates its own (unused) signal.
 - `output` — `Output.object(...)` / `Output.string(...)` to extract a typed payload from a `<tag>` block in stdout. Requires `max_iterations=1` and that `<tag>` literally appear in the prompt. Failure raises [`StructuredOutputError`](#structuredoutputerror).
 - `resume_session` — Claude Code session id to resume; appends `--resume <id>` to the agent argv. Requires `max_iterations=1`.
+- `copy_to_worktree` — list of host-relative file/directory paths to copy from `cwd` into the freshly-carved worktree before the sandbox boots (and before `host.on_worktree_ready` hooks fire, so hooks can use the copied files). Files preserve their relative path; directories copy recursively; existing destinations are overwritten. Absolute paths, `..` traversal, and the `head` branch strategy raise `InvalidOptions`; missing sources raise `CopyToWorktreeError`. Useful for seeding `.env` files, fixtures, or local configs that the worktree shouldn't inherit from `git checkout`.
 
 Returns a `RunResult`.
 
@@ -157,6 +159,7 @@ def interactive(
     branch_strategy: BranchStrategy | None = None,
     name: str | None = None,
     hooks: Hooks | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> InteractiveResult: ...
 ```
 
@@ -164,6 +167,7 @@ def interactive(
 - `prompt` / `prompt_file` / `prompt_args` are optional. When supplied, the rendered text is passed to the agent's `build_interactive_command(ctx)` (or `build_command(ctx)` when no interactive override exists).
 - `branch_strategy` defaults to `BranchStrategy.head()` when the provider supports it — interactive sessions usually want writes to land in the host repo directly. Override to `merge_to_head()` or `named()` for an isolated session.
 - `hooks` runs the same `OnWorktreeReady` / `OnSandboxReady` / `OnClose` lifecycle as `run()`; `OnIterationStart` / `OnIterationEnd` are not relevant.
+- `copy_to_worktree` — same semantics as on [`run()`](#run): host-relative paths copied into the worktree before `on_worktree_ready` hooks fire. Incompatible with `BranchStrategy.head()`, which is the default for interactive sessions — pass `branch_strategy=BranchStrategy.merge_to_head()` (or `named(...)`) to use it.
 
 Returns an [`InteractiveResult`](#interactiveresult).
 
@@ -194,8 +198,11 @@ def create_sandbox(
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> Sandbox: ...
 ```
+
+`copy_to_worktree` (when supplied) seeds host-relative files into the worktree before the sandbox boots — same semantics as on [`run()`](#run), and the copy happens once at `create_sandbox()` time (not on every subsequent `sb.run()`). Incompatible with `BranchStrategy.head()`.
 
 The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, plus a `.run(...)` method (same shape as the top-level `run()` minus `agent`/`sandbox` already supplied). It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle and worktree on exit.
 
@@ -912,7 +919,7 @@ The 19 concrete error classes re-exported from `eden`:
 - `EdenError` — base class for everything.
 - `AgentError` — the agent subprocess exited non-zero without hitting the completion signal. Carries `agent_name`, `exit_code`, `stderr`, and `parsed_error` (extracted from stdout for Codex / Pi / OpenCode, which surface errors there rather than on stderr).
 - `ConfigError` — bad arguments, env, or cwd; raised before any side-effect.
-- `CopyToWorktreeError` — the isolated provider's worktree clone failed or exceeded `Timeouts.copy_to_worktree`. Carries `source`, `target`, `timeout`, and `timed_out` (true on budget overrun, false on permission/disk failure).
+- `CopyToWorktreeError` — a worktree copy failed. Raised in two places: (1) the isolated provider's worktree clone failed or exceeded `Timeouts.copy_to_worktree`; (2) a `copy_to_worktree=` entry passed to `run()` / `create_sandbox()` / `interactive()` doesn't exist on disk, or the copy hit a permissions / disk-space error. Carries `source`, `target`, `timeout`, and `timed_out` (true on budget overrun, false on missing-source / permission / disk failure).
 - `CwdError` — invalid `cwd=` (missing, not a directory, not in a git repo).
 - `EdenTimeoutError` — base for time-budget exceedances; subclasses `TimeoutError`.
 - `EnvMergeError` — conflicting `env` overrides between caller, agent, and provider.

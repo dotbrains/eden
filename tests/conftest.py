@@ -30,6 +30,21 @@ def tmp_git_repo(tmp_path: Path) -> Iterator[Path]:
         check=True,
         capture_output=True,
     )
+    # Disable signing for the test repo so tests run on machines with a
+    # global commit.gpgsign=true policy (or with the agent-runner signing
+    # hook active). The fixture has no signing key and shouldn't need one.
+    subprocess.run(
+        ["git", "config", "commit.gpgsign", "false"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "tag.gpgsign", "false"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
     seed = tmp_path / "README.md"
     seed.write_text("seed\n")
     subprocess.run(
