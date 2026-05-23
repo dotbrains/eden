@@ -56,6 +56,30 @@ def _validate_entry(raw: str) -> PurePosixPath:
     return p
 
 
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def _resolve_confined_source(*, rel: PurePosixPath, src: Path, source_root: Path) -> Path:
+    """Resolve ``src`` and reject symlinks that point outside ``source_root``."""
+    resolved_root = source_root.resolve(strict=True)
+    resolved_src = src.resolve(strict=True)
+    if resolved_src != resolved_root and not _is_relative_to(resolved_src, resolved_root):
+        raise InvalidOptions(
+            code="config.invalid_options",
+            message=(
+                f"copy_to_worktree entry {str(rel)!r} resolves outside the host repo; "
+                "entries must stay inside source_root even through symlinks"
+            ),
+            hint="copy the file into the host repo first, then list its in-repo path",
+        )
+    return resolved_src
+
+
 def apply_copy_to_worktree(
     *,
     paths: Sequence[str] | None,
@@ -99,11 +123,12 @@ def apply_copy_to_worktree(
                 target=dst,
             )
         try:
+            resolved_src = _resolve_confined_source(rel=rel, src=src, source_root=source_root)
             dst.parent.mkdir(parents=True, exist_ok=True)
-            if src.is_dir():
-                shutil.copytree(src, dst, dirs_exist_ok=True)
+            if resolved_src.is_dir():
+                shutil.copytree(resolved_src, dst, dirs_exist_ok=True)
             else:
-                shutil.copy2(src, dst)
+                shutil.copy2(resolved_src, dst)
         except OSError as exc:
             raise CopyToWorktreeError(
                 message=f"copying {src} → {dst} failed: {exc}",

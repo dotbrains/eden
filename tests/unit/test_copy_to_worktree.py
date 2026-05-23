@@ -137,6 +137,37 @@ def test_apply_copy_missing_source_raises(tmp_path: Path) -> None:
     assert exc_info.value.code == "copy.to_worktree_missing_source"
 
 
+def test_apply_copy_rejects_file_symlink_outside_source_root(tmp_path: Path) -> None:
+    src_root = tmp_path / "src"
+    wt = tmp_path / "wt"
+    outside = tmp_path / "outside"
+    src_root.mkdir()
+    wt.mkdir()
+    outside.write_text("secret")
+    (src_root / "linked-secret").symlink_to(outside)
+
+    with pytest.raises(InvalidOptions, match="resolves outside"):
+        apply_copy_to_worktree(paths=["linked-secret"], source_root=src_root, worktree_path=wt)
+
+    assert not (wt / "linked-secret").exists()
+
+
+def test_apply_copy_rejects_directory_symlink_outside_source_root(tmp_path: Path) -> None:
+    src_root = tmp_path / "src"
+    wt = tmp_path / "wt"
+    outside = tmp_path / "outside"
+    src_root.mkdir()
+    wt.mkdir()
+    outside.mkdir()
+    (outside / "secret.txt").write_text("secret")
+    (src_root / "linked-dir").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(InvalidOptions, match="resolves outside"):
+        apply_copy_to_worktree(paths=["linked-dir"], source_root=src_root, worktree_path=wt)
+
+    assert not (wt / "linked-dir").exists()
+
+
 def test_apply_copy_same_root_is_noop(tmp_path: Path) -> None:
     (tmp_path / "a.txt").write_text("a")
     # When source and worktree resolve to the same dir, copying a file onto
