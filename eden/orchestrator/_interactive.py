@@ -12,6 +12,7 @@ from eden.env import load_eden_env, merge_env
 from eden.errors import InvalidOptions
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
+from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._setup import resolve_branch_strategy, resolve_target_branch
 from eden.prompt import render_prompt
 from eden.prompt._source import resolve_source
@@ -49,6 +50,7 @@ def interactive(
     base_branch: str | None = None,
     name: str | None = None,
     hooks: Hooks | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> InteractiveResult:
     """Run an agent attached to the parent TTY for an interactive session.
 
@@ -128,6 +130,19 @@ def interactive(
 
         raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
 
+    if copy_to_worktree and strategy.tag == "head":
+        raise InvalidOptions(
+            code="config.invalid_options",
+            message=(
+                "copy_to_worktree= is incompatible with branch_strategy 'head'; "
+                "the worktree IS the host repo, so copying would overwrite it"
+            ),
+            hint=(
+                "drop copy_to_worktree or pick a branch strategy that carves "
+                "a separate worktree (merge_to_head or named)"
+            ),
+        )
+
     target_branch = resolve_target_branch(host_repo_path=cwd_path)
 
     wt = create_worktree(host_repo_path=cwd_path, strategy=strategy, name_hint=name)
@@ -137,6 +152,11 @@ def interactive(
 
     timeouts = Timeouts()
     try:
+        apply_copy_to_worktree(
+            paths=copy_to_worktree,
+            source_root=cwd_path,
+            worktree_path=wt.worktree_path,
+        )
         run_host_hooks(
             phase=HookPhase.OnWorktreeReady,
             hooks=hooks_or_default.host,

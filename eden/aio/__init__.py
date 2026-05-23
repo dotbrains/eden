@@ -67,6 +67,7 @@ async def run(
     signal: AbortSignal | None = None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> RunResult:
     """Async wrapper around :func:`eden.run`.
 
@@ -98,6 +99,7 @@ async def run(
         signal=signal,
         output=output,
         resume_session=resume_session,
+        copy_to_worktree=copy_to_worktree,
     )
 
 
@@ -111,6 +113,7 @@ async def create_sandbox(
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> Sandbox:
     """Async wrapper around :func:`eden.create_sandbox`.
 
@@ -129,6 +132,7 @@ async def create_sandbox(
         env=env,
         mounts=mounts,
         name=name,
+        copy_to_worktree=copy_to_worktree,
     )
 
 
@@ -145,6 +149,7 @@ async def interactive(
     base_branch: str | None = None,
     name: str | None = None,
     hooks: Hooks | None = None,
+    copy_to_worktree: list[str] | None = None,
 ) -> InteractiveResult:
     """Async wrapper around :func:`eden.interactive`.
 
@@ -166,6 +171,7 @@ async def interactive(
         base_branch=base_branch,
         name=name,
         hooks=hooks,
+        copy_to_worktree=copy_to_worktree,
     )
 
 

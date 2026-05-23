@@ -23,6 +23,7 @@ from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.logging._file import FileLogSink, default_log_path
 from eden.orchestrator._completion import match
+from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._idle import IdleWatchdog
 from eden.orchestrator._recovery import format_agent_error_recovery
 from eden.orchestrator._result import assemble
@@ -92,6 +93,7 @@ def _run_loop(
     prompt_args: Mapping[str, str] | None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    copy_to_worktree: list[str] | None = None,
     existing_worktree: WorktreeHandle | None = None,
     existing_handle: SandboxHandle | None = None,
 ) -> RunResult:
@@ -160,6 +162,14 @@ def _run_loop(
 
     try:
         if not caller_managed:
+            # Seed user-supplied files into the worktree before
+            # ``on_worktree_ready`` hooks fire — hooks may depend on the
+            # copied files (e.g. an ``npm install`` hook reading ``.env``).
+            apply_copy_to_worktree(
+                paths=copy_to_worktree,
+                source_root=setup.cwd,
+                worktree_path=wt.worktree_path,
+            )
             run_host_hooks(
                 phase=HookPhase.OnWorktreeReady,
                 hooks=hooks.host,
