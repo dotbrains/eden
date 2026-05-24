@@ -76,21 +76,38 @@ def _generate_branch(name_hint: str | None) -> str:
     return f"eden/{ts}-{suffix}"
 
 
+def _eden_dir(host_repo_path: Path) -> Path:
+    """Return the resolved (symlink-free) path to ``<repo>/.eden/``.
+
+    Git keys its worktree records by realpath. When users symlink
+    ``.eden/`` to another disk (a common setup when the host repo lives
+    on a small SSD), passing the symlink-relative path to
+    ``git worktree add / remove`` makes git's internal lookup miss its
+    own records. Resolving once at the entry point fixes both branches.
+
+    The directory is created if it does not exist so ``.resolve()``
+    returns an absolute path on every platform (Windows in particular
+    requires the target to exist for full resolution).
+    """
+    eden_dir = host_repo_path / ".eden"
+    eden_dir.mkdir(exist_ok=True)
+    return eden_dir.resolve()
+
+
 def _lock_path_for(host_repo_path: Path, branch: str | None) -> Path:
-    base = host_repo_path / ".eden" / "worktrees"
+    base = _eden_dir(host_repo_path) / "worktrees"
     if branch is None:
         return base / "_head.lock"
     return base / f"{_sanitize(branch)}.lock"
 
 
 def _worktree_path_for(host_repo_path: Path, branch: str) -> Path:
-    return host_repo_path / ".eden" / "worktrees" / _sanitize(branch)
+    return _eden_dir(host_repo_path) / "worktrees" / _sanitize(branch)
 
 
 def _ensure_eden_gitignore(host_repo_path: Path) -> None:
     """Write .eden/.gitignore so git ignores eden's own metadata directory."""
-    eden_dir = host_repo_path / ".eden"
-    eden_dir.mkdir(exist_ok=True)
+    eden_dir = _eden_dir(host_repo_path)
     gitignore = eden_dir / ".gitignore"
     if not gitignore.exists():
         gitignore.write_text("*\n", encoding="utf-8")

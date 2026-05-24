@@ -91,10 +91,24 @@ def clean_command(
 ) -> None:
     """Delete stale .eden/{logs,sessions,worktrees,isolated} artifacts."""
     repo = (cwd or Path.cwd()).resolve()
-    eden_dir = repo / ".eden"
-    if not eden_dir.is_dir():
+    eden_dir_display = repo / ".eden"
+    if not eden_dir_display.is_dir():
         console.print(f"[yellow]no .eden/ directory in {repo}[/yellow]")
         raise typer.Exit(code=0)
+    # Resolve symlinks so the paths we hand to shutil.rmtree match git's
+    # realpath-keyed worktree records (port of upstream PR #491 /
+    # commit b6cc84f). Users who symlink .eden/ to a separate disk would
+    # otherwise see stale-worktree cleanup mis-target. Keep the original
+    # path around so user-facing output stays repo-relative.
+    eden_dir = eden_dir_display.resolve()
+
+    def _display(path: Path) -> str:
+        try:
+            return str(path.relative_to(repo))
+        except ValueError:
+            # .eden/ symlink targets a path outside the repo — show
+            # absolute so the user can see where bytes were freed.
+            return str(path)
 
     cutoff = time.time() - (days * 86400)
     total_files = 0
@@ -109,13 +123,11 @@ def clean_command(
             files, freed = _delete_old(target, cutoff=cutoff)
         if files > 0:
             scope = "all" if all_ else f">{days}d"
-            console.print(
-                f"  {target.relative_to(repo)}: {files} entries, {_human_size(freed)} ({scope})"
-            )
+            console.print(f"  {_display(target)}: {files} entries, {_human_size(freed)} ({scope})")
         total_files += files
         total_bytes += freed
 
     if total_files == 0:
-        console.print(f"[green]nothing to clean in {eden_dir.relative_to(repo)}[/green]")
+        console.print(f"[green]nothing to clean in {_display(eden_dir)}[/green]")
     else:
         console.print(f"[green]freed {_human_size(total_bytes)} ({total_files} entries)[/green]")
