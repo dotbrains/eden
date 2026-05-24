@@ -32,6 +32,42 @@ class BranchExists(WorktreeError):
         super().__init__(f"branch {branch!r} already exists")
 
 
+class WorktreeCollision(WorktreeError):
+    """``git worktree add`` would collide with an existing checkout.
+
+    Raised in two distinct shapes:
+
+    * ``reason == "branch_in_use"`` — the target branch is already checked
+      out by a different worktree (git refuses to check the same branch
+      out twice). ``conflict_path`` holds the path of that worktree.
+    * ``reason == "rebase_in_progress"`` — the host repo is mid-rebase,
+      mid-merge, or mid-cherry-pick. Spawning a new worktree at this
+      point produces cryptic git errors. ``conflict_path`` holds the
+      ``.git/<state>`` path that signalled the in-flight operation.
+
+    Carries a recovery hint pointing at the underlying conflict so the
+    user can untangle it without parsing git stderr.
+    """
+
+    def __init__(
+        self,
+        *,
+        branch: str,
+        reason: str,
+        conflict_path: Path | None = None,
+        hint: str | None = None,
+    ) -> None:
+        self.branch = branch
+        self.reason = reason
+        self.conflict_path = conflict_path
+        self.hint = hint
+        suffix = f" (conflict at {conflict_path})" if conflict_path is not None else ""
+        msg = f"cannot carve worktree for branch {branch!r}: {reason}{suffix}"
+        if hint:
+            msg = f"{msg}\nhint: {hint}"
+        super().__init__(msg)
+
+
 class GitCommandFailed(WorktreeError):
     def __init__(self, *, argv: tuple[str, ...], exit_code: int, stderr: str) -> None:
         self.argv = argv
