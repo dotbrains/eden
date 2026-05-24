@@ -524,7 +524,7 @@ A deterministic agent that emits a pre-baked output. Use in tests, in examples, 
 
 ```python
 def claude_code(
-    model: str,
+    model: str = "claude-opus-4-7",
     *,
     name: str = "claude-code",
     effort: Literal["low", "medium", "high"] | None = None,

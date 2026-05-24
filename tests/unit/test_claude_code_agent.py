@@ -52,6 +52,17 @@ def test_default_metadata() -> None:
     assert isinstance(a, Agent)
 
 
+def test_model_defaults_to_opus_4_7() -> None:
+    """Upstream parity (PR #620): no model arg picks the latest stable Opus."""
+    a = claude_code()
+    assert a.model == "claude-opus-4-7"
+
+
+def test_explicit_model_overrides_default() -> None:
+    a = claude_code(model="claude-sonnet-4-6")
+    assert a.model == "claude-sonnet-4-6"
+
+
 def test_custom_name() -> None:
     a = claude_code(model="m", name="my-agent")
     assert a.name == "my-agent"

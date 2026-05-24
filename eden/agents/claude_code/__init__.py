@@ -7,9 +7,11 @@ from typing import Literal
 
 from eden.agents.claude_code._agent import _ClaudeCodeAgent
 
+_DEFAULT_MODEL = "claude-opus-4-7"
+
 
 def claude_code(
-    model: str,
+    model: str = _DEFAULT_MODEL,
     *,
     name: str = "claude-code",
     effort: Literal["low", "medium", "high"] | None = None,
@@ -20,7 +22,10 @@ def claude_code(
     """Build a Claude Code-backed Agent.
 
     Args:
-        model: Claude model id (threaded into ``--model``).
+        model: Claude model id (threaded into ``--model``). Defaults to
+            ``"claude-opus-4-7"`` — bump in lockstep with the
+            latest-stable Opus release; pin explicitly for reproducible
+            runs.
         name: Agent identifier (default ``"claude-code"``).
         effort: Optional ``--thinking-effort`` level.
         env: Per-agent environment additions (merged by the orchestrator).
