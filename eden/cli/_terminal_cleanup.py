@@ -36,12 +36,16 @@ class _Stdin(Protocol):
 def _restore_cooked_mode(stdin: _Stdin) -> None:
     """Drop stdin out of raw / cbreak mode, if possible.
 
-    On non-POSIX platforms or when the termios import / call fails (closed
-    fd, not a real TTY, etc.) this is a silent no-op.
+    On non-POSIX platforms or when the termios call fails (closed fd,
+    not a real TTY, etc.) this is a silent no-op. The ``sys.platform``
+    guard up front lets mypy narrow the termios attribute accesses as
+    unreachable on Windows — where typeshed's termios stub does not
+    expose ``tcgetattr`` / ``ICANON`` / etc.
     """
+    if sys.platform == "win32":
+        return
     try:
         import termios
-        import tty  # noqa: F401 — keep termios paired with tty
     except ImportError:
         return
     with contextlib.suppress(Exception):
