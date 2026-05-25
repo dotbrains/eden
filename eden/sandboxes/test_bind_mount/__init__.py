@@ -111,9 +111,13 @@ class _TestBindMountHandle:
             return result
 
         return stream_exec(
-            ["/bin/sh", "-c", cmd],
+            cmd,
             cmd_for_error=cmd,
-            shell=False,
+            # ``shell=True`` lets the host's native shell (cmd.exe on
+            # Windows, /bin/sh on POSIX) interpret ``cmd`` — keeps the
+            # test provider runnable on every platform the rest of eden
+            # supports rather than hard-coding ``/bin/sh``.
+            shell=True,
             cwd=cwd if cwd is not None else self.worktree_path,
             env=env,
             on_line=on_line,

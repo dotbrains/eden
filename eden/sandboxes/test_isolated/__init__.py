@@ -80,9 +80,11 @@ class _TestIsolatedHandle:
             return result
 
         return stream_exec(
-            ["/bin/sh", "-c", cmd],
+            cmd,
             cmd_for_error=cmd,
-            shell=False,
+            # See test_bind_mount: shell=True keeps this provider
+            # runnable cross-platform.
+            shell=True,
             cwd=cwd if cwd is not None else self.worktree_path,
             env=env,
             on_line=on_line,

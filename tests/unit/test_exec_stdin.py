@@ -76,14 +76,25 @@ def test_stream_exec_default_stdin_is_none() -> None:
     assert result.exit_code == 0
 
 
+def _cat_stdin_script(tmp_path: Path) -> Path:
+    """Write a tiny Python script that echoes stdin to stdout.
+
+    Going through a script file dodges cross-platform shell-quoting
+    issues with ``python -c '...'`` (single quotes break on Windows
+    cmd.exe; double quotes break differently on POSIX in some sub-shell
+    contexts). All the `_forwards_stdin` tests reuse this.
+    """
+    script = tmp_path / "cat_stdin.py"
+    script.write_text("import sys\nsys.stdout.write(sys.stdin.read())\n", encoding="utf-8")
+    return script
+
+
 def test_no_sandbox_forwards_stdin(tmp_path: Path) -> None:
     p = no_sandbox()
     h = p.create(_opts(tmp_path))
+    script = _cat_stdin_script(tmp_path)
     try:
-        result = h.exec(
-            f"{sys.executable} -c 'import sys; sys.stdout.write(sys.stdin.read())'",
-            stdin="forwarded\n",
-        )
+        result = h.exec(f"{sys.executable} {script}", stdin="forwarded\n")
         assert result.exit_code == 0
         assert "forwarded" in result.stdout
     finally:
@@ -118,12 +129,9 @@ def test_test_bind_mount_records_stdin_in_call_log(tmp_path: Path) -> None:
 def test_test_bind_mount_forwards_stdin_to_real_subprocess(tmp_path: Path) -> None:
     p = bind_mount_provider()
     h = p.create(_opts(tmp_path))
+    script = _cat_stdin_script(tmp_path)
     try:
-        # Use printf via a shell-quoted python to roundtrip stdin.
-        result = h.exec(
-            f"{sys.executable} -c 'import sys; sys.stdout.write(sys.stdin.read())'",
-            stdin="hello-via-handle\n",
-        )
+        result = h.exec(f"{sys.executable} {script}", stdin="hello-via-handle\n")
         assert result.exit_code == 0
         assert "hello-via-handle" in result.stdout
     finally:
@@ -133,11 +141,9 @@ def test_test_bind_mount_forwards_stdin_to_real_subprocess(tmp_path: Path) -> No
 def test_test_isolated_forwards_stdin_to_real_subprocess(tmp_git_repo: Path) -> None:
     p = isolated_provider()
     h = p.create(_opts(tmp_git_repo))
+    script = _cat_stdin_script(tmp_git_repo)
     try:
-        result = h.exec(
-            f"{sys.executable} -c 'import sys; sys.stdout.write(sys.stdin.read())'",
-            stdin="iso-stdin\n",
-        )
+        result = h.exec(f"{sys.executable} {script}", stdin="iso-stdin\n")
         assert result.exit_code == 0
         assert "iso-stdin" in result.stdout
     finally:
