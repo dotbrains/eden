@@ -6,17 +6,31 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from eden.worktree.errors import GitCommandFailed, WorktreeCollision
+from eden.worktree.errors import GitCommandFailed, GitCommandTimeout, WorktreeCollision
+
+# All host-side git invocations bound by this deadline. A wedged local
+# git (NFS stall, filesystem repair, runaway hook) would otherwise hang
+# Eden indefinitely. 60 s matches upstream's default.
+_DEFAULT_GIT_TIMEOUT: float = 60.0
 
 
-def _run_git(argv: tuple[str, ...], *, cwd: Path) -> tuple[str, str]:
-    proc = subprocess.run(
-        argv,
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+def _run_git(
+    argv: tuple[str, ...],
+    *,
+    cwd: Path,
+    timeout: float = _DEFAULT_GIT_TIMEOUT,
+) -> tuple[str, str]:
+    try:
+        proc = subprocess.run(
+            argv,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise GitCommandTimeout(argv=argv, timeout=timeout) from exc
     if proc.returncode != 0:
         raise GitCommandFailed(argv=argv, exit_code=proc.returncode, stderr=proc.stderr)
     return proc.stdout, proc.stderr
@@ -28,13 +42,20 @@ def status_porcelain(*, repo_path: Path) -> str:
 
 
 def branch_exists(*, repo_path: Path, branch: str) -> bool:
-    proc = subprocess.run(
-        ("git", "rev-parse", "--verify", f"refs/heads/{branch}"),
-        cwd=str(repo_path),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        proc = subprocess.run(
+            ("git", "rev-parse", "--verify", f"refs/heads/{branch}"),
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=_DEFAULT_GIT_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise GitCommandTimeout(
+            argv=("git", "rev-parse", "--verify", f"refs/heads/{branch}"),
+            timeout=_DEFAULT_GIT_TIMEOUT,
+        ) from exc
     return proc.returncode == 0
 
 
