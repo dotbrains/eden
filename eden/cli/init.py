@@ -60,7 +60,11 @@ def init_command(
     backlog: str | None = typer.Option(
         None,
         "--backlog",
-        help="Backlog manager: github or beads (only used by simple-loop)",
+        help=(
+            "Backlog manager: one of github, beads, linear, jira, or custom "
+            "(custom scaffolds <TODO> stubs the agent wires up on first run). "
+            "Only used by templates that read a backlog."
+        ),
     ),
     image_name: str | None = typer.Option(None, "--image-name", help="Docker image tag"),
     yes: bool = typer.Option(False, "--yes", help="Accept all defaults"),

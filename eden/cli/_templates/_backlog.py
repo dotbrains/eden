@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-BacklogName = Literal["github", "beads", "linear", "jira"]
+BacklogName = Literal["github", "beads", "linear", "jira", "custom"]
 
 
 @dataclass(frozen=True)
@@ -189,6 +189,31 @@ _REGISTRY: tuple[BacklogManager, ...] = (
             "# JIRA_API_TOKEN=\n# JIRA_AUTH_TYPE=basic\n"
             "# Set JIRA_AUTH_TYPE=bearer for Jira Server / Data Center.\n"
             "# Run `jira init` once to write ~/.config/.jira/.config.yml.\n"
+        ),
+    ),
+    # The "custom" entry is intentionally broken-until-configured: every
+    # command is a `<TODO ...>` marker the agent is expected to replace on
+    # first run after reading the scaffolded README. Pick this when your
+    # tracker isn't one of the four shipped above (e.g. Shortcut, Asana,
+    # in-house REST). The agent's first task is to wire these in.
+    BacklogManager(
+        name="custom",
+        label="Custom (agent wires it up)",
+        list_tasks_command=(
+            "<TODO: replace with a shell one-liner that prints open tasks as JSON "
+            '[{"id": "...", "title": "...", "body": "...", "status": "..."}]>'
+        ),
+        view_task_command=("<TODO: replace with the command that prints details for issue <ID>>"),
+        close_task_command=("<TODO: replace with the command that closes issue <ID>>"),
+        dockerfile_install=(
+            "# <TODO: install your tracker's CLI here. Examples: shortcut-cli,\n"
+            "# asana-cli, a curl-driven helper script for an in-house REST API.>\n"
+            "# RUN apt-get update && apt-get install -y --no-install-recommends \\\n"
+            "#     <your-cli-package> && rm -rf /var/lib/apt/lists/*"
+        ),
+        env_example_lines=(
+            "# <TODO: list any credentials your custom tracker needs and uncomment.>\n"
+            "# YOUR_TRACKER_TOKEN=\n"
         ),
     ),
 )
