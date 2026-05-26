@@ -43,9 +43,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certifi
 
 
 _BEADS_DOCKERFILE = """\
-# Install Beads (bd) CLI for backlog management
+# Install Beads (bd) CLI for backlog management. Detect host arch so the
+# image builds on both amd64 and arm64 Linux hosts.
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \\
-    && curl -fsSL https://github.com/steveyegge/beads/releases/latest/download/bd-linux-amd64 \\
+    && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')" \\
+    && curl -fsSL "https://github.com/steveyegge/beads/releases/latest/download/bd-linux-${ARCH}" \\
        -o /usr/local/bin/bd \\
     && chmod +x /usr/local/bin/bd \\
     && rm -rf /var/lib/apt/lists/*"""
@@ -131,7 +133,9 @@ _REGISTRY: tuple[BacklogManager, ...] = (
         name="github",
         label="GitHub Issues",
         list_tasks_command=(
-            "gh issue list --state open --label eden "
+            # --limit 100 ensures the parallel-planner sees the full dependency
+            # graph; gh defaults to 30 results and silently truncates.
+            "gh issue list --state open --label eden --limit 100 "
             "--json number,title,body,labels,comments "
             "--jq '[.[] | {id: .number, title, body, "
             "labels: [.labels[].name], comments: [.comments[].body]}]'"
@@ -139,14 +143,21 @@ _REGISTRY: tuple[BacklogManager, ...] = (
         view_task_command="gh issue view <ID>",
         close_task_command='gh issue close <ID> --comment "Completed by Eden"',
         dockerfile_install=_GITHUB_DOCKERFILE,
-        env_example_lines="# GitHub personal access token\n# GH_TOKEN=\n",
+        env_example_lines=(
+            "# GitHub personal access token. Create at\n"
+            "# https://github.com/settings/personal-access-tokens with these scopes:\n"
+            "#   - Repository: Issues (Read and write), Metadata (Read)\n"
+            "# GH_TOKEN=\n"
+        ),
     ),
     BacklogManager(
         name="beads",
         label="Beads",
         list_tasks_command="bd ready --json",
         view_task_command="bd show <ID>",
-        close_task_command='bd close <ID> "Completed by Eden"',
+        # bd expects --reason=<text> as a flag, not a positional arg; the
+        # positional form silently fails on current beads releases.
+        close_task_command='bd close <ID> --reason="Completed by Eden"',
         dockerfile_install=_BEADS_DOCKERFILE,
         env_example_lines="",
     ),

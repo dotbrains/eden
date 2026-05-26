@@ -9,6 +9,33 @@ ships.
 
 ### Added
 
+- **Codex per-iteration token usage** — the codex `parse_stream` parser now
+  decodes `{"type":"turn.completed","usage":{...}}` events into
+  `StreamEvent(type="usage", ...)`, so `Iteration.usage` populates and the
+  orchestrator's per-iteration "Context window: NNNk" display works for
+  codex runs (matches claude_code). Codex's `cached_input_tokens` maps to
+  Eden's `cache_read_input_tokens`; `input_tokens` is reported net of cache
+  hits so the split mirrors Claude's accounting. _(Upstream parity 0.6.2.)_
+
+### Fixed
+
+- **Beads `bd close` template** now passes `--reason="..."` instead of a
+  positional argument; current Beads releases reject the positional form,
+  silently leaving tasks open even though the agent thought it closed them.
+  _(Upstream parity 0.6.0.)_
+- **GitHub Issues backlog `list_tasks_command`** now passes `--limit 100`
+  (previously defaulted to 30) so the parallel-planner sees the full
+  dependency graph for backlogs over 30 issues. _(Upstream parity 0.6.0.)_
+- **Beads Dockerfile detects host arch** (`amd64` / `arm64` from `uname -m`)
+  before downloading the `bd-linux-<arch>` binary; previously hard-coded to
+  `amd64` and would 404 on arm64 hosts.
+- **GH_TOKEN `.env.example` comment** now links the personal-access-token
+  creation page and lists the required scopes (Issues R/W, Metadata R), so
+  silent 403s from under-scoped tokens are easier to diagnose. _(Upstream
+  parity 0.6.0.)_
+
+### Added
+
 - **Daytona live-API integration test** (`tests/integration/test_daytona_provider.py`)
   — gated on `DAYTONA_API_KEY`; skipped cleanly when the env var is unset.
   Exercises the full provider lifecycle against `https://api.daytona.io`
