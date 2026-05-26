@@ -178,6 +178,23 @@ class StructuredOutputError(EdenError):
 
     Carries ``branch`` and ``preserved_worktree_path`` so callers can recover
     side effects without losing the run's commits and worktree state.
+
+    Also carries ``session_id`` (and ``session_file_path`` when the session
+    was captured to the host) of the iteration that produced the bad
+    output. Callers running claude_code can resume that same session with
+    corrective feedback and re-emit the output without repeating the work:
+
+        try:
+            return run(..., output=Output.object(...))
+        except StructuredOutputError as e:
+            if e.session_id is not None:
+                return run(
+                    ...,
+                    output=Output.object(...),
+                    resume_session=e.session_id,
+                    prompt="Your previous output was malformed; re-emit it.",
+                )
+            raise
     """
 
     def __init__(
@@ -191,6 +208,8 @@ class StructuredOutputError(EdenError):
         raw_matched: str | None,
         branch: str,
         preserved_worktree_path: object = None,
+        session_id: str | None = None,
+        session_file_path: object = None,
     ) -> None:
         self.code = code
         self.message = message
@@ -200,6 +219,8 @@ class StructuredOutputError(EdenError):
         self.raw_matched = raw_matched
         self.branch = branch
         self.preserved_worktree_path = preserved_worktree_path
+        self.session_id = session_id
+        self.session_file_path = session_file_path
         super().__init__(_format(code, message, hint))
 
 

@@ -599,6 +599,8 @@ def _run_loop(
             output,
             branch=wt.branch,
             preserved_worktree_path=preserved,
+            session_id=last.session_id if last else None,
+            session_file_path=last.session_file_path if last else None,
         )
     return assemble(
         iterations=iterations,
