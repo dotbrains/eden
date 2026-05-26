@@ -19,6 +19,9 @@ def provider(
     container_uid: int | None = None,
     container_gid: int | None = None,
     selinux_label: Literal["z", "Z"] | None = "z",
+    devices: tuple[str, ...] | None = None,
+    cpus: float | None = None,
+    groups: tuple[str | int, ...] | None = None,
 ) -> SandboxProvider:
     """Build a docker bind-mount SandboxProvider.
 
@@ -33,6 +36,17 @@ def provider(
     ``selinux_label`` controls the bind-mount relabel suffix (``"z"`` shared,
     ``"Z"`` private, ``None`` disabled). Default ``"z"`` is required for SELinux
     hosts (Fedora, RHEL) and harmless on non-SELinux hosts.
+
+    ``devices`` exposes host devices into the container (``--device <spec>``).
+    Useful for GPU workloads (``("/dev/dri:/dev/dri:rwm",)``) or KVM
+    nesting (``("/dev/kvm",)``).
+
+    ``cpus`` bounds the container's CPU usage (``--cpus <value>``). Useful
+    when several sandboxes share a host.
+
+    ``groups`` adds supplementary groups to the in-container user
+    (``--group-add``); most commonly ``("docker",)`` for Docker-in-Docker
+    setups that bind-mount the host socket.
     """
     return make_container_provider(
         binary="docker",
@@ -43,6 +57,9 @@ def provider(
         container_uid=container_uid,
         container_gid=container_gid,
         selinux_label=selinux_label,
+        devices=devices,
+        cpus=cpus,
+        groups=groups,
     )
 
 
