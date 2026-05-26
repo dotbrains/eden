@@ -9,6 +9,13 @@ ships.
 
 ### Added
 
+- **`"custom"` backlog manager in `eden init`** — selectable via
+  `--backlog custom`, scaffolds projects in a deliberately
+  broken-until-configured state with `<TODO ...>` markers in the rendered
+  `prompt.md`, `.env.example`, and `Dockerfile`. Intended for users whose
+  issue tracker isn't one of the four shipped (Shortcut, Asana, in-house
+  REST APIs); the agent is expected to wire the markers up on first run
+  after reading the scaffolded README. _(Upstream parity 0.6.3.)_
 - **`resume_session=` precheck + `SessionNotFound` typed error** — `run()`
   now verifies the session JSONL exists on the host before spawning the
   agent (was: agent failed inside the sandbox with a buried "session not
