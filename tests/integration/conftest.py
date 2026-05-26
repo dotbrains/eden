@@ -11,13 +11,19 @@ from pathlib import Path
 
 import pytest
 
+_DOCKER_ONLY_PREFIXES: tuple[str, ...] = ("test_docker", "test_podman")
+
 
 def pytest_ignore_collect(collection_path: Path, config: pytest.Config) -> bool | None:
-    """Skip collection of the integration suite on non-Linux runners."""
-    integration_dir = Path(__file__).resolve().parent
-    if sys.platform != "linux" and (
-        collection_path == integration_dir or integration_dir in collection_path.parents
-    ):
+    """Skip docker/podman integration tests on non-Linux runners.
+
+    REST-based cloud-provider tests (daytona, vercel) work everywhere, so
+    they are NOT skipped here — they gate themselves on the relevant
+    credentials env var inside the test module.
+    """
+    if sys.platform == "linux":
+        return None
+    if collection_path.is_file() and collection_path.name.startswith(_DOCKER_ONLY_PREFIXES):
         return True
     return None
 
