@@ -17,6 +17,7 @@ def claude_code(
     effort: Literal["low", "medium", "high"] | None = None,
     env: Mapping[str, str] | None = None,
     capture_sessions: bool = True,
+    dangerously_skip_permissions: bool = False,
     extra_args: tuple[str, ...] = (),
 ) -> _ClaudeCodeAgent:
     """Build a Claude Code-backed Agent.
@@ -31,6 +32,12 @@ def claude_code(
         env: Per-agent environment additions (merged by the orchestrator).
         capture_sessions: When ``True``, the orchestrator post-processes each
             iteration's session JSONL into ``.eden/sessions/...``.
+        dangerously_skip_permissions: When ``True``, appends
+            ``--dangerously-skip-permissions`` so Claude does not block on
+            per-tool permission prompts. Safe inside an isolated sandbox
+            (docker/podman/vercel/daytona/isolated providers); think twice
+            before enabling for ``no_sandbox()``, where Claude would gain
+            unprompted access to the host filesystem.
         extra_args: Escape hatch for unsurfaced Claude CLI flags. Inserted
             before the ``--`` prompt separator.
     """
@@ -43,6 +50,7 @@ def claude_code(
         _effort=effort,
         _env=dict(env) if env is not None else {},
         _extra_args=tuple(extra_args),
+        _dangerously_skip_permissions=dangerously_skip_permissions,
         _session_storage=ClaudeSessionStorage() if capture_sessions else None,
     )
 

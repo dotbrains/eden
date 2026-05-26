@@ -23,6 +23,7 @@ class _ClaudeCodeAgent:
     _effort: Literal["low", "medium", "high"] | None = None
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
+    _dangerously_skip_permissions: bool = False
     _session_storage: SessionStorage | None = None
 
     @property
@@ -41,6 +42,7 @@ class _ClaudeCodeAgent:
             effort=self._effort,
             extra_args=self._extra_args,
             resume_session=ctx.resume_session,
+            dangerously_skip_permissions=self._dangerously_skip_permissions,
         )
 
     def stdin_content(self, ctx: IterationContext) -> str | None:
@@ -57,6 +59,8 @@ class _ClaudeCodeAgent:
         argv: list[str] = ["claude", "--model", self.model]
         if self._effort is not None:
             argv.extend(["--thinking-effort", self._effort])
+        if self._dangerously_skip_permissions:
+            argv.append("--dangerously-skip-permissions")
         argv.extend(self._extra_args)
         if ctx.prompt:
             argv.append(ctx.prompt)
