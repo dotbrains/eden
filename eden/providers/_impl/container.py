@@ -348,6 +348,9 @@ def make_container_provider(
     container_uid: int | None = None,
     container_gid: int | None = None,
     selinux_label: SelinuxLabel | None = "z",
+    devices: tuple[str, ...] | None = None,
+    cpus: float | None = None,
+    groups: tuple[str | int, ...] | None = None,
 ) -> SandboxProvider:
     """Build a bind-mount SandboxProvider backed by ``<binary> run``.
 
@@ -364,9 +367,24 @@ def make_container_provider(
     container-private; ``None`` disables relabeling (use on hosts where SELinux
     is not enforced or relabel would conflict). The label is harmless on
     non-SELinux hosts (Docker / Podman ignore the suffix).
+
+    ``devices`` is a tuple of ``--device`` specs (e.g. ``("/dev/kvm",)`` or
+    ``("/dev/dri:/dev/dri:rwm",)``) that exposes host devices into the
+    sandbox — common ask for GPU workloads or KVM nesting.
+
+    ``cpus`` bounds the container's CPU usage (passed as ``--cpus <value>``,
+    e.g. ``1.5``). Useful when several sandboxes share a host or when a
+    parallel-planner template spawns N branches that would otherwise
+    saturate the box.
+
+    ``groups`` is a tuple of supplementary group names or GIDs passed via
+    ``--group-add``. Most commonly used to grant the in-container ``agent``
+    user access to a bind-mounted Docker socket (``groups=("docker",)``).
     """
     provider_mounts: tuple[Mount, ...] = mounts or ()
     provider_env: dict[str, str] = dict(env) if env else {}
+    provider_devices: tuple[str, ...] = devices or ()
+    provider_groups: tuple[str | int, ...] = groups or ()
     effective_uid: int = container_uid if container_uid is not None else _host_uid()
     effective_gid: int = container_gid if container_gid is not None else _host_gid()
 
@@ -427,6 +445,12 @@ def make_container_provider(
             argv.extend(["-e", f"{k}={v}"])
         if network:
             argv.extend(["--network", network])
+        if cpus is not None:
+            argv.extend(["--cpus", str(cpus)])
+        for device in provider_devices:
+            argv.extend(["--device", device])
+        for group in provider_groups:
+            argv.extend(["--group-add", str(group)])
         argv.extend([image, "infinity"])
 
         run_proc = subprocess.run(argv, capture_output=True, text=True)

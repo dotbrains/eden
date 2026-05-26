@@ -9,6 +9,17 @@ ships.
 
 ### Added
 
+- **`docker()` / `podman()` resource options** — three new keyword arguments
+  on both provider factories (and on `make_container_provider`):
+  - `devices: tuple[str, ...] | None = None` — expose host devices via
+    `--device <spec>` (e.g. `("/dev/kvm",)` for nested virtualization or
+    `("/dev/dri:/dev/dri:rwm",)` for GPU access).
+  - `cpus: float | None = None` — bound the container's CPU usage via
+    `--cpus <value>`; useful when multiple sandboxes share a host.
+  - `groups: tuple[str | int, ...] | None = None` — add supplementary
+    groups to the in-container user via `--group-add`; most commonly
+    `("docker",)` for Docker-in-Docker setups bind-mounting the host
+    socket. _(Upstream parity 0.6.0.)_
 - **opencode `parse_stream` parser + `--format json` + `--dangerously-skip-permissions` + `agent=` mode** — `opencode()` now ships a dedicated `_OpenCodeAgent` class (mirroring `_CodexAgent`) instead of the thin `cli_agent` wrapper. Builds the invocation `opencode run --format json --model <model> [--variant <v>] [--agent <name>] [--dangerously-skip-permissions] [extra_args ...] <prompt>` and parses opencode's JSONL events (`step_start` → `session_id`, `text` → `text`, `tool_use` (`state.status=="completed"`) → `tool_call`, `error` → `text`). Without `--format json` opencode would emit free-form text and Eden would silently drop session ids and tool calls. The new `agent=` kwarg maps to `--agent build` / `--agent plan` for opencode's named modes. _(Upstream parity 0.6.0.)_
 - **Host-side git subprocess timeouts** — every host-side `git` invocation (`eden/worktree/_git.py:_run_git`, `branch_exists`, `eden/orchestrator/_setup.py:resolve_target_branch`) now runs with a 60 s deadline. Wedged local git (NFS stall, filesystem repair, runaway hook) raises the new typed `GitCommandTimeout` instead of hanging Eden indefinitely. `_run_git()` accepts a `timeout=` override.
 - **Codex per-iteration token usage** — the codex `parse_stream` parser now
