@@ -3,74 +3,65 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Literal
 
-from eden.agents._context import IterationContext
-from eden.agents._protocol import Agent
-from eden.agents.cli import cli_agent
-from eden.agents.codex._stream import parse_line as _parse_line
-from eden.streaming import StreamEvent
-
-Effort = Literal["low", "medium", "high", "xhigh"]
-
-_NAME = "codex"
-
-
-def _parse_stream(line: str) -> StreamEvent | None:
-    return _parse_line(line, agent_name=_NAME, iteration=0)
+from eden.agents.codex._agent import _CodexAgent
+from eden.agents.codex._argv import Effort
 
 
 def codex(
     model: str = "gpt-5",
     *,
+    name: str = "codex",
     effort: Effort | None = None,
     env: Mapping[str, str] | None = None,
+    capture_sessions: bool = True,
+    dangerously_bypass_approvals_and_sandbox: bool = True,
     extra_args: tuple[str, ...] = (),
-) -> Agent:
-    """OpenAI Codex CLI agent. Assumes `codex` binary is on PATH.
+) -> _CodexAgent:
+    """OpenAI Codex CLI agent.
+
+    Builds the invocation::
+
+        codex exec [resume <id>] --json
+              [--dangerously-bypass-approvals-and-sandbox]
+              -m <model> [-c model_reasoning_effort="<level>"] [extra_args ...]
+
+    with the prompt delivered via stdin.
 
     Args:
         model: Default ``"gpt-5"`` is illustrative — override per call site.
+        name: Agent identifier (default ``"codex"``).
         effort: Optional reasoning-effort level. When set, threads
-            ``-c model_reasoning_effort="<level>"`` into the codex invocation.
+            ``-c model_reasoning_effort="<level>"`` into the invocation.
             One of ``"low"``, ``"medium"``, ``"high"``, ``"xhigh"``.
         env: Per-agent environment additions (merged by the orchestrator).
-        extra_args: Inserted between the effort override (if any) and the prompt.
+        capture_sessions: When ``True``, the orchestrator post-processes each
+            iteration's session JSONL into ``.eden/sessions/...`` via
+            :class:`CodexSessionStorage`. Default ``True``.
+        dangerously_bypass_approvals_and_sandbox: When ``True``, appends
+            ``--dangerously-bypass-approvals-and-sandbox`` so codex does not
+            block on per-tool approval prompts. Safe inside an isolated
+            sandbox; think twice before enabling for ``no_sandbox()``.
+            Default ``True``.
+        extra_args: Escape hatch for unsurfaced codex CLI flags. Appended
+            after the standard flags.
 
-    The agent's ``parse_stream`` decodes codex JSONL events (``thread.started``,
-    ``item.completed`` / ``agent_message``, ``item.started`` /
-    ``command_execution``, ``error``) so live display and file logs see
-    structured text / tool_call / session_id / error events instead of
-    one-line-per-token noise.
+    The agent's ``parse_stream`` decodes codex JSONL events
+    (``thread.started`` → ``session_id``, ``item.completed``/``agent_message``
+    → ``text``, ``item.started``/``command_execution`` → ``tool_call`` (Bash),
+    ``error`` → ``text``).
     """
-    if effort is None:
-        return cli_agent(
-            name=_NAME,
-            model=model,
-            binary=_NAME,
-            parse_stream=_parse_stream,
-            env=env,
-            extra_args=extra_args,
-        )
+    from eden.session._codex import CodexSessionStorage
 
-    def _build(ctx: IterationContext) -> list[str]:
-        argv: list[str] = [
-            _NAME,
-            "-c",
-            f'model_reasoning_effort="{effort}"',
-        ]
-        argv.extend(extra_args)
-        argv.append(ctx.prompt)
-        return argv
-
-    return cli_agent(
-        name=_NAME,
+    return _CodexAgent(
+        name=name,
         model=model,
-        binary=_NAME,
-        build_argv=_build,
-        parse_stream=_parse_stream,
-        env=env,
-        extra_args=extra_args,
+        captures_sessions=capture_sessions,
+        _effort=effort,
+        _env=dict(env) if env is not None else {},
+        _extra_args=tuple(extra_args),
+        _dangerously_bypass_approvals_and_sandbox=dangerously_bypass_approvals_and_sandbox,
+        _session_storage=CodexSessionStorage() if capture_sessions else None,
     )
 
 

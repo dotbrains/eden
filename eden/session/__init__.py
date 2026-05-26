@@ -2,25 +2,12 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from eden.errors import SessionCaptureFailed
+from eden.session._branch import sanitize_branch as _sanitize_branch
 from eden.session._slug import claude_projects_slug
 from eden.session._store import write_session_copy
-
-# Mirrors eden.logging._file._BRANCH_SANITIZE for consistency.
-_BRANCH_SANITIZE = re.compile(r"[^A-Za-z0-9._-]+")
-_BRANCH_MAX = 64
-
-
-def _sanitize_branch(branch: str) -> str:
-    safe = _BRANCH_SANITIZE.sub("-", branch).strip("-")
-    if not safe:
-        safe = "run"
-    if len(safe) > _BRANCH_MAX:
-        safe = safe[:_BRANCH_MAX]
-    return safe
 
 
 def capture_session(
@@ -80,4 +67,20 @@ def _default_claude_session_storage() -> object:
     return ClaudeSessionStorage()
 
 
-__all__ = ["capture_session"]
+# Re-export per-agent SessionStorage implementations + the cross-host
+# transfer helper so downstream tooling (CI dashboards, multi-host
+# orchestration) can move sessions without poking at private modules.
+from eden.session._claude import ClaudeSessionStorage  # noqa: E402
+from eden.session._codex import (  # noqa: E402
+    CodexSessionStorage,
+    find_codex_session_path,
+)
+from eden.session._transfer import transfer_session  # noqa: E402
+
+__all__ = [
+    "ClaudeSessionStorage",
+    "CodexSessionStorage",
+    "capture_session",
+    "find_codex_session_path",
+    "transfer_session",
+]

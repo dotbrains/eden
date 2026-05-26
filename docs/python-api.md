@@ -650,6 +650,30 @@ class ClaudeSessionStorage:
 
 The default `SessionStorage` implementation, used by `claude_code()`. Mounts `~/.claude/projects` into containerized sandboxes and locates Claude's per-iteration JSONL by the project-slug convention. `home=` overrides `~` for tests.
 
+### `CodexSessionStorage`
+
+```python
+@dataclass(frozen=True)
+class CodexSessionStorage:
+    home: Path | None = None
+```
+
+The `SessionStorage` implementation used by `codex(capture_sessions=True)` (the default). Mounts `~/.codex/sessions` into containerized sandboxes and walks codex's date-nested directory tree (`<YYYY>/<MM>/<DD>/rollout-<timestamp>-<session_id>.jsonl`) to locate the per-iteration transcript. `home=` overrides `~` for tests.
+
+### `transfer_session`
+
+```python
+def transfer_session(
+    *,
+    source: Path,
+    dest: Path,
+    source_cwd: str,
+    dest_cwd: str,
+) -> Path: ...
+```
+
+Cross-host helper. Copies a captured session JSONL from `source` to `dest`, rewriting every absolute path that starts with `source_cwd` to start with `dest_cwd`. Use to migrate captured sessions between machines whose worktree paths differ (e.g. `/Users/alice/repo` → `/home/build/repo`) so the resumed agent sees its own filesystem layout. `dest`'s parent is created. Raises `SessionCaptureFailed` on missing source or I/O error.
+
 ---
 
 ## Lifecycle hooks
