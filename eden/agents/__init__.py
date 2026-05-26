@@ -7,6 +7,8 @@ from eden.agents._protocol import Agent
 from eden.agents.claude_code import claude_code
 from eden.agents.cli import cli_agent
 from eden.agents.codex import codex
+from eden.agents.copilot import copilot
+from eden.agents.cursor import cursor
 from eden.agents.opencode import opencode
 from eden.agents.pi import pi
 from eden.agents.simulated import simulated_agent
@@ -17,6 +19,8 @@ __all__ = [
     "claude_code",
     "cli_agent",
     "codex",
+    "copilot",
+    "cursor",
     "opencode",
     "pi",
     "simulated_agent",
