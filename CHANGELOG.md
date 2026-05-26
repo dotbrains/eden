@@ -9,6 +9,14 @@ ships.
 
 ### Added
 
+- **`throw_on_duplicate_worktree`** kwarg on `run()`, `create_sandbox()`,
+  `create_worktree()`, `interactive()`, and their `eden.aio.*` async wrappers
+  (default `True`). When `False` and the named-strategy branch already has an
+  on-disk worktree, that worktree is reused (returned with `managed=False` so
+  `close()` does not remove it) instead of raising `BranchExists`. Only
+  meaningful for `BranchStrategy.named(...)`; `merge_to_head` always carves a
+  fresh branch and `head` reuses the host repo. Branches that exist but have
+  no on-disk worktree still raise `BranchExists`. _(Upstream parity 0.4.1.)_
 - **Codex + pi `parse_stream` parsers** — both agents now decode their
   respective JSONL stream formats into structured `StreamEvent`s instead of
   one-line-per-token text noise. Codex maps `thread.started` →

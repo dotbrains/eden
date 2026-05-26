@@ -68,6 +68,7 @@ async def run(
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
     copy_to_worktree: list[str] | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> RunResult:
     """Async wrapper around :func:`eden.run`.
 
@@ -100,6 +101,7 @@ async def run(
         output=output,
         resume_session=resume_session,
         copy_to_worktree=copy_to_worktree,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )
 
 
@@ -114,6 +116,7 @@ async def create_sandbox(
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
     copy_to_worktree: list[str] | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> Sandbox:
     """Async wrapper around :func:`eden.create_sandbox`.
 
@@ -133,6 +136,7 @@ async def create_sandbox(
         mounts=mounts,
         name=name,
         copy_to_worktree=copy_to_worktree,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )
 
 
@@ -150,6 +154,7 @@ async def interactive(
     name: str | None = None,
     hooks: Hooks | None = None,
     copy_to_worktree: list[str] | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> InteractiveResult:
     """Async wrapper around :func:`eden.interactive`.
 
@@ -172,6 +177,7 @@ async def interactive(
         name=name,
         hooks=hooks,
         copy_to_worktree=copy_to_worktree,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )
 
 
