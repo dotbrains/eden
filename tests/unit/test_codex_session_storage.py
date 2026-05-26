@@ -78,7 +78,10 @@ def test_extra_mounts_returns_mount_when_sessions_dir_exists(tmp_path: Path) -> 
     assert len(mounts) == 1
     assert isinstance(mounts[0], Mount)
     assert mounts[0].host == tmp_path / ".codex" / "sessions"
-    assert str(mounts[0].sandbox) == "/home/agent/.codex/sessions"
+    # Sandbox paths are always POSIX; compare via as_posix() so the
+    # assertion passes on Windows hosts too (str(WindowsPath("/foo/bar"))
+    # produces backslashes).
+    assert mounts[0].sandbox.as_posix() == "/home/agent/.codex/sessions"
 
 
 class _StubHandle:
@@ -117,9 +120,14 @@ def test_host_capture_writes_per_iteration_copy(tmp_path: Path) -> None:
     assert dest.parent == repo / ".eden" / "sessions" / "feat-x"
     assert dest.name == "iter-2-sess1.jsonl"
     body = dest.read_text(encoding="utf-8")
-    assert str(repo) in body  # cwd was rewritten
+    # Parse the JSONL line and compare decoded values: on Windows, host
+    # paths contain backslashes that JSON serializes as ``\\``, so a raw
+    # substring check on the file body would fail even when the rewrite
+    # was correct. The decoded ``cwd`` field is OS-correct.
+    entry = json.loads(body.strip())
+    assert entry["cwd"] == str(repo)
     assert "/workspace" not in body
-    # Source unchanged
+    # Source unchanged.
     assert src.read_text(encoding="utf-8").startswith("{")
 
 
