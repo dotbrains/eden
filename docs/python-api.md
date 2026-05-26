@@ -427,7 +427,27 @@ Validation at entry:
 - `max_iterations == 1` is required (raises `InvalidOptions` otherwise).
 - `<tag>` must literally appear in the prompt source (raises `InvalidOptions` otherwise).
 
-Failures during extraction raise [`StructuredOutputError`](#structuredoutputerror) with `tag`, `raw_matched`, `branch`, and optional `preserved_worktree_path` so callers can recover commits and worktree state.
+Failures during extraction raise [`StructuredOutputError`](#structuredoutputerror) with `tag`, `raw_matched`, `branch`, optional `preserved_worktree_path`, and — when the failing iteration was captured — `session_id` and `session_file_path`. The session fields let claude_code callers resume the same conversation with corrective feedback and re-emit corrected output, rather than restart from scratch:
+
+```python
+from eden import Output, StructuredOutputError, claude_code, run
+
+try:
+    result = run(
+        agent=claude_code(),
+        sandbox=..., prompt="emit <result>{...}</result>",
+        output=Output.object(tag="result", schema=my_schema),
+    )
+except StructuredOutputError as e:
+    if e.session_id is None:
+        raise
+    run(
+        agent=claude_code(),
+        sandbox=..., output=Output.object(tag="result", schema=my_schema),
+        resume_session=e.session_id,
+        prompt=f"Your previous <result> was malformed: {e.raw_matched!r}. Re-emit it.",
+    )
+```
 
 ### `OutputDefinition`
 
@@ -935,7 +955,7 @@ The 19 concrete error classes re-exported from `eden`:
 - `RestRateLimited` — 429 after retries were exhausted.
 - `SessionCaptureFailed` — the orchestrator could not locate or read a session JSONL; soft failure surfaced as a warning event.
 - `StepTimeout` — an iteration exceeded `Timeouts.iteration_step`.
-- <a id="structuredoutputerror"></a>`StructuredOutputError` — `output=Output.{object,string}(...)` failed to extract or validate. Carries `tag`, `raw_matched` (the matched contents or `None`), `branch`, and optional `preserved_worktree_path`. Raised on missing tag, invalid JSON, or schema validation failure.
+- <a id="structuredoutputerror"></a>`StructuredOutputError` — `output=Output.{object,string}(...)` failed to extract or validate. Carries `tag`, `raw_matched` (the matched contents or `None`), `branch`, optional `preserved_worktree_path`, and — when the failing iteration was captured — `session_id` and `session_file_path` so claude_code callers can resume that conversation with corrective feedback via `resume_session=`. Raised on missing tag, invalid JSON, or schema validation failure.
 
 ---
 

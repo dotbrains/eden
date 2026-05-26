@@ -44,12 +44,19 @@ def extract_structured_output(
     *,
     branch: str,
     preserved_worktree_path: Path | None = None,
+    session_id: str | None = None,
+    session_file_path: Path | None = None,
 ) -> object:
     """Extract + validate the configured tag's payload from ``stdout``.
 
     Raises ``StructuredOutputError`` on missing tag, invalid JSON, or failed
     schema validation. Returns the validated value (string for
     ``Output.string``, schema-returned ``T`` for ``Output.object``).
+
+    ``session_id`` / ``session_file_path``, when provided by the
+    orchestrator, are stamped onto the raised error so callers can
+    resume the failed session with corrective feedback rather than
+    restart from scratch.
     """
     if isinstance(definition, _OutputString):
         raw = _find_last_tag(stdout, definition.tag)
@@ -61,6 +68,8 @@ def extract_structured_output(
                 raw_matched=None,
                 branch=branch,
                 preserved_worktree_path=preserved_worktree_path,
+                session_id=session_id,
+                session_file_path=session_file_path,
             )
         return raw.strip()
 
@@ -75,6 +84,8 @@ def extract_structured_output(
             raw_matched=None,
             branch=branch,
             preserved_worktree_path=preserved_worktree_path,
+            session_id=session_id,
+            session_file_path=session_file_path,
         )
     unwrapped = _unwrap_fences(raw.strip())
     try:
@@ -87,6 +98,8 @@ def extract_structured_output(
             raw_matched=raw,
             branch=branch,
             preserved_worktree_path=preserved_worktree_path,
+            session_id=session_id,
+            session_file_path=session_file_path,
             cause=exc,
         ) from exc
     try:
@@ -99,5 +112,7 @@ def extract_structured_output(
             raw_matched=raw,
             branch=branch,
             preserved_worktree_path=preserved_worktree_path,
+            session_id=session_id,
+            session_file_path=session_file_path,
             cause=exc,
         ) from exc
