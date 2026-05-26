@@ -160,7 +160,7 @@ def codex(
 ) -> Agent: ...
 ```
 
-Thin wrapper over [`cli_agent`](#cli_agent) with `binary="codex"` and `name="codex"`. `captures_sessions` is `False`.
+Thin wrapper over [`cli_agent`](#cli_agent) with `binary="codex"` and `name="codex"`. `captures_sessions` is `False`. Wires a `parse_stream` that decodes codex JSONL events (`thread.started` → `session_id`, `item.completed`/`agent_message` → `text`, `item.started`/`command_execution` → `tool_call` (Bash), `error` → `text`) so live display, file logs, and `on_agent_stream_event` callbacks see structured events instead of one-line-per-token noise.
 
 ### Options
 
@@ -225,7 +225,7 @@ def pi(
 ) -> Agent: ...
 ```
 
-Thin wrapper over [`cli_agent`](#cli_agent) with `binary="pi"` and `name="pi"`. `captures_sessions` is `False`.
+Thin wrapper over [`cli_agent`](#cli_agent) with `binary="pi"` and `name="pi"`. `captures_sessions` is `False`. Wires a `parse_stream` that decodes pi JSONL events (`message_update`/`text_delta` → `text`, `tool_execution_start` → `tool_call` for known tools (Bash, WebSearch, WebFetch, Agent), `agent_end` → final-message `text`, `agent_error`/`error` → `text`) so live display and file logs see structured events instead of one-line-per-token noise.
 
 ### What binary it wraps
 

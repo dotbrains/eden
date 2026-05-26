@@ -230,7 +230,7 @@ def _run_loop(
             """
             if agent_stream_cb is None:
                 return
-            if ev.type not in ("text", "tool_call", "usage"):
+            if ev.type not in ("text", "tool_call", "usage", "session_id"):
                 return
             try:
                 agent_stream_cb(ev)
@@ -362,6 +362,8 @@ def _run_loop(
                         if ev.type == "usage":
                             iter_session_id = ev.session_id
                             iter_usage = ev.usage
+                        elif ev.type == "session_id":
+                            iter_session_id = ev.session_id
                         if sink is not None:
                             sink.write(ev)
                         if on_event is not None:
@@ -386,6 +388,8 @@ def _run_loop(
                                     if tev.type == "usage":
                                         iter_session_id = tev.session_id
                                         iter_usage = tev.usage
+                                    elif tev.type == "session_id":
+                                        iter_session_id = tev.session_id
                                     if sink is not None:
                                         sink.write(tev)
                                     if on_event is not None:

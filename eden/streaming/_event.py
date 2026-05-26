@@ -15,10 +15,13 @@ class StreamEvent:
 
     Phase 3a kinds: ``"text"`` (carries ``text``) and ``"idle_warning"`` (carries
     ``minutes_idle``). Phase 3b adds ``"tool_call"`` (carries ``tool_name`` and
-    ``tool_input``) and ``"usage"`` (carries ``usage`` and ``session_id``).
+    ``tool_input``), ``"usage"`` (carries ``usage`` and ``session_id``), and
+    ``"session_id"`` (carries ``session_id`` standalone — emitted by agents
+    whose stream announces the session before any usage data is available,
+    e.g. codex's ``thread.started``).
     """
 
-    type: Literal["text", "idle_warning", "tool_call", "usage"]
+    type: Literal["text", "idle_warning", "tool_call", "usage", "session_id"]
     agent_name: str
     iteration: int
     timestamp: datetime
@@ -38,3 +41,5 @@ class StreamEvent:
             raise ValueError('StreamEvent type="tool_call" requires tool_name to be non-None')
         if self.type == "usage" and self.usage is None:
             raise ValueError('StreamEvent type="usage" requires usage to be non-None')
+        if self.type == "session_id" and self.session_id is None:
+            raise ValueError('StreamEvent type="session_id" requires session_id to be non-None')

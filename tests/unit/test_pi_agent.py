@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
@@ -68,3 +69,24 @@ def test_pi_extra_args_threaded() -> None:
     argv = a.build_command(_ctx(prompt="p"))
     assert "--verbose" in argv
     assert argv.index("--verbose") < argv.index("p")
+
+
+def test_pi_parse_stream_wired_in() -> None:
+    a = pi()
+    line = json.dumps(
+        {
+            "type": "message_update",
+            "assistantMessageEvent": {"type": "text_delta", "delta": "hello"},
+        }
+    )
+    ev = a.parse_stream(line)
+    assert ev is not None
+    assert ev.type == "text"
+    assert ev.text == "hello"
+    assert ev.agent_name == "pi"
+
+
+def test_pi_parse_stream_returns_none_for_unknown() -> None:
+    a = pi()
+    assert a.parse_stream("not json") is None
+    assert a.parse_stream(json.dumps({"type": "noop"})) is None
