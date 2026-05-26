@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
@@ -91,3 +92,52 @@ def test_opencode_no_variant_omits_flag() -> None:
     a = opencode(model="m")
     argv = a.build_command(_ctx(prompt="p"))
     assert "--variant" not in argv
+
+
+def test_opencode_format_json_always_present() -> None:
+    a = opencode()
+    argv = a.build_command(_ctx())
+    assert "--format" in argv
+    assert argv[argv.index("--format") + 1] == "json"
+
+
+def test_opencode_dangerously_skip_permissions_default_off() -> None:
+    a = opencode()
+    argv = a.build_command(_ctx())
+    assert "--dangerously-skip-permissions" not in argv
+
+
+def test_opencode_dangerously_skip_permissions_appends_flag() -> None:
+    a = opencode(dangerously_skip_permissions=True)
+    argv = a.build_command(_ctx(prompt="p"))
+    assert "--dangerously-skip-permissions" in argv
+    assert argv.index("--dangerously-skip-permissions") < argv.index("p")
+
+
+def test_opencode_agent_mode_threaded() -> None:
+    a = opencode(agent="build")
+    argv = a.build_command(_ctx(prompt="p"))
+    assert "--agent" in argv
+    assert argv[argv.index("--agent") + 1] == "build"
+    assert argv.index("--agent") < argv.index("p")
+
+
+def test_opencode_no_agent_mode_omits_flag() -> None:
+    a = opencode()
+    argv = a.build_command(_ctx())
+    assert "--agent" not in argv
+
+
+def test_opencode_parse_stream_wired_in() -> None:
+    a = opencode()
+    ev = a.parse_stream(json.dumps({"type": "step_start", "sessionID": "sid"}))
+    assert ev is not None
+    assert ev.type == "session_id"
+    assert ev.session_id == "sid"
+    assert ev.agent_name == "opencode"
+
+
+def test_opencode_parse_stream_returns_none_for_unknown() -> None:
+    a = opencode()
+    assert a.parse_stream("garbage") is None
+    assert a.parse_stream(json.dumps({"type": "heartbeat"})) is None

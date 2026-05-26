@@ -197,13 +197,28 @@ agent = opencode("claude-opus-4")
 def opencode(
     model: str = "claude-opus-4",
     *,
+    name: str = "opencode",
     variant: str | None = None,
+    agent: str | None = None,
     env: Mapping[str, str] | None = None,
+    dangerously_skip_permissions: bool = False,
     extra_args: tuple[str, ...] = (),
 ) -> Agent: ...
 ```
 
-Builds the argv `opencode run --model <model> [--variant <v>] [extra_args] <prompt>`. `variant` controls reasoning effort (e.g. `"high"`, `"max"`, `"low"`, `"minimal"`); omit to keep opencode's default. Uses `cli_agent` under the hood with a custom argv builder; `captures_sessions` is `False`.
+Builds the argv `opencode run --format json --model <model> [--variant <v>] [--agent <name>] [--dangerously-skip-permissions] [extra_args] <prompt>`. `--format json` is always present so the bundled stream parser receives structured events; without it, opencode would emit free-form text and the orchestrator's per-line fallback would silently drop session ids and tool calls.
+
+`captures_sessions` is `False` (no `OpenCodeSessionStorage` ships today; the parser does surface `step_start` events so `Iteration.session_id` populates).
+
+### Options
+
+- `variant` — reasoning-effort variant passed via `--variant` (e.g. `"high"`, `"max"`, `"low"`, `"minimal"`); omit to keep opencode's default.
+- `agent` — named agent mode passed via `--agent` (e.g. `"build"` / `"plan"`); selects a different built-in opencode persona per mode.
+- `dangerously_skip_permissions` — when `True`, appends `--dangerously-skip-permissions` so opencode does not block on per-tool permission prompts. Safe inside isolated sandboxes; think twice before enabling for `no_sandbox()`. Default `False`.
+
+### parse_stream
+
+Decodes opencode JSONL events: `step_start` → `session_id`, `text`/`part.type==text` → `text`, `tool_use`/`part.type==tool` (only on `state.status=="completed"`) → `tool_call`, `error` → `text`.
 
 ### What binary it wraps
 

@@ -92,12 +92,19 @@ def resolve_branch_strategy(
 
 
 def resolve_target_branch(*, host_repo_path: Path) -> str:
-    proc = subprocess.run(
-        ["git", "symbolic-ref", "--short", "HEAD"],
-        cwd=str(host_repo_path),
-        capture_output=True,
-        text=True,
-    )
+    # 60 s deadline matches eden/worktree/_git._DEFAULT_GIT_TIMEOUT — a
+    # wedged host-side git here would otherwise hang the orchestrator before
+    # the agent even starts.
+    try:
+        proc = subprocess.run(
+            ["git", "symbolic-ref", "--short", "HEAD"],
+            cwd=str(host_repo_path),
+            capture_output=True,
+            text=True,
+            timeout=60.0,
+        )
+    except subprocess.TimeoutExpired:
+        return "HEAD"
     if proc.returncode != 0:
         return "HEAD"
     return proc.stdout.strip() or "HEAD"

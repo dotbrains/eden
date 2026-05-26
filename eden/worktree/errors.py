@@ -74,3 +74,21 @@ class GitCommandFailed(WorktreeError):
         self.exit_code = exit_code
         self.stderr = stderr
         super().__init__(f"git command failed (exit {exit_code}): {' '.join(argv)}\n{stderr}")
+
+
+class GitCommandTimeout(WorktreeError):
+    """A host-side git subprocess exceeded its deadline.
+
+    Raised when the local ``git`` invocation exceeds the per-call timeout
+    (default 60 s). Covers wedged local-filesystem hangs (NFS stalls,
+    filesystem repair, runaway git hooks); does NOT cover git operations
+    the agent runs inside the sandbox (those bound by ``Timeouts.iteration_step``).
+    """
+
+    def __init__(self, *, argv: tuple[str, ...], timeout: float) -> None:
+        self.argv = argv
+        self.timeout = timeout
+        super().__init__(
+            f"git command timed out after {timeout:.1f}s: {' '.join(argv)}\n"
+            f"hint: a wedged host-side git may indicate a filesystem stall or runaway hook"
+        )
