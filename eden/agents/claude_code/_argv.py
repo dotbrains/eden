@@ -19,6 +19,7 @@ def build_argv(
     effort: Literal["low", "medium", "high"] | None,
     extra_args: tuple[str, ...],
     resume_session: str | None = None,
+    dangerously_skip_permissions: bool = False,
 ) -> list[str]:
     """Return the argv vector for a single Claude Code invocation.
 
@@ -26,12 +27,17 @@ def build_argv(
     Linux 128 KB execve argv limit cannot truncate large prompts.
     ``resume_session``, when set, appends ``--resume <id>`` to continue a
     prior conversation captured by ``capture_sessions``.
+    ``dangerously_skip_permissions``, when ``True``, appends
+    ``--dangerously-skip-permissions`` so Claude does not block on
+    per-tool permission prompts inside a sandboxed container.
     """
     argv: list[str] = [*_BASE, "--model", model]
     if effort is not None:
         argv.extend(["--thinking-effort", effort])
     if resume_session is not None:
         argv.extend(["--resume", resume_session])
+    if dangerously_skip_permissions:
+        argv.append("--dangerously-skip-permissions")
     argv.extend(extra_args)
     argv.extend(["-p", "-"])
     return argv

@@ -9,6 +9,12 @@ ships.
 
 ### Added
 
+- **`claude_code(dangerously_skip_permissions=...)`** — when `True`, appends
+  `--dangerously-skip-permissions` so Claude does not block on per-tool
+  permission prompts inside a sandboxed container. Default `False`. Safe inside
+  isolated sandboxes (docker/podman/vercel/daytona/isolated); think twice
+  before enabling for `no_sandbox()`. Also propagates to the interactive
+  command path. _(Upstream parity 0.4.6.)_
 - **`codex(effort=...)`** — optional reasoning-effort level (`"low"`, `"medium"`,
   `"high"`, `"xhigh"`). When set, threads
   `-c model_reasoning_effort="<level>"` into the codex invocation. _(Upstream

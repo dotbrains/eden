@@ -104,6 +104,7 @@ def claude_code(
     effort: Literal["low", "medium", "high"] | None = None,
     env: Mapping[str, str] | None = None,
     capture_sessions: bool = True,
+    dangerously_skip_permissions: bool = False,
     extra_args: tuple[str, ...] = (),
 ) -> _ClaudeCodeAgent: ...
 ```
@@ -113,11 +114,12 @@ def claude_code(
 - `effort` — optional `--thinking-effort` level (`"low"`, `"medium"`, `"high"`).
 - `env` — per-agent environment additions; the orchestrator merges them with the host env.
 - `capture_sessions` — when `True`, the orchestrator post-processes each iteration's session JSONL into `.eden/sessions/`. Default `True`.
+- `dangerously_skip_permissions` — when `True`, appends `--dangerously-skip-permissions` so Claude does not block on per-tool permission prompts. Safe inside an isolated sandbox; think twice before enabling for `no_sandbox()`, where Claude would gain unprompted access to the host filesystem. Default `False`.
 - `extra_args` — escape hatch for unsurfaced Claude CLI flags. Inserted before the stdin sigil (`-p -`).
 
 ### Argv shape
 
-Eden builds `claude --print --output-format stream-json --verbose --model <model> [--thinking-effort ...] [--resume <id>] [extra_args...] -p -` and pipes the prompt via stdin. Stdin delivery dodges the Linux 128 KB execve argv-size limit, so prompts of any size are safe.
+Eden builds `claude --print --output-format stream-json --verbose --model <model> [--thinking-effort ...] [--resume <id>] [--dangerously-skip-permissions] [extra_args...] -p -` and pipes the prompt via stdin. Stdin delivery dodges the Linux 128 KB execve argv-size limit, so prompts of any size are safe.
 
 ### Session capture and resume
 

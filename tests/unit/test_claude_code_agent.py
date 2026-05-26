@@ -101,6 +101,26 @@ def test_build_command_with_effort_includes_thinking_effort() -> None:
     assert "--thinking-effort" in argv
 
 
+def test_dangerously_skip_permissions_default_off() -> None:
+    a = claude_code(model="m")
+    argv = a.build_command(_ctx())
+    assert "--dangerously-skip-permissions" not in argv
+
+
+def test_dangerously_skip_permissions_appends_flag() -> None:
+    a = claude_code(model="m", dangerously_skip_permissions=True)
+    argv = a.build_command(_ctx())
+    assert "--dangerously-skip-permissions" in argv
+    # Flag must precede the prompt-stdin sigil.
+    assert argv.index("--dangerously-skip-permissions") < argv.index("-p")
+
+
+def test_dangerously_skip_permissions_propagates_to_interactive() -> None:
+    a = claude_code(model="m", dangerously_skip_permissions=True)
+    argv = a.build_interactive_command(_ctx(prompt=""))
+    assert "--dangerously-skip-permissions" in argv
+
+
 def test_parse_stream_returns_text_for_assistant_block() -> None:
     a = claude_code(model="m")
     line = json.dumps(
