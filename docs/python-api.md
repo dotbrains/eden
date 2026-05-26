@@ -599,6 +599,37 @@ def pi(
 
 Wrapper for the `pi` CLI binary.
 
+#### `cursor(...)`
+
+```python
+def cursor(
+    model: str = "claude-sonnet-4-6",
+    *,
+    name: str = "cursor",
+    env: Mapping[str, str] | None = None,
+    force: bool = False,
+    extra_args: tuple[str, ...] = (),
+) -> Agent: ...
+```
+
+Wrapper for Cursor's CLI binary (named `agent`). Builds `agent --print --output-format stream-json --model <model> [--force] [extra_args ...] <prompt>`. Prompt is delivered positionally, with a 120 KB pre-flight guard (raises `InvalidOptions(code="config.prompt_too_long")` on overflow). `force` is Cursor's equivalent of Claude's `dangerously_skip_permissions`. `captures_sessions` is `False`. The parser handles cursor's `tool_call` event and delegates Claude-compatible `assistant`/`result` blocks to Claude's parser. See [agents.md](agents.md#cursor) for details.
+
+#### `copilot(...)`
+
+```python
+def copilot(
+    model: str = "claude-sonnet-4",
+    *,
+    name: str = "copilot",
+    effort: Literal["low", "medium", "high"] | None = None,
+    env: Mapping[str, str] | None = None,
+    allow_all_tools: bool = False,
+    extra_args: tuple[str, ...] = (),
+) -> Agent: ...
+```
+
+Wrapper for the `copilot` CLI binary (GitHub Copilot CLI). Builds `copilot -p <prompt> --output-format json --model <model> [--allow-all-tools] [--effort <level>] [extra_args ...]`. Prompt is delivered via `-p` (still argv), with the same 120 KB pre-flight guard. `allow_all_tools` is Copilot's equivalent of Claude's `dangerously_skip_permissions`. `captures_sessions` is `False`. The parser decodes `assistant.message_delta` → `text`, `tool.execution_start` → `tool_call` (normalises lowercase `"bash"` → `"Bash"`), `result` → `session_id`, `error`/`agent_error` → `text`. See [agents.md](agents.md#copilot) for details.
+
 #### `cli_agent(...)`
 
 Generic factory for any line-streaming CLI. The codex/opencode/pi wrappers are 5-line shims over this.

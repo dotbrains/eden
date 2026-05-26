@@ -9,6 +9,30 @@ ships.
 
 ### Added
 
+- **`cursor()` agent factory** — wraps Cursor's CLI binary (named `agent`).
+  Builds `agent --print --output-format stream-json --model <model>
+  [--force] [extra_args ...] <prompt>`. Includes a 120 KB pre-flight
+  prompt-size guard (positional argv → execve `ARG_MAX`) that raises
+  `InvalidOptions(code="config.prompt_too_long")` instead of letting the
+  runner die with `OSError: Argument list too long`. Optional `force=True`
+  is cursor's equivalent of Claude's `dangerously_skip_permissions`.
+  Parser handles cursor's `tool_call` events and delegates
+  Claude-compatible `assistant`/`result` shapes to Claude's parser.
+  `captures_sessions=False` (resume not supported). _(Upstream parity 0.6.0.)_
+- **`copilot()` agent factory** — wraps GitHub's `copilot` CLI binary.
+  Builds `copilot -p <prompt> --output-format json --model <model>
+  [--allow-all-tools] [--effort <level>] [extra_args ...]`. Same 120 KB
+  pre-flight guard. Optional `effort: "low"|"medium"|"high"` and
+  `allow_all_tools=True` (Copilot's equivalent of
+  `dangerously_skip_permissions`). Parser decodes Copilot JSONL events
+  (`assistant.message_delta` → `text`, `tool.execution_start` →
+  `tool_call` (normalising lowercase `"bash"` → `"Bash"`), `result` →
+  `session_id`, `error`/`agent_error` → `text`).
+  `captures_sessions=False`. _(Upstream parity 0.6.0.)_
+- **`assert_prompt_fits_argv` helper** — shared pre-flight check at
+  `eden/agents/_argv_guards.py` for agents that pass the prompt
+  positionally. Conservative 120 KB byte cap (UTF-8) leaves headroom
+  for envp + remaining argv under Linux's ~128 KB `ARG_MAX`.
 - **`"custom"` backlog manager in `eden init`** — selectable via
   `--backlog custom`, scaffolds projects in a deliberately
   broken-until-configured state with `<TODO ...>` markers in the rendered
