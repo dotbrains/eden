@@ -9,6 +9,10 @@ ships.
 
 ### Added
 
+- **`codex(effort=...)`** — optional reasoning-effort level (`"low"`, `"medium"`,
+  `"high"`, `"xhigh"`). When set, threads
+  `-c model_reasoning_effort="<level>"` into the codex invocation. _(Upstream
+  parity.)_
 - **`base_branch` parameter** on `run()`, `create_sandbox()`, `create_worktree()`,
   `interactive()`, and their `eden.aio.*` async wrappers. Overrides the fork
   point of the default `merge_to_head` strategy without forcing the caller to

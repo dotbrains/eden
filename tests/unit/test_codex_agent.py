@@ -68,3 +68,24 @@ def test_codex_extra_args_threaded() -> None:
     argv = a.build_command(_ctx(prompt="x"))
     assert "--no-cache" in argv
     assert argv.index("--no-cache") < argv.index("x")
+
+
+def test_codex_effort_unset_omits_override() -> None:
+    a = codex()
+    argv = a.build_command(_ctx(prompt="x"))
+    assert "-c" not in argv
+    assert not any("model_reasoning_effort" in arg for arg in argv)
+
+
+def test_codex_effort_threads_config_override() -> None:
+    a = codex(effort="high")
+    argv = a.build_command(_ctx(prompt="hello"))
+    assert argv[:3] == ["codex", "-c", 'model_reasoning_effort="high"']
+    assert argv[-1] == "hello"
+
+
+def test_codex_effort_orders_before_prompt_and_extra_args() -> None:
+    a = codex(effort="xhigh", extra_args=("--no-cache",))
+    argv = a.build_command(_ctx(prompt="p"))
+    assert argv.index('model_reasoning_effort="xhigh"') < argv.index("--no-cache")
+    assert argv.index("--no-cache") < argv.index("p")

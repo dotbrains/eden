@@ -152,12 +152,17 @@ agent = codex("gpt-5")
 def codex(
     model: str = "gpt-5",
     *,
+    effort: Literal["low", "medium", "high", "xhigh"] | None = None,
     env: Mapping[str, str] | None = None,
     extra_args: tuple[str, ...] = (),
 ) -> Agent: ...
 ```
 
 Thin wrapper over [`cli_agent`](#cli_agent) with `binary="codex"` and `name="codex"`. `captures_sessions` is `False`.
+
+### Options
+
+- `effort` — optional reasoning-effort level. When set, threads `-c model_reasoning_effort="<level>"` into the codex invocation. One of `"low"`, `"medium"`, `"high"`, `"xhigh"`.
 
 ### What binary it wraps
 
