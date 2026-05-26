@@ -79,5 +79,25 @@ class ClaudeSessionStorage:
         # ``~/.claude/projects`` host directory, so transfer is a no-op.
         return None
 
+    def locate_session_on_host(
+        self,
+        *,
+        session_id: str,
+        sandbox_cwd: Path,
+    ) -> Path | None:
+        """Locate ``<projects_dir>/<slug>/<session_id>.jsonl`` if it exists.
+
+        Claude derives the project-slug from the cwd it was running in when
+        the session was captured. The caller must pass the same
+        ``sandbox_cwd`` the agent will see at resume time (typically the
+        host repo path for ``no_sandbox`` or ``/workspace`` for a
+        containerized run).
+        """
+        from eden.session._slug import claude_projects_slug
+
+        slug = claude_projects_slug(sandbox_cwd)
+        path = self._projects_dir() / slug / f"{session_id}.jsonl"
+        return path if path.is_file() else None
+
 
 __all__ = ["ClaudeSessionStorage"]

@@ -42,6 +42,7 @@ from eden.errors import (
     RestNotFoundError,
     RestRateLimited,
     SessionCaptureFailed,
+    SessionNotFound,
     StepTimeout,
     StructuredOutputError,
 )
@@ -129,6 +130,7 @@ __all__ = [
     "SandboxHooks",
     "SandboxProvider",
     "SessionCaptureFailed",
+    "SessionNotFound",
     "SessionStorage",
     "SilentDisplay",
     "StepTimeout",

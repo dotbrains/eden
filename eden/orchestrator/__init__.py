@@ -29,6 +29,34 @@ def _seconds(value: float | timedelta) -> float:
     return float(value)
 
 
+def _precheck_resume_session(
+    *,
+    agent: Agent,
+    sandbox: SandboxProvider,
+    resume_session: str,
+    host_repo_path: Path,
+) -> None:
+    """Verify the JSONL for ``resume_session`` exists on the host before spawn.
+
+    Fast, host-side, structured. Without this the agent would fail inside
+    the sandbox with a buried "session not found" stderr.
+
+    Skipped silently when the agent's ``session_storage`` does not
+    implement :meth:`LocatableSessionStorage.locate_session_on_host`
+    (back-compat for custom storage impls).
+    """
+    from eden.errors import SessionNotFound
+
+    storage = getattr(agent, "session_storage", None)
+    locate = getattr(storage, "locate_session_on_host", None)
+    if not callable(locate):
+        return
+    sandbox_cwd = host_repo_path if sandbox.kind == "none" else Path("/workspace")
+    found = locate(session_id=resume_session, sandbox_cwd=sandbox_cwd)
+    if found is None:
+        raise SessionNotFound(session_id=resume_session, agent_name=agent.name)
+
+
 def _maybe_seconds(value: float | timedelta | None) -> float | None:
     if value is None:
         return None
@@ -84,6 +112,13 @@ def run(
                 "resuming a prior session implies a single follow-up turn; "
                 "use max_iterations=1 or omit resume_session"
             ),
+        )
+    if resume_session is not None:
+        _precheck_resume_session(
+            agent=agent,
+            sandbox=sandbox,
+            resume_session=resume_session,
+            host_repo_path=setup.cwd,
         )
     if output is not None:
         if max_iterations != 1:
