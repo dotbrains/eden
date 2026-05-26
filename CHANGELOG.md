@@ -9,6 +9,32 @@ ships.
 
 ### Added
 
+- **`CodexSessionStorage`** + codex session capture/resume — `codex()` now
+  defaults `capture_sessions=True` and ships a `CodexSessionStorage` instance
+  on its `session_storage` attribute, mirroring the claude_code pattern.
+  Mounts `~/.codex/sessions` into containerized sandboxes and walks codex's
+  date-nested directory tree (`<YYYY>/<MM>/<DD>/rollout-<...>-<id>.jsonl`)
+  to locate per-iteration JSONLs. Resume a captured codex session via the
+  top-level `run(..., resume_session=<id>)` (requires `max_iterations=1`);
+  the invocation becomes `codex exec resume <id> --json ...`. _(Upstream
+  parity 0.5.0.)_
+- **codex command shape now matches the upstream contract** — invocation is
+  `codex exec [resume <id>] --json [--dangerously-bypass-approvals-and-sandbox]
+  -m <model> [-c model_reasoning_effort="<level>"] [extra_args ...]` with the
+  prompt delivered via stdin. The previous thin `cli_agent` wrapper (which
+  ran `codex <prompt>` and emitted no parsed stream events without manual
+  `extra_args`) is replaced by a dedicated `_CodexAgent` class.
+- **`codex(dangerously_bypass_approvals_and_sandbox=...)`** — opt-out kwarg
+  (default `True`). When `True`, appends `--dangerously-bypass-approvals-and-sandbox`
+  so codex does not block on per-tool approvals inside a sandbox. Mirrors
+  `claude_code(dangerously_skip_permissions=...)` ergonomics.
+- **`transfer_session(*, source, dest, source_cwd, dest_cwd)`** — public
+  helper that copies a captured session JSONL between hosts, rewriting
+  absolute paths that start with `source_cwd` to start with `dest_cwd`.
+  Useful for migrating sessions between machines whose worktree paths
+  differ. Exported from `eden` and `eden.session`.
+- **`CodexSessionStorage` and `transfer_session` exposed at the top level**
+  (`from eden import CodexSessionStorage, transfer_session`).
 - **`throw_on_duplicate_worktree`** kwarg on `run()`, `create_sandbox()`,
   `create_worktree()`, `interactive()`, and their `eden.aio.*` async wrappers
   (default `True`). When `False` and the named-strategy branch already has an

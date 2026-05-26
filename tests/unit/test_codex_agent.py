@@ -57,39 +57,77 @@ def test_codex_custom_model() -> None:
     assert a.model == "gpt-4o"
 
 
-def test_codex_build_command_uses_codex_binary() -> None:
+def test_codex_build_command_shape() -> None:
+    """Default invocation: ``codex exec --json --dangerously-bypass-... -m <model>``."""
     a = codex()
     argv = a.build_command(_ctx(prompt="hello"))
-    assert argv[0] == "codex"
-    assert argv[-1] == "hello"
+    assert argv[:2] == ["codex", "exec"]
+    assert "--json" in argv
+    assert "--dangerously-bypass-approvals-and-sandbox" in argv
+    assert "-m" in argv
+    assert argv[argv.index("-m") + 1] == "gpt-5"
+    # Prompt is delivered via stdin, not argv.
+    assert "hello" not in argv
 
 
-def test_codex_extra_args_threaded() -> None:
+def test_codex_stdin_carries_prompt() -> None:
+    a = codex()
+    payload = a.stdin_content(_ctx(prompt="my prompt"))
+    assert payload == "my prompt"
+
+
+def test_codex_extra_args_appended_after_standard_flags() -> None:
     a = codex(extra_args=("--no-cache",))
-    argv = a.build_command(_ctx(prompt="x"))
+    argv = a.build_command(_ctx())
     assert "--no-cache" in argv
-    assert argv.index("--no-cache") < argv.index("x")
+    assert argv.index("--no-cache") > argv.index("--json")
+
+
+def test_codex_dangerously_bypass_can_be_disabled() -> None:
+    a = codex(dangerously_bypass_approvals_and_sandbox=False)
+    argv = a.build_command(_ctx())
+    assert "--dangerously-bypass-approvals-and-sandbox" not in argv
 
 
 def test_codex_effort_unset_omits_override() -> None:
     a = codex()
-    argv = a.build_command(_ctx(prompt="x"))
+    argv = a.build_command(_ctx())
     assert "-c" not in argv
     assert not any("model_reasoning_effort" in arg for arg in argv)
 
 
 def test_codex_effort_threads_config_override() -> None:
     a = codex(effort="high")
-    argv = a.build_command(_ctx(prompt="hello"))
-    assert argv[:3] == ["codex", "-c", 'model_reasoning_effort="high"']
-    assert argv[-1] == "hello"
+    argv = a.build_command(_ctx())
+    assert "-c" in argv
+    assert 'model_reasoning_effort="high"' in argv
 
 
-def test_codex_effort_orders_before_prompt_and_extra_args() -> None:
-    a = codex(effort="xhigh", extra_args=("--no-cache",))
-    argv = a.build_command(_ctx(prompt="p"))
-    assert argv.index('model_reasoning_effort="xhigh"') < argv.index("--no-cache")
-    assert argv.index("--no-cache") < argv.index("p")
+def test_codex_resume_session_adds_resume_subcommand() -> None:
+    a = codex()
+    ctx = IterationContext(
+        iteration=0,
+        prompt="continue",
+        sandbox_handle=_StubHandle(),
+        worktree_path=Path("/workspace"),
+        branch="HEAD",
+        name=None,
+        resume_session="sess-abc",
+    )
+    argv = a.build_command(ctx)
+    assert argv[:4] == ["codex", "exec", "resume", "sess-abc"]
+
+
+def test_codex_capture_sessions_default_true() -> None:
+    a = codex()
+    assert a.captures_sessions is True
+    assert a.session_storage is not None
+
+
+def test_codex_capture_sessions_false_clears_storage() -> None:
+    a = codex(capture_sessions=False)
+    assert a.captures_sessions is False
+    assert a.session_storage is None
 
 
 def test_codex_parse_stream_wired_in() -> None:

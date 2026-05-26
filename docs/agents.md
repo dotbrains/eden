@@ -154,27 +154,34 @@ agent = codex("gpt-5")
 def codex(
     model: str = "gpt-5",
     *,
+    name: str = "codex",
     effort: Literal["low", "medium", "high", "xhigh"] | None = None,
     env: Mapping[str, str] | None = None,
+    capture_sessions: bool = True,
+    dangerously_bypass_approvals_and_sandbox: bool = True,
     extra_args: tuple[str, ...] = (),
 ) -> Agent: ...
 ```
 
-Thin wrapper over [`cli_agent`](#cli_agent) with `binary="codex"` and `name="codex"`. `captures_sessions` is `False`. Wires a `parse_stream` that decodes codex JSONL events (`thread.started` → `session_id`, `item.completed`/`agent_message` → `text`, `item.started`/`command_execution` → `tool_call` (Bash), `error` → `text`) so live display, file logs, and `on_agent_stream_event` callbacks see structured events instead of one-line-per-token noise.
+Builds the invocation `codex exec [resume <id>] --json [--dangerously-bypass-approvals-and-sandbox] -m <model> [-c model_reasoning_effort="<level>"] [extra_args ...]` and delivers the prompt via stdin.
 
 ### Options
 
-- `effort` — optional reasoning-effort level. When set, threads `-c model_reasoning_effort="<level>"` into the codex invocation. One of `"low"`, `"medium"`, `"high"`, `"xhigh"`.
+- `effort` — optional reasoning-effort level. When set, threads `-c model_reasoning_effort="<level>"` into the invocation. One of `"low"`, `"medium"`, `"high"`, `"xhigh"`.
+- `capture_sessions` — when `True` (default), the orchestrator post-processes each iteration's session JSONL into `.eden/sessions/` via [`CodexSessionStorage`](python-api.md#codexsessionstorage). Resume a captured session via the top-level `run(..., resume_session=<id>)` (requires `max_iterations=1`).
+- `dangerously_bypass_approvals_and_sandbox` — when `True` (default), appends `--dangerously-bypass-approvals-and-sandbox` so codex does not block on per-tool approval prompts. Safe inside an isolated sandbox; think twice before enabling for `no_sandbox()`.
+
+### parse_stream
+
+Decodes codex JSONL events: `thread.started` → `session_id`, `item.completed`/`agent_message` → `text`, `item.started`/`command_execution` → `tool_call` (Bash), `error` → `text`. Live display, file logs, and `on_agent_stream_event` callbacks see structured events instead of one-line-per-token noise.
 
 ### What binary it wraps
 
-The `codex` CLI from OpenAI. Must be on `$PATH`.
+The `codex` CLI from OpenAI. Must be on `$PATH`. The `"gpt-5"` default is illustrative — supply whatever model identifier your installed `codex` accepts.
 
 ### When to use
 
-- Codex-driven workflows where session capture isn't required.
-
-The `"gpt-5"` default is illustrative — supply whatever model identifier your installed `codex` accepts.
+- Codex-driven workflows with or without session capture/resume.
 
 ## `opencode`
 

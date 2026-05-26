@@ -66,7 +66,9 @@ from eden.providers._types import (
 )
 from eden.sandboxes import Sandbox, create_sandbox
 from eden.session._claude import ClaudeSessionStorage
+from eden.session._codex import CodexSessionStorage
 from eden.session._protocol import SessionStorage
+from eden.session._transfer import transfer_session
 from eden.streaming import StreamEvent
 
 __all__ = [
@@ -81,6 +83,7 @@ __all__ = [
     # provider re-exports
     "BranchStrategy",
     "ClaudeSessionStorage",
+    "CodexSessionStorage",
     "Commit",
     "ConfigError",
     "CopyToWorktreeError",
@@ -148,4 +151,5 @@ __all__ = [
     "pi",
     "run",
     "simulated_agent",
+    "transfer_session",
 ]
