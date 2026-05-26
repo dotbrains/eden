@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
@@ -89,3 +90,18 @@ def test_codex_effort_orders_before_prompt_and_extra_args() -> None:
     argv = a.build_command(_ctx(prompt="p"))
     assert argv.index('model_reasoning_effort="xhigh"') < argv.index("--no-cache")
     assert argv.index("--no-cache") < argv.index("p")
+
+
+def test_codex_parse_stream_wired_in() -> None:
+    a = codex()
+    ev = a.parse_stream(json.dumps({"type": "thread.started", "thread_id": "tid"}))
+    assert ev is not None
+    assert ev.type == "session_id"
+    assert ev.session_id == "tid"
+    assert ev.agent_name == "codex"
+
+
+def test_codex_parse_stream_returns_none_for_unknown() -> None:
+    a = codex()
+    assert a.parse_stream("garbage") is None
+    assert a.parse_stream(json.dumps({"type": "heartbeat"})) is None

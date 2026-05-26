@@ -6,6 +6,14 @@ from collections.abc import Mapping
 
 from eden.agents._protocol import Agent
 from eden.agents.cli import cli_agent
+from eden.agents.pi._stream import parse_line as _parse_line
+from eden.streaming import StreamEvent
+
+_NAME = "pi"
+
+
+def _parse_stream(line: str) -> StreamEvent | None:
+    return _parse_line(line, agent_name=_NAME, iteration=0)
 
 
 def pi(
@@ -18,11 +26,18 @@ def pi(
 
     Default `model` ("pi-3.5") is illustrative — override via the positional
     `model` argument or supply your own `extra_args` for binary-specific flags.
+
+    The agent's ``parse_stream`` decodes pi JSONL events (``message_update`` /
+    ``text_delta``, ``tool_execution_start`` for known tools (``Bash``,
+    ``WebSearch``, ``WebFetch``, ``Agent``), ``agent_end``, ``agent_error`` /
+    ``error``) so live display and file logs see structured text / tool_call
+    events instead of one-line-per-token noise.
     """
     return cli_agent(
-        name="pi",
+        name=_NAME,
         model=model,
-        binary="pi",
+        binary=_NAME,
+        parse_stream=_parse_stream,
         env=env,
         extra_args=extra_args,
     )

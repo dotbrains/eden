@@ -9,6 +9,20 @@ ships.
 
 ### Added
 
+- **Codex + pi `parse_stream` parsers** — both agents now decode their
+  respective JSONL stream formats into structured `StreamEvent`s instead of
+  one-line-per-token text noise. Codex maps `thread.started` →
+  `StreamEvent(type="session_id")`, `item.completed` (agent_message) →
+  `text`, `item.started` (command_execution) → `tool_call` (Bash), and
+  `error` → `text`. Pi maps `message_update` (text_delta) → `text`,
+  `tool_execution_start` → `tool_call` for known tools (Bash, WebSearch,
+  WebFetch, Agent), `agent_end` → final-message `text`, and
+  `agent_error`/`error` → `text`. _(Upstream parity.)_
+- **`StreamEvent(type="session_id")`** — new variant for agents whose stream
+  announces the session id before any usage data is available (e.g. codex's
+  `thread.started`). The orchestrator reads `session_id` from this event the
+  same way it reads it from `usage` events, so `Iteration.session_id` now
+  populates for codex too.
 - **`claude_code(dangerously_skip_permissions=...)`** — when `True`, appends
   `--dangerously-skip-permissions` so Claude does not block on per-tool
   permission prompts inside a sandboxed container. Default `False`. Safe inside

@@ -17,4 +17,12 @@ def format_line(
     if event.type == "text":
         body = (event.text or "").rstrip("\n")
         return f"{prefix} {body}"
-    return f"{prefix} minutes_idle={event.minutes_idle}"
+    if event.type == "idle_warning":
+        return f"{prefix} minutes_idle={event.minutes_idle}"
+    if event.type == "tool_call":
+        return f"{prefix} {event.tool_name} {event.tool_input}"
+    if event.type == "usage":
+        return f"{prefix} session_id={event.session_id} usage={event.usage}"
+    if event.type == "session_id":
+        return f"{prefix} session_id={event.session_id}"
+    return prefix
