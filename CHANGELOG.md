@@ -9,6 +9,14 @@ ships.
 
 ### Added
 
+- **Daytona live-API integration test** (`tests/integration/test_daytona_provider.py`)
+  — gated on `DAYTONA_API_KEY`; skipped cleanly when the env var is unset.
+  Exercises the full provider lifecycle against `https://api.daytona.io`
+  (overridable via `DAYTONA_API_URL`): create → exec → stdin-via-base64 →
+  copy_file_in (file and directory) → copy_file_out → finalize → idempotent
+  close. The integration suite's non-Linux skip in
+  `tests/integration/conftest.py` now applies only to docker/podman files
+  so REST-based provider tests can run on any OS.
 - **`CodexSessionStorage`** + codex session capture/resume — `codex()` now
   defaults `capture_sessions=True` and ships a `CodexSessionStorage` instance
   on its `session_storage` attribute, mirroring the claude_code pattern.
