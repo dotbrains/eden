@@ -12,6 +12,7 @@ from typing import Literal
 from eden.providers._types import BranchStrategy
 from eden.worktree._git import (
     branch_exists,
+    list_worktrees,
     status_porcelain,
     worktree_add,
     worktree_remove,
@@ -118,7 +119,18 @@ def create_worktree(
     host_repo_path: Path,
     strategy: BranchStrategy,
     name_hint: str | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> WorktreeHandle:
+    """Carve (or reuse) a worktree per ``strategy``.
+
+    ``throw_on_duplicate_worktree`` only applies to the ``named`` strategy.
+    When ``False`` and the named branch already exists with a worktree on
+    disk, the existing worktree is reused (returned with ``managed=False``
+    so it is not removed on close). When ``True`` (default), a duplicate
+    raises :class:`BranchExists`. Other strategies are unaffected:
+    ``head`` uses the host repo directly and ``merge_to_head`` always
+    generates a fresh branch name.
+    """
     # Ensure .eden/ is gitignored regardless of strategy so metadata files
     # created by any path don't surface as untracked in the host repo.
     _ensure_eden_gitignore(host_repo_path)
@@ -143,6 +155,22 @@ def create_worktree(
         assert strategy.branch is not None
         branch = strategy.branch
         if branch_exists(repo_path=host_repo_path, branch=branch):
+            if throw_on_duplicate_worktree:
+                raise BranchExists(branch=branch)
+            # Reuse path: find the existing worktree for this branch.
+            for record in list_worktrees(repo_path=host_repo_path):
+                if record.branch == branch:
+                    lock = acquire_lock(_lock_path_for(host_repo_path, branch))
+                    return WorktreeHandle(
+                        branch=branch,
+                        worktree_path=record.path,
+                        host_repo_path=host_repo_path,
+                        managed=False,
+                        _lock_handle=lock,
+                    )
+            # Branch exists but isn't checked out by any worktree — we have
+            # no on-disk worktree to reuse. Fall through to BranchExists so
+            # the caller knows their state is unexpected.
             raise BranchExists(branch=branch)
 
     wt_path = _worktree_path_for(host_repo_path, branch)

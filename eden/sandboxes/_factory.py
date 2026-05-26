@@ -163,6 +163,7 @@ def create_sandbox(
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
     copy_to_worktree: list[str] | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> Sandbox:
     """Resolve branch/strategy, carve a worktree, and create the sandbox handle.
 
@@ -214,6 +215,7 @@ def create_sandbox(
         host_repo_path=host_repo_path,
         strategy=strategy,
         name_hint=name,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )
 
     # .eden/.env values flow into the container at create time so entrypoints

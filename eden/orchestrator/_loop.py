@@ -94,6 +94,7 @@ def _run_loop(
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
     copy_to_worktree: list[str] | None = None,
+    throw_on_duplicate_worktree: bool = True,
     existing_worktree: WorktreeHandle | None = None,
     existing_handle: SandboxHandle | None = None,
 ) -> RunResult:
@@ -123,7 +124,12 @@ def _run_loop(
         )
         if not sandbox.supports_strategy(strategy):
             raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
-        wt = create_worktree(host_repo_path=setup.cwd, strategy=strategy, name_hint=name)
+        wt = create_worktree(
+            host_repo_path=setup.cwd,
+            strategy=strategy,
+            name_hint=name,
+            throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+        )
 
     target_branch = resolve_target_branch(host_repo_path=setup.cwd)
 

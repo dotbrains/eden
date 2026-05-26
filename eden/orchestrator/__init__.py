@@ -59,6 +59,7 @@ def run(
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
     copy_to_worktree: list[str] | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> RunResult:
     """Run an agent against a sandbox in a managed worktree, returning RunResult."""
     cwd_path = Path(cwd) if cwd is not None else None
@@ -148,6 +149,7 @@ def run(
         output=output,
         resume_session=resume_session,
         copy_to_worktree=copy_to_worktree,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )
 
 
@@ -157,6 +159,7 @@ def create_worktree(
     branch_strategy: BranchStrategy | None = None,
     base_branch: str | None = None,
     name: str | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> WorktreeHandle:
     """Carve a worktree using Phase 2's create_worktree, with sugar for branch/strategy.
 
@@ -183,6 +186,7 @@ def create_worktree(
         host_repo_path=Path.cwd(),
         strategy=strategy,
         name_hint=name,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )
 
 

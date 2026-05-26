@@ -51,6 +51,7 @@ def interactive(
     name: str | None = None,
     hooks: Hooks | None = None,
     copy_to_worktree: list[str] | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> InteractiveResult:
     """Run an agent attached to the parent TTY for an interactive session.
 
@@ -145,7 +146,12 @@ def interactive(
 
     target_branch = resolve_target_branch(host_repo_path=cwd_path)
 
-    wt = create_worktree(host_repo_path=cwd_path, strategy=strategy, name_hint=name)
+    wt = create_worktree(
+        host_repo_path=cwd_path,
+        strategy=strategy,
+        name_hint=name,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+    )
     handle = None
     hooks_or_default = hooks if hooks is not None else Hooks()
     from eden._types import Timeouts
