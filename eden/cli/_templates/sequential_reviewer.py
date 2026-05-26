@@ -9,6 +9,7 @@ working tree directly. Adapted from upstream's sequential-reviewer template.
 from __future__ import annotations
 
 from eden.cli._templates._backlog import BacklogManager
+from eden.cli._templates._env import render_env_example
 
 _DOCKERFILE = """\
 FROM python:3.13-slim
@@ -204,16 +205,6 @@ _AGENT_CALL: dict[str, str] = {
 }
 
 
-_BASE_ENV: dict[str, str] = {
-    "claude-code": (
-        "# Anthropic API key (required for claude-code)\n# ANTHROPIC_API_KEY=sk-ant-...\n"
-    ),
-    "codex": "# OpenAI API key (required for codex)\n# OPENAI_API_KEY=sk-...\n",
-    "opencode": "# Provider key for the model you've configured opencode to use\n",
-    "pi": "# pi credentials\n",
-}
-
-
 def render_sequential_reviewer(
     *,
     sandbox: str,
@@ -226,12 +217,7 @@ def render_sequential_reviewer(
     if agent not in _AGENT_IMPORT:
         raise ValueError(f"unsupported agent for sequential-reviewer: {agent!r}")
     image_arg = f'image="{image_name}"' if sandbox in ("docker", "podman") else ""
-    env_example = (
-        "# Copy this file to .env and fill in the values your agent needs.\n\n"
-        f"{_BASE_ENV.get(agent, '')}"
-    )
-    if backlog.env_example_lines:
-        env_example += "\n" + backlog.env_example_lines
+    env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
 
     agent_call = _AGENT_CALL[agent].format(model=model)
     return {
