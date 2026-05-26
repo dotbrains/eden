@@ -98,3 +98,57 @@ def test_error_top_level_message_emits_text() -> None:
 
 def test_error_without_payload_returns_none() -> None:
     assert _parse({"type": "error"}) is None
+
+
+def test_turn_completed_emits_usage_with_cache_split() -> None:
+    ev = _parse(
+        {
+            "type": "turn.completed",
+            "usage": {
+                "input_tokens": 1000,
+                "cached_input_tokens": 400,
+                "output_tokens": 250,
+            },
+        }
+    )
+    assert ev is not None
+    assert ev.type == "usage"
+    assert ev.usage is not None
+    # input_tokens is total - cached so the accounting matches Claude's split
+    assert ev.usage.input_tokens == 600
+    assert ev.usage.cache_read_input_tokens == 400
+    assert ev.usage.cache_creation_input_tokens == 0
+    assert ev.usage.output_tokens == 250
+
+
+def test_turn_completed_without_usage_returns_none() -> None:
+    assert _parse({"type": "turn.completed"}) is None
+
+
+def test_turn_completed_with_partial_usage_returns_none() -> None:
+    # Missing output_tokens — return None rather than fabricate a 0
+    assert (
+        _parse(
+            {
+                "type": "turn.completed",
+                "usage": {"input_tokens": 10, "cached_input_tokens": 0},
+            }
+        )
+        is None
+    )
+
+
+def test_turn_completed_with_non_int_usage_returns_none() -> None:
+    assert (
+        _parse(
+            {
+                "type": "turn.completed",
+                "usage": {
+                    "input_tokens": "ten",
+                    "cached_input_tokens": 0,
+                    "output_tokens": 5,
+                },
+            }
+        )
+        is None
+    )
