@@ -85,4 +85,34 @@ class SessionStorage(Protocol):
         ...
 
 
-__all__ = ["SessionStorage"]
+class LocatableSessionStorage(SessionStorage, Protocol):
+    """Extension of :class:`SessionStorage` that supports host-side lookup
+    by session id, used by the orchestrator's ``resume_session=`` precheck.
+
+    Implementations that ship this method get a fast, structured
+    :class:`eden.errors.SessionNotFound` raised host-side when the user
+    tries to resume a session that does not exist, instead of the agent
+    failing inside the sandbox with a buried "session not found" stderr.
+
+    Backwards-compatible: if an agent's ``session_storage`` does not
+    implement this method, the orchestrator skips the precheck and lets
+    the agent fail naturally (existing behaviour).
+    """
+
+    def locate_session_on_host(
+        self,
+        *,
+        session_id: str,
+        sandbox_cwd: Path,
+    ) -> Path | None:
+        """Return the host-side path to the JSONL for ``session_id``, or
+        ``None`` if no matching file exists.
+
+        ``sandbox_cwd`` is the cwd the agent will run under inside the
+        sandbox — Claude derives the per-project slug from it. Agents
+        whose layout doesn't depend on cwd (codex) ignore it.
+        """
+        ...
+
+
+__all__ = ["LocatableSessionStorage", "SessionStorage"]

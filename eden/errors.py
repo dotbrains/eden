@@ -9,6 +9,7 @@ set ``__cause__``; callers who want chained tracebacks must use
 from __future__ import annotations
 
 import builtins
+from pathlib import Path
 
 
 class EdenError(Exception):
@@ -308,6 +309,38 @@ class SessionCaptureFailed(EdenError):
         self.hint = hint
         self.cause = cause
         super().__init__(_format(code, message, hint))
+
+
+class SessionNotFound(EdenError):
+    """Raised at run start when ``resume_session=<id>`` references a JSONL that
+    does not exist on the host filesystem.
+
+    The orchestrator runs this precheck before spawning the agent so the user
+    sees a clean host-side error with the expected path, instead of a buried
+    in-container failure ("session not found" in agent stderr).
+    """
+
+    def __init__(
+        self,
+        *,
+        session_id: str,
+        agent_name: str,
+        expected_path: Path | None = None,
+        hint: str | None = None,
+    ) -> None:
+        self.code = "session.not_found"
+        self.session_id = session_id
+        self.agent_name = agent_name
+        self.expected_path = expected_path
+        path_suffix = f" (expected at {expected_path})" if expected_path is not None else ""
+        message = (
+            f"resume_session={session_id!r} not found on host for agent {agent_name!r}{path_suffix}"
+        )
+        self.message = message
+        self.hint = hint or (
+            "verify the id is correct, or list captured sessions under <repo>/.eden/sessions/"
+        )
+        super().__init__(_format(self.code, message, self.hint))
 
 
 class RestError(EdenError):

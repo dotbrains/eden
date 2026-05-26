@@ -9,6 +9,15 @@ ships.
 
 ### Added
 
+- **`resume_session=` precheck + `SessionNotFound` typed error** — `run()`
+  now verifies the session JSONL exists on the host before spawning the
+  agent (was: agent failed inside the sandbox with a buried "session not
+  found" stderr). `SessionStorage` gains an optional
+  `locate_session_on_host(session_id, sandbox_cwd)` method; the
+  orchestrator skips the precheck silently when the agent's storage
+  doesn't ship one (back-compat for custom impls). `ClaudeSessionStorage`
+  derives the project-slug from `sandbox_cwd`; `CodexSessionStorage` walks
+  its date-nested tree. _(Upstream parity 0.6.1.)_
 - **`docker()` / `podman()` resource options** — three new keyword arguments
   on both provider factories (and on `make_container_provider`):
   - `devices: tuple[str, ...] | None = None` — expose host devices via

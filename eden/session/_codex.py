@@ -140,5 +140,18 @@ class CodexSessionStorage:
         # claude_code.
         return None
 
+    def locate_session_on_host(
+        self,
+        *,
+        session_id: str,
+        sandbox_cwd: Path,
+    ) -> Path | None:
+        """Walk the date-nested sessions tree for a ``rollout-*-<id>.jsonl``.
+
+        ``sandbox_cwd`` is unused — codex's layout doesn't encode cwd in
+        the JSONL path.
+        """
+        return find_codex_session_path(self._sessions_dir(), session_id)
+
 
 __all__ = ["CodexSessionStorage", "find_codex_session_path"]
