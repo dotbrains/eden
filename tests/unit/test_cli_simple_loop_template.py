@@ -75,6 +75,9 @@ def test_render_simple_loop_prompt_threads_backlog_commands() -> None:
     assert "bd ready --json" in prompt
     assert "bd show <ID>" in prompt
     assert "bd close <ID>" in prompt
+    # The "already filtered" hint keeps the agent from re-querying the
+    # tracker with a broader filter when the configured list comes back empty.
+    assert "already been filtered" in prompt
 
 
 def test_render_simple_loop_main_py_threads_agent_factory() -> None:
