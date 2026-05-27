@@ -10,10 +10,12 @@
 # only because pre-commit needs the version inline to provision its env).
 #
 # The mypy hook uses `language: system` so it picks up the active venv's
-# installed dependencies (typer, rich, requests, opentelemetry, …). That means
-# `git commit` must be run from an activated venv, or with `.venv/bin` on
-# PATH — pre-commit cannot easily replicate the project's full transitive
-# dependency tree inside an isolated env.
+# installed dependencies (typer, rich, requests, opentelemetry, …) —
+# pre-commit cannot easily replicate the project's full transitive dependency
+# tree inside an isolated env. `scripts/precommit_mypy.py` locates the
+# project's mypy in `.venv/bin/mypy` (POSIX) or `.venv\Scripts\mypy.exe`
+# (Windows) and falls back to `mypy` on PATH for CI, so `git commit` works
+# without activating the venv first.
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -31,7 +33,7 @@ repos:
     hooks:
       - id: mypy
         name: mypy --strict
-        entry: mypy --strict
+        entry: python3 scripts/precommit_mypy.py --strict
         language: system
         types: [python]
         pass_filenames: false
