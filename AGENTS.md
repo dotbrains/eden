@@ -88,7 +88,7 @@ Prefer `unit` or focused e2e tests while iterating. Run the CI command before co
 
 ## Formatting, linting, and typing
 
-Ruff and mypy versions are intentionally pinned in `pyproject.toml` so local checks match CI. Ruff hooks run in pre-commit-managed environments. The mypy hook uses `language: system`, so `mypy` and project dependencies must be installed in the active environment before running hooks.
+Ruff and mypy versions are intentionally pinned in `pyproject.toml` so local checks match CI. Ruff hooks run in pre-commit-managed environments. The mypy hook uses `language: system` and shells through `scripts/precommit_mypy.py`, which locates mypy in `.venv/bin/mypy` (or `.venv\Scripts\mypy.exe` on Windows) and falls back to `mypy` on PATH for CI — `git commit` works without activating the venv first.
 
 Ruff is configured for line length 100 and Python 3.11. Mypy runs in strict mode over `eden` and `tests`.
 

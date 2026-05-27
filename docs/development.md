@@ -17,7 +17,7 @@ pre-commit install   # one-time, wires the git hook
 
 The `[dev]` extra pulls in `pytest`, `pytest-cov`, `mypy`, `ruff`, `pre-commit`, `build`, and `types-requests`. `mypy` and `ruff` are pinned tightly so local pre-commit runs match CI byte-for-byte. Eden requires Python 3.11+; CI tests against 3.11, 3.12, and 3.13.
 
-After `pre-commit install`, every `git commit` runs ruff format, ruff lint, and `mypy --strict` against `eden/` and `tests/`. The ruff hooks run in an isolated pre-commit-managed env (no venv needed), but the mypy hook calls the active venv's `mypy` so it can resolve project imports — **activate your venv before committing** (or have `.venv/bin` on PATH). To check the whole tree without committing: `pre-commit run --all-files`.
+After `pre-commit install`, every `git commit` runs ruff format, ruff lint, and `mypy --strict` against `eden/` and `tests/`. The ruff hooks run in an isolated pre-commit-managed env (no venv needed). The mypy hook calls a small wrapper (`scripts/precommit_mypy.py`) that finds your project's mypy at `.venv/bin/mypy` (or `.venv\Scripts\mypy.exe` on Windows) and falls back to `mypy` on PATH for CI — committing works without activating the venv. To check the whole tree without committing: `pre-commit run --all-files`.
 
 ## Repo layout
 
