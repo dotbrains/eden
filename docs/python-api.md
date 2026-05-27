@@ -421,7 +421,15 @@ result = run(..., output=Output.object(tag="plan", schema=parse), max_iterations
 plan = result.output  # whatever schema returned
 ```
 
-`Output.object(tag, schema)` extracts the **last** `<tag>...</tag>` pair, strips an optional Markdown code fence (`` ```json ... ``` ``), `json.loads` it, and calls `schema(parsed)`. `schema` is any `Callable[[object], T]` that returns a validated value or raises — works with pydantic `Model.model_validate`, dataclass factories, msgspec, or hand-rolled validators.
+`Output.object(tag, schema)` extracts the **last** `<tag>...</tag>` pair, strips an optional Markdown code fence (`` ```json ... ``` ``), `json.loads` it, and passes the parsed object to `schema`. The `schema` argument can be:
+
+- a **pydantic v2 `BaseModel` class** — Eden invokes `MyModel.model_validate(parsed)` directly, so `schema=MyModel` works without writing `schema=MyModel.model_validate`;
+- a **pydantic v1 `BaseModel` class** — detected via `parse_obj` + `__fields__`, invoked as `MyModel.parse_obj(parsed)`;
+- a **dataclass / attrs class** wrapped as `schema=lambda d: MyDataclass(**d)`;
+- a **msgspec converter** like `schema=lambda d: msgspec.convert(d, MyType)`;
+- any other **callable** of shape `(parsed: object) -> T`.
+
+Detection happens at extraction time via `model_validate` / `parse_obj` getattr — no third-party dependencies are imported. Anything that isn't callable and isn't a recognised validator class raises `TypeError` from `eden.output._validator.resolve_validator`.
 
 `Output.string(tag)` extracts the contents and `.strip()`s them — no JSON, no validation.
 

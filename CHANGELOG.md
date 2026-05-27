@@ -9,6 +9,15 @@ ships.
 
 ### Added
 
+- **`Output.object(schema=...)` accepts validator classes directly** —
+  pydantic v2 `BaseModel` subclasses (detected via `model_validate`),
+  pydantic v1 `BaseModel` subclasses (detected via `parse_obj` +
+  `__fields__`), and anything else callable. Previously users had to
+  pass `schema=MyModel.model_validate` to dodge BaseModel's
+  positional-arg incompatibility; now `schema=MyModel` Just Works.
+  No new dependencies — detection is via `getattr` duck-typing. New
+  helper `eden.output._validator.resolve_validator`. _(Upstream parity
+  0.6.1.)_
 - **`cursor()` agent factory** — wraps Cursor's CLI binary (named `agent`).
   Builds `agent --print --output-format stream-json --model <model>
   [--force] [extra_args ...] <prompt>`. Includes a 120 KB pre-flight

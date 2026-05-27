@@ -8,6 +8,7 @@ from pathlib import Path
 
 from eden.errors import StructuredOutputError
 from eden.output._types import OutputDefinition, _OutputObject, _OutputString
+from eden.output._validator import resolve_validator
 
 _FENCE_RE = re.compile(r"^```(?:json)?\s*\n([\s\S]*?)\n\s*```\s*$")
 
@@ -103,7 +104,8 @@ def extract_structured_output(
             cause=exc,
         ) from exc
     try:
-        return definition.schema(parsed)
+        validator = resolve_validator(definition.schema)
+        return validator(parsed)
     except Exception as exc:
         raise StructuredOutputError(
             code="output.validation_failed",
