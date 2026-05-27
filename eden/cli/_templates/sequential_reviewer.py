@@ -41,6 +41,10 @@ _IMPLEMENT_PROMPT = """\
 
 !`{list_tasks_command}`
 
+The list above has already been filtered to tasks ready for work — do not
+re-query the tracker or pull in tasks outside this list. If the list is
+empty, there is nothing to do this iteration.
+
 ## Recent eden commits (last 10)
 
 !`git log --oneline --grep="eden:" -10`

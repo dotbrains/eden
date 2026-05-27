@@ -9,6 +9,15 @@ ships.
 
 ### Added
 
+- **"List is pre-filtered" hint in `simple-loop` and `sequential-reviewer`
+  templates** — both prompts now state, after the
+  `!`{list_tasks_command}` ` block, that the list has already been filtered to
+  tasks ready for work and that an empty list means nothing to do this
+  iteration. Without this, agents would sometimes re-query the tracker with a
+  broader filter and pull in tasks outside the configured label set when their
+  own list came back empty. The `parallel-planner*` templates already had this
+  hint; this brings the other two templates to parity. _(Upstream parity
+  sandcastle 0.6.4.)_
 - **`Output.object(schema=...)` accepts validator classes directly** —
   pydantic v2 `BaseModel` subclasses (detected via `model_validate`),
   pydantic v1 `BaseModel` subclasses (detected via `parse_obj` +
