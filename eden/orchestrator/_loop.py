@@ -22,6 +22,7 @@ from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.logging._file import FileLogSink, default_log_path
+from eden.orchestrator._bounded_tail import BoundedTail
 from eden.orchestrator._completion import match
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._finalize_recovery import format_finalize_recovery
@@ -137,7 +138,10 @@ def _run_loop(
     sink: FileLogSink | None = None
     handle: SandboxHandle | None = existing_handle if caller_managed else None
     iterations: list[Iteration] = []
-    stdout_chunks: list[str] = []
+    # Bounded rolling tail — capped to keep memory finite on long agent
+    # runs. The three consumers (parse_stdout_error, Output extraction,
+    # final RunResult.stdout) all care about the tail, not the head.
+    stdout_chunks = BoundedTail()
     completion_hit: str | None = None
     rendered_prompt = ""
     log_path: Path | None = None
@@ -374,7 +378,7 @@ def _run_loop(
                             on_event(ev)
 
                     for line in runner.iter_lines(signal=signal, on_warning=_emit_warning):
-                        stdout_chunks.append(line + "\n")
+                        stdout_chunks.push(line + "\n")
                         parsed = agent.parse_stream(line)
                         if parsed is not None:
                             # Parser doesn't know the real iteration; rewrap.
@@ -405,7 +409,7 @@ def _run_loop(
                             # session_id + usage) is captured even when the
                             # completion signal fires before the process exits.
                             for trailing in runner.drain_remaining():
-                                stdout_chunks.append(trailing + "\n")
+                                stdout_chunks.push(trailing + "\n")
                                 trailing_parsed = agent.parse_stream(trailing)
                                 if trailing_parsed is not None:
                                     tev = replace(
@@ -441,7 +445,7 @@ def _run_loop(
             # events on stdout instead of stderr.
             if iter_completion is None:
                 if agent_exit_code is not None and agent_exit_code != 0:
-                    parsed_stdout: str | None = parse_stdout_error("".join(stdout_chunks))
+                    parsed_stdout: str | None = parse_stdout_error(stdout_chunks.to_string())
                     stderr_text = agent_stderr.strip()
                     body = parsed_stdout or stderr_text or "(no output)"
                     err = AgentError(
@@ -663,7 +667,7 @@ def _run_loop(
         _stack.close()
 
     last = iterations[-1] if iterations else None
-    full_stdout = "".join(stdout_chunks)
+    full_stdout = stdout_chunks.to_string()
     extracted: object | None = None
     if output is not None:
         extracted = extract_structured_output(

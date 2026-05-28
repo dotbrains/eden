@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +13,23 @@ from eden.worktree.errors import GitCommandFailed, GitCommandTimeout, WorktreeCo
 # git (NFS stall, filesystem repair, runaway hook) would otherwise hang
 # Eden indefinitely. 60 s matches upstream's default.
 _DEFAULT_GIT_TIMEOUT: float = 60.0
+
+
+def c_locale_env() -> dict[str, str]:
+    """Inherit ``os.environ`` and pin git's locale to ``C``.
+
+    Eden parses git output via ``--porcelain`` and exit codes today, so
+    the immediate motivation is defensive: a future caller that relies
+    on human-readable stderr (e.g. "fatal: invalid reference") would
+    silently break under non-English locales without this pin.
+    Mirrors upstream's ``LC_ALL=C`` fix (v0.6.1, 46eb483) — its
+    ``WorktreeManager`` did substring-match localised stderr and broke
+    outright in those locales.
+
+    ``LANGUAGE`` is cleared because git prefers it over ``LC_ALL`` for
+    message selection.
+    """
+    return {**os.environ, "LC_ALL": "C", "LANG": "C", "LANGUAGE": ""}
 
 
 def _run_git(
@@ -28,6 +46,7 @@ def _run_git(
             text=True,
             check=False,
             timeout=timeout,
+            env=c_locale_env(),
         )
     except subprocess.TimeoutExpired as exc:
         raise GitCommandTimeout(argv=argv, timeout=timeout) from exc
@@ -50,6 +69,7 @@ def branch_exists(*, repo_path: Path, branch: str) -> bool:
             text=True,
             check=False,
             timeout=_DEFAULT_GIT_TIMEOUT,
+            env=c_locale_env(),
         )
     except subprocess.TimeoutExpired as exc:
         raise GitCommandTimeout(
