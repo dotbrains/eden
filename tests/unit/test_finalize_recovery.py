@@ -31,15 +31,20 @@ def test_hard_failure_includes_error_and_rsync(tmp_path: Path) -> None:
 
 
 def test_soft_failure_lists_files(tmp_path: Path) -> None:
+    foo = Path("src/foo.py")
+    bar = Path("src/bar.py")
     out = format_finalize_recovery(
         isolated_path=tmp_path / "iso",
         target_path=tmp_path / "tgt",
-        files_failed=(Path("src/foo.py"), Path("src/bar.py")),
+        files_failed=(foo, bar),
     )
     # No error line when error is None.
     assert "error:" not in out
-    assert "src/foo.py" in out
-    assert "src/bar.py" in out
+    # Use ``str(path)`` so the assertion matches the OS-native separator
+    # (Windows: backslashes; POSIX: forward slashes) — the formatter renders
+    # paths via ``f"{path}"`` which is platform-native.
+    assert str(foo) in out
+    assert str(bar) in out
 
 
 def test_preserved_false_omits_recovery_commands(tmp_path: Path) -> None:
