@@ -9,6 +9,22 @@ ships.
 
 ### Added
 
+- **Bounded rolling tail for accumulated stdout** — the orchestrator's
+  per-run `stdout_chunks` is now a `BoundedTail` (default 64 KiB)
+  instead of an unbounded `list[str]`. Multi-hour agent runs no longer
+  grow the buffer linearly with output volume. The three consumers
+  (`parse_stdout_error`, `Output.object` / `Output.string` extraction,
+  the final `RunResult.stdout`) all care about the tail, not the head,
+  so bounding is sound. Public class `BoundedTail` is available under
+  `eden.orchestrator._bounded_tail` for downstream reuse. _(Upstream
+  parity sandcastle's `boundedTail.ts`.)_
+- **`LC_ALL=C` pinned on host-side git invocations** — `_run_git`,
+  `branch_exists`, and `resolve_target_branch` now run git under a
+  fixed C locale via the new `c_locale_env()` helper. Eden parses
+  porcelain output today so the immediate fix is defensive, but a
+  caller that later substring-matches git stderr (e.g. "fatal:
+  invalid reference") would silently break under non-English locales
+  without this pin. _(Upstream parity sandcastle 0.6.1, 46eb483.)_
 - **Process-wide shutdown registry** — new `eden.register_shutdown(cb)`
   installs at most one `SIGINT` / `SIGTERM` / `atexit` handler per signal
   and fans out to a set of synchronous teardown callbacks. Returns an
