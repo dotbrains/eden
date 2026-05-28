@@ -162,6 +162,7 @@ def interactive(
     name: str | None = None,
     hooks: Hooks | None = None,
     copy_to_worktree: list[str] | None = None,
+    collect_args: bool | None = None,
 ) -> InteractiveResult: ...
 ```
 
@@ -170,6 +171,7 @@ def interactive(
 - `branch_strategy` defaults to `BranchStrategy.head()` when the provider supports it — interactive sessions usually want writes to land in the host repo directly. Override to `merge_to_head()` or `named()` for an isolated session.
 - `hooks` runs the same `OnWorktreeReady` / `OnSandboxReady` / `OnClose` lifecycle as `run()`; `OnIterationStart` / `OnIterationEnd` are not relevant.
 - `copy_to_worktree` — same semantics as on [`run()`](#run): host-relative paths copied into the worktree before `on_worktree_ready` hooks fire. Incompatible with `BranchStrategy.head()`, which is the default for interactive sessions — pass `branch_strategy=BranchStrategy.merge_to_head()` (or `named(...)`) to use it.
+- `collect_args` — when the rendered prompt references `{{KEY}}` placeholders not supplied via `prompt_args`, eden prompts the user via stdin for each missing key instead of raising `PromptError`. Defaults to autodetect: collect when `stdin` is a TTY, skip otherwise (so CI runs hit the normal error). Pass `True` / `False` to force.
 
 Returns an [`InteractiveResult`](#interactiveresult).
 
@@ -822,6 +824,26 @@ class Aborted(EdenError):
 ```
 
 Raised by `raise_if_aborted()` and surfaced from `run()` when cancellation lands.
+
+### `register_shutdown(callback)`
+
+```python
+def register_shutdown(callback: ShutdownCallback) -> Callable[[], None]: ...
+```
+
+Register a synchronous teardown that runs on `SIGINT`, `SIGTERM`, or normal process exit. Returns an idempotent unregister function. The first registration installs a single process-wide handler per signal; the last unregistration removes it.
+
+Use this when you create resources that need to be released even when the parent process is killed without running `try/finally` (most notably `SIGTERM`). `eden.run()` already wires its own teardown for the sandbox handle and worktree it creates — `register_shutdown` is for caller-managed cleanup (e.g. a cloud workspace allocated outside `eden.run()`).
+
+`callback` must be synchronous and tolerate running in a signal context. Exceptions raised from one callback are swallowed; the rest still run.
+
+### `ShutdownCallback`
+
+```python
+ShutdownCallback = Callable[[], None]
+```
+
+Type alias for `register_shutdown` callbacks.
 
 ---
 

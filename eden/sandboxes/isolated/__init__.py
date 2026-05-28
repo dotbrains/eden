@@ -98,6 +98,7 @@ class _IsolatedHandle:
     worktree_path: Path
     host_worktree_path: Path
     baseline: dict[Path, str]
+    _preserved: bool = False
 
     def exec(
         self,
@@ -134,7 +135,17 @@ class _IsolatedHandle:
         d = patch_sync.diff(before=self.baseline, after=after)
         return patch_sync.apply(d, src=self.worktree_path, dst=target)
 
+    def preserve(self) -> None:
+        """Mark this handle for preservation: skip cleanup on ``close()``.
+
+        Called by the orchestrator when finalize fails so the isolated
+        worktree stays on disk for the user's ``rsync``-based recovery.
+        """
+        self._preserved = True
+
     def close(self) -> None:
+        if self._preserved:
+            return
         if self.worktree_path.exists():
             shutil.rmtree(self.worktree_path, ignore_errors=True)
 
