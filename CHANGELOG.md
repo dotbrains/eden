@@ -9,6 +9,36 @@ ships.
 
 ### Added
 
+- **Process-wide shutdown registry** — new `eden.register_shutdown(cb)`
+  installs at most one `SIGINT` / `SIGTERM` / `atexit` handler per signal
+  and fans out to a set of synchronous teardown callbacks. Returns an
+  idempotent unregister. `eden.run()` uses it to close the sandbox handle
+  and worktree on `SIGTERM`, which Python's default handler terminates
+  without running `try/finally` — previously this leaked containers and
+  isolated worktrees when the parent died abruptly. Callers managing
+  their own resources can register custom teardowns. `SIGINT` re-raises
+  `KeyboardInterrupt` after running teardowns so `try/finally` still
+  runs; `SIGTERM` exits with code `143`. _(Upstream parity sandcastle's
+  `shutdownRegistry.ts`.)_
+- **Interactive `{{KEY}}` placeholder collection** — `eden.interactive()`
+  now prompts the user via stdin for any `{{KEY}}` placeholder not
+  supplied in `prompt_args` instead of raising `PromptError`. Built-in
+  keys (`SOURCE_BRANCH` / `TARGET_BRANCH`) are skipped. Default
+  behaviour autodetects: collect when stdin is a TTY, skip otherwise
+  (CI runs still surface the existing error). Pass `collect_args=True` /
+  `False` to force. Helpers `find_missing_keys` and `collect_missing_args`
+  are exported from `eden.prompt` for reuse. _(Upstream parity
+  sandcastle's `findMissingPromptArgKeys` + interactive arg loop.)_
+- **Copy-pastable finalize-failure recovery** — when an isolated
+  provider's `finalize(target)` raises or returns `applied=False`, the
+  orchestrator now emits a structured recovery message via the stream
+  sink listing the isolated worktree path, the host target, the error,
+  and an `rsync -a --exclude=.git --exclude=.eden <iso>/ <target>/`
+  command the user can paste to complete the merge manually. The local
+  `isolated` provider also marks its temp worktree as preserved on
+  finalize failure (`handle.preserve()`) so the rsync target actually
+  exists. Replaces the previous single-line `[eden] finalize failed:
+  {exc}` log. _(Upstream parity sandcastle's `buildRecoveryMessage`.)_
 - **"List is pre-filtered" hint in `simple-loop` and `sequential-reviewer`
   templates** — both prompts now state, after the
   `!`{list_tasks_command}` ` block, that the list has already been filtered to

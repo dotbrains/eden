@@ -15,6 +15,7 @@ from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._setup import resolve_branch_strategy, resolve_target_branch
 from eden.prompt import render_prompt
+from eden.prompt._collect import collect_missing_args
 from eden.prompt._source import resolve_source
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
@@ -52,6 +53,7 @@ def interactive(
     hooks: Hooks | None = None,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
+    collect_args: bool | None = None,
 ) -> InteractiveResult:
     """Run an agent attached to the parent TTY for an interactive session.
 
@@ -70,7 +72,14 @@ def interactive(
     the resulting text to the agent's interactive argv builder. Agents that
     define a ``build_interactive_command(ctx)`` method use it; others fall
     back to ``build_command(ctx)``.
+
+    ``collect_args`` controls interactive collection of missing
+    ``{{KEY}}`` placeholders. When ``None`` (default), eden collects them
+    only when ``stdin`` is a TTY — CI runs hit the normal
+    :class:`eden.errors.PromptError`. Pass ``True`` / ``False`` to force.
     """
+    import sys
+
     if sandbox is None:
         from eden.sandboxes.no_sandbox import provider as no_sandbox
 
@@ -195,9 +204,13 @@ def interactive(
             # substitution, no shell expansion, no built-in injection.
             rendered = prompt_text
         else:
+            effective_args: Mapping[str, str] = prompt_args or {}
+            should_collect = collect_args if collect_args is not None else sys.stdin.isatty()
+            if should_collect:
+                effective_args = collect_missing_args(prompt_text, effective_args)
             rendered = render_prompt(
                 text=prompt_text,
-                args=prompt_args or {},
+                args=effective_args,
                 source_branch=wt.branch,
                 target_branch=target_branch,
                 handle=handle,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from eden.prompt._collect import collect_missing_args, find_missing_keys
 from eden.prompt._render import render, render_known
 from eden.prompt._shell import expand_shell_blocks
 from eden.prompt._source import PromptSource, resolve_source
@@ -41,4 +42,10 @@ def render_prompt(
     )
 
 
-__all__ = ["PromptSource", "render_prompt", "resolve_source"]
+__all__ = [
+    "PromptSource",
+    "collect_missing_args",
+    "find_missing_keys",
+    "render_prompt",
+    "resolve_source",
+]

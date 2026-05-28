@@ -13,7 +13,7 @@ from eden._types import Iteration, RunResult, Timeouts, Usage
 
 if TYPE_CHECKING:
     from eden.session._protocol import SessionStorage
-from eden.abort import AbortSignal
+from eden.abort import AbortSignal, register_shutdown
 from eden.agents._context import IterationContext
 from eden.agents._errors import parse_stdout_error
 from eden.agents._protocol import Agent
@@ -24,6 +24,7 @@ from eden.logging._config import Logging
 from eden.logging._file import FileLogSink, default_log_path
 from eden.orchestrator._completion import match
 from eden.orchestrator._copy_files import apply_copy_to_worktree
+from eden.orchestrator._finalize_recovery import format_finalize_recovery
 from eden.orchestrator._idle import IdleWatchdog
 from eden.orchestrator._recovery import format_agent_error_recovery
 from eden.orchestrator._result import assemble
@@ -141,6 +142,7 @@ def _run_loop(
     rendered_prompt = ""
     log_path: Path | None = None
     preserved: Path | None = None
+    unregister_shutdown: Callable[[], None] | None = None
 
     session_storage = _resolve_session_storage(agent)
     extra_mounts: tuple[Mount, ...] = (
@@ -213,6 +215,26 @@ def _run_loop(
                     timeouts=timeouts,
                 )
         assert handle is not None
+
+        # SIGTERM doesn't run try/finally — register an emergency cleanup so
+        # containers and worktrees don't leak when the parent dies abruptly.
+        # The normal-exit path unregisters this in `finally` before its own
+        # close, so close() runs once on the happy path.
+        if not caller_managed:
+            _emergency_handle = handle
+            _emergency_wt = wt
+
+            def _emergency_cleanup() -> None:
+                try:
+                    _emergency_handle.close()
+                except Exception:
+                    pass
+                try:
+                    _emergency_wt.close()
+                except Exception:
+                    pass
+
+            unregister_shutdown = register_shutdown(_emergency_cleanup)
 
         log_cfg = logging_cfg or Logging.file(
             default_log_path(
@@ -543,18 +565,58 @@ def _run_loop(
                         )
                     )
             except Exception as exc:
+                _preserve = getattr(handle, "preserve", None)
+                if callable(_preserve):
+                    try:
+                        _preserve()
+                    except Exception:
+                        pass
                 if sink is not None:
+                    recovery = format_finalize_recovery(
+                        isolated_path=handle.worktree_path,
+                        target_path=wt.host_repo_path,
+                        error=exc,
+                        preserved=callable(_preserve),
+                    )
                     sink.write(
                         StreamEvent(
                             type="text",
                             agent_name=agent.name,
                             iteration=len(iterations),
                             timestamp=_utcnow(),
-                            text=f"[eden] finalize failed: {exc}",
+                            text=recovery,
+                        )
+                    )
+            else:
+                if not fr.applied and sink is not None:
+                    _preserve = getattr(handle, "preserve", None)
+                    if callable(_preserve):
+                        try:
+                            _preserve()
+                        except Exception:
+                            pass
+                    recovery = format_finalize_recovery(
+                        isolated_path=handle.worktree_path,
+                        target_path=wt.host_repo_path,
+                        files_failed=fr.files_changed,
+                        preserved=callable(_preserve),
+                    )
+                    sink.write(
+                        StreamEvent(
+                            type="text",
+                            agent_name=agent.name,
+                            iteration=len(iterations),
+                            timestamp=_utcnow(),
+                            text=recovery,
                         )
                     )
 
     finally:
+        if unregister_shutdown is not None:
+            try:
+                unregister_shutdown()
+            except Exception:
+                pass
         if handle is not None and not caller_managed:
             try:
                 run_sandbox_hooks(

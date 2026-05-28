@@ -5,7 +5,13 @@ from __future__ import annotations
 from eden._error_format import format_error_message
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
 from eden._version import __version__
-from eden.abort import AbortController, Aborted, AbortSignal
+from eden.abort import (
+    AbortController,
+    Aborted,
+    AbortSignal,
+    ShutdownCallback,
+    register_shutdown,
+)
 from eden.agents import (
     Agent,
     IterationContext,
@@ -134,6 +140,7 @@ __all__ = [
     "SessionCaptureFailed",
     "SessionNotFound",
     "SessionStorage",
+    "ShutdownCallback",
     "SilentDisplay",
     "StepTimeout",
     "StreamEvent",
@@ -155,6 +162,7 @@ __all__ = [
     "opencode",
     # entrypoints
     "pi",
+    "register_shutdown",
     "run",
     "simulated_agent",
     "transfer_session",
