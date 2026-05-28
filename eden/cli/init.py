@@ -14,6 +14,7 @@ from eden.cli._templates._backlog import (
     list_backlog_managers,
 )
 from eden.cli._templates.blank import render_blank
+from eden.cli._templates.github_agent_workflows import render_github_agent_workflows
 from eden.cli._templates.parallel_planner import render_parallel_planner
 from eden.cli._templates.parallel_planner_with_review import (
     render_parallel_planner_with_review,
@@ -34,6 +35,7 @@ _VALID_TEMPLATES = (
     "parallel-planner",
     "parallel-planner-with-review",
     "plan-implement-review",
+    "github-agent-workflows",
 )
 _TEMPLATES_REQUIRING_BACKLOG = {
     "simple-loop",
@@ -41,6 +43,7 @@ _TEMPLATES_REQUIRING_BACKLOG = {
     "parallel-planner",
     "parallel-planner-with-review",
     "plan-implement-review",
+    "github-agent-workflows",
 }
 _VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
 
@@ -164,7 +167,7 @@ def init_command(
             image_name=image_name,
             backlog=get_backlog_manager(cast(BacklogName, backlog)),
         )
-    else:  # plan-implement-review
+    elif template == "plan-implement-review":
         assert backlog is not None
         files = render_plan_implement_review(
             sandbox=sandbox,
@@ -173,9 +176,31 @@ def init_command(
             image_name=image_name,
             backlog=get_backlog_manager(cast(BacklogName, backlog)),
         )
-    target.mkdir(parents=True)
+    else:  # github-agent-workflows
+        assert backlog is not None
+        files = render_github_agent_workflows(
+            sandbox=sandbox,
+            agent=agent,
+            model=model,
+            image_name=image_name,
+            backlog=get_backlog_manager(cast(BacklogName, backlog)),
+        )
+    repo = Path.cwd().resolve()
+    outputs: list[tuple[Path, str]] = []
     for name, contents in files.items():
-        (target / name).write_text(contents, encoding="utf-8")
+        out = (target / name).resolve()
+        if not out.is_relative_to(repo):
+            console.print(f"[red]refusing to write outside repo: {out}[/red]")
+            raise typer.Exit(code=1)
+        if out.exists():
+            console.print(f"[red]refusing to overwrite existing {out}[/red]")
+            raise typer.Exit(code=1)
+        outputs.append((out, contents))
+
+    target.mkdir(parents=True)
+    for out, contents in outputs:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(contents, encoding="utf-8")
 
     typer.secho(f"✓ scaffolded {target}", fg="green")
     typer.echo("Next steps:")
