@@ -43,6 +43,16 @@ class InvalidOptions(ConfigError):
 
 
 class PromptError(ConfigError):
+    """Prompt resolution or expansion failed.
+
+    ``exit_code`` carries the subprocess exit code when the failure was a
+    non-zero exit from a ``!`command`` shell-block expansion, so a caller
+    can branch on it programmatically (e.g. retry only on transient
+    codes) without parsing the message string. ``None`` for non-exec
+    failures like missing files or unknown placeholders. Mirrors
+    upstream's typed prompt-expansion diagnostics (v0.6.6, b9b9712).
+    """
+
     def __init__(
         self,
         *,
@@ -50,11 +60,13 @@ class PromptError(ConfigError):
         message: str,
         hint: str | None = None,
         cause: Exception | None = None,
+        exit_code: int | None = None,
     ) -> None:
         self.code = code
         self.message = message
         self.hint = hint
         self.cause = cause
+        self.exit_code = exit_code
         super().__init__(_format(code, message, hint))
 
 

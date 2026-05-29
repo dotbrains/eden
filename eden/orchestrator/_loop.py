@@ -86,6 +86,7 @@ def _run_loop(
     completion_signal: str | list[str],
     idle_timeout: float,
     idle_warning_interval: float | None,
+    completion_timeout: float | None = 60.0,
     name: str | None,
     hooks: Hooks,
     timeouts: Timeouts,
@@ -95,6 +96,7 @@ def _run_loop(
     prompt_args: Mapping[str, str] | None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    fork_session: bool = False,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
     existing_worktree: WorktreeHandle | None = None,
@@ -313,6 +315,7 @@ def _run_loop(
                     branch=wt.branch,
                     name=name,
                     resume_session=resume_session,
+                    fork_session=fork_session,
                 )
             )
 
@@ -408,7 +411,27 @@ def _run_loop(
                             # the agent's final ``result`` line (carrying
                             # session_id + usage) is captured even when the
                             # completion signal fires before the process exits.
-                            for trailing in runner.drain_remaining():
+                            # ``completion_timeout`` bounds the total wait so a
+                            # child process that holds the pipe open after the
+                            # agent emits the signal can't hang the loop until
+                            # the much-larger ``idle_timeout`` trips.
+                            drain = runner.drain_remaining(total_timeout=completion_timeout)
+                            if drain.timed_out and sink is not None:
+                                warn_ev = StreamEvent(
+                                    type="text",
+                                    agent_name=agent.name,
+                                    iteration=i,
+                                    timestamp=_utcnow(),
+                                    text=(
+                                        f"[eden] completion_timeout ({completion_timeout}s) "
+                                        "elapsed after completion signal — agent process did "
+                                        "not EOF; terminating now. Iteration succeeded."
+                                    ),
+                                )
+                                sink.write(warn_ev)
+                                if on_event is not None:
+                                    on_event(warn_ev)
+                            for trailing in drain.lines:
                                 stdout_chunks.push(trailing + "\n")
                                 trailing_parsed = agent.parse_stream(trailing)
                                 if trailing_parsed is not None:
@@ -678,6 +701,8 @@ def _run_loop(
             session_id=last.session_id if last else None,
             session_file_path=last.session_file_path if last else None,
         )
+    from eden._types import _RunContext
+
     return assemble(
         iterations=iterations,
         completion_signal=completion_hit,
@@ -693,6 +718,7 @@ def _run_loop(
         session_file_path=last.session_file_path if last else None,
         usage=last.usage if last else None,
         output=extracted,
+        ctx=_RunContext(agent=agent, sandbox=sandbox, cwd=setup.cwd),
     )
 
 

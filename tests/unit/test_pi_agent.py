@@ -10,6 +10,7 @@ import pytest
 
 from eden.agents import IterationContext
 from eden.agents.pi import pi
+from eden.errors import InvalidOptions
 from eden.providers._types import ExecResult
 
 pytestmark = pytest.mark.unit
@@ -90,3 +91,32 @@ def test_pi_parse_stream_returns_none_for_unknown() -> None:
     a = pi()
     assert a.parse_stream("not json") is None
     assert a.parse_stream(json.dumps({"type": "noop"})) is None
+
+
+def test_pi_thinking_appends_flag() -> None:
+    """``thinking="high"`` becomes ``--thinking high`` before the prompt."""
+    a = pi(thinking="high")
+    argv = a.build_command(_ctx(prompt="p"))
+    i = argv.index("--thinking")
+    assert argv[i + 1] == "high"
+    assert i < argv.index("p")
+
+
+def test_pi_thinking_precedes_extra_args() -> None:
+    """``--thinking`` is inserted before user-supplied ``extra_args``."""
+    a = pi(thinking="medium", extra_args=("--verbose",))
+    argv = a.build_command(_ctx(prompt="p"))
+    assert argv.index("--thinking") < argv.index("--verbose")
+
+
+def test_pi_thinking_default_no_flag() -> None:
+    """No ``--thinking`` flag when option is omitted."""
+    a = pi()
+    argv = a.build_command(_ctx(prompt="p"))
+    assert "--thinking" not in argv
+
+
+def test_pi_thinking_rejects_invalid_level() -> None:
+    with pytest.raises(InvalidOptions) as excinfo:
+        pi(thinking="extreme")  # type: ignore[arg-type]
+    assert "extreme" in excinfo.value.message

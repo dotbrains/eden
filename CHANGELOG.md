@@ -9,6 +9,43 @@ ships.
 
 ### Added
 
+- **`RunResult.resume(prompt)` and `RunResult.fork(prompt)` methods** —
+  sugar for `eden.run(agent=..., sandbox=..., cwd=..., prompt=prompt,
+  resume_session=result.session_id)` with the original `run()` context
+  carried on the result. `.fork()` writes a **new** session id while
+  continuing from the captured state (claude `--fork-session`, codex
+  `exec fork <id>`), so concurrent fan-out (`r.fork(a)` and `r.fork(b)`
+  in parallel) doesn't corrupt the parent. Safe concurrent fork also
+  needs distinct `branch_strategy=BranchStrategy.named(...)` per child.
+  `eden.run()` and `Sandbox.run()` also accept `fork_session=True`
+  directly. _(Upstream parity upstream v0.6.6, 58f335f.)_
+- **`completion_timeout` bounds the trailing-line drain** — once the
+  iteration's completion signal is matched, eden swaps the idle timer
+  for a shorter total budget (default `60.0` seconds) while draining
+  trailing lines. A child process that keeps the agent's stdout pipe
+  open after the signal no longer hangs the run until `idle_timeout`
+  (default 10 min) trips; on `completion_timeout` expiry the iteration
+  succeeds with a warning, commits intact. `total_timeout=None`
+  preserves the pre-port behaviour. _(Upstream parity upstream
+  v0.6.6, ddc26ba.)_
+- **`pi()` session capture + resume** — `pi(capture_sessions=True)` is
+  the new default; pi sessions captured under
+  `~/.pi/agent/sessions/--<enc-cwd>--/<ts>_<id>.jsonl` are copied to
+  `.eden/sessions/<branch>/iter-<i>-<id>.jsonl` with the JSONL header's
+  `cwd` rewritten. Resume rewrites it back to the sandbox cwd and lands
+  the file under `--<encoded-sandbox-cwd>--/` so pi's project-first
+  resolver doesn't trigger the "fork session?" prompt. New
+  `PiSessionStorage` exported from `eden`. _(Upstream parity upstream
+  v0.6.6, 932aa70.)_
+- **`pi(thinking=...)` option** — forwards `--thinking <level>` to the
+  pi CLI. Accepted: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`,
+  `"xhigh"`. _(Upstream parity upstream v0.6.6, 1201b4d.)_
+- **`PromptError.exit_code` structured field** — when a `` !`command` ``
+  shell-block expansion fails, the subprocess exit code is now an
+  attribute on the raised `PromptError` (not just in the message), so
+  callers can branch programmatically (e.g. retry only on transient
+  codes). `None` for non-exec failures (missing files, unknown
+  placeholders). _(Upstream parity upstream v0.6.6, b9b9712.)_
 - **Bounded rolling tail for accumulated stdout** — the orchestrator's
   per-run `stdout_chunks` is now a `BoundedTail` (default 64 KiB)
   instead of an unbounded `list[str]`. Multi-hour agent runs no longer

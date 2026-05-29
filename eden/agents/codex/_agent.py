@@ -42,6 +42,7 @@ class _CodexAgent:
             effort=self._effort,
             extra_args=self._extra_args,
             resume_session=ctx.resume_session,
+            fork_session=ctx.fork_session,
             dangerously_bypass_approvals_and_sandbox=(
                 self._dangerously_bypass_approvals_and_sandbox
             ),

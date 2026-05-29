@@ -46,6 +46,22 @@ def parse_line(line: str, *, agent_name: str, iteration: int) -> StreamEvent | N
     now = datetime.now(UTC)
     kind = obj.get("type")
 
+    if kind == "session":
+        # First line of pi's --mode json stdout stream is a session header
+        # carrying the UUID. Subsequent entries (model_change, message_update,
+        # ...) do not. Surfacing the id as a ``session_id`` event lets the
+        # orchestrator route capture / resume via ``PiSessionStorage``.
+        sid = obj.get("id")
+        if isinstance(sid, str):
+            return StreamEvent(
+                type="session_id",
+                agent_name=agent_name,
+                iteration=iteration,
+                timestamp=now,
+                session_id=sid,
+            )
+        return None
+
     if kind == "message_update":
         evt = obj.get("assistantMessageEvent")
         if (
