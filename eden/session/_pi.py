@@ -83,11 +83,16 @@ def transfer_pi_session(jsonl: str, from_cwd: Path, to_cwd: Path) -> str:
     JSONL line passes through verbatim, including malformed JSON
     (preserved so a captured stream stays byte-faithful outside the one
     field we own).
+
+    Paths are compared and emitted in POSIX form (``as_posix()``)
+    because pi writes its JSONL inside a Linux container — ``str(Path)``
+    on a Windows host would produce backslashes that wouldn't match the
+    forward slashes already in the file.
     """
     if jsonl == "":
         return ""
-    from_s = str(from_cwd)
-    to_s = str(to_cwd)
+    from_s = from_cwd.as_posix()
+    to_s = to_cwd.as_posix()
     out: list[str] = []
     for line in jsonl.split("\n"):
         if line == "":
