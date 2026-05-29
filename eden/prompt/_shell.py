@@ -29,6 +29,7 @@ def expand_shell_blocks(text: str, *, handle: SandboxHandle) -> str:
                 code="prompt.shell_block_failed",
                 message=f"prompt shell block {cmd!r} exited {result.exit_code}",
                 hint=result.stderr.strip() or None,
+                exit_code=result.exit_code,
             )
         body = result.stdout
         if body.endswith("\n"):

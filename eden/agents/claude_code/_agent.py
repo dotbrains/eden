@@ -42,6 +42,7 @@ class _ClaudeCodeAgent:
             effort=self._effort,
             extra_args=self._extra_args,
             resume_session=ctx.resume_session,
+            fork_session=ctx.fork_session,
             dangerously_skip_permissions=self._dangerously_skip_permissions,
         )
 

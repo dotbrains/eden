@@ -701,6 +701,16 @@ class CodexSessionStorage:
 
 The `SessionStorage` implementation used by `codex(capture_sessions=True)` (the default). Mounts `~/.codex/sessions` into containerized sandboxes and walks codex's date-nested directory tree (`<YYYY>/<MM>/<DD>/rollout-<timestamp>-<session_id>.jsonl`) to locate the per-iteration transcript. `home=` overrides `~` for tests.
 
+### `PiSessionStorage`
+
+```python
+@dataclass(frozen=True)
+class PiSessionStorage:
+    home: Path | None = None
+```
+
+The `SessionStorage` implementation used by `pi(capture_sessions=True)` (the default). Mounts `~/.pi/agent/sessions` into containerized sandboxes and locates pi's per-iteration JSONL by the `--<encoded-cwd>--/<timestamp>_<session_id>.jsonl` convention. Resume rewrites the session header's `cwd` field via `transfer_pi_session(...)` and places the JSONL inside the sandbox-cwd-encoded directory so pi's project-first resolver doesn't trigger the "fork session?" prompt. `home=` overrides `~` for tests.
+
 ### `transfer_session`
 
 ```python

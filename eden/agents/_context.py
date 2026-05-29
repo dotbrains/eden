@@ -17,3 +17,10 @@ class IterationContext:
     branch: str
     name: str | None
     resume_session: str | None = None
+    fork_session: bool = False
+    """When ``True``, agents that support session forking write a NEW
+    session id while continuing from ``resume_session``'s captured state.
+    Implies ``resume_session is not None``. Mirrors sandcastle's
+    ``--fork-session`` (claude) / ``codex exec fork`` (codex) wiring
+    (v0.6.6, 58f335f).
+    """

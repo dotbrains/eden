@@ -78,6 +78,7 @@ def run(
     completion_signal: str | list[str] = "<promise>COMPLETE</promise>",
     idle_timeout: float | timedelta = 600.0,
     idle_warning_interval: float | timedelta | None = None,
+    completion_timeout: float | timedelta | None = 60.0,
     name: str | None = None,
     hooks: Hooks | None = None,
     timeouts: Timeouts | None = None,
@@ -86,6 +87,7 @@ def run(
     signal: AbortSignal | None = None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    fork_session: bool = False,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
 ) -> RunResult:
@@ -119,6 +121,15 @@ def run(
             sandbox=sandbox,
             resume_session=resume_session,
             host_repo_path=setup.cwd,
+        )
+    if fork_session and resume_session is None:
+        raise InvalidOptions(
+            code="config.invalid_options",
+            message="fork_session=True requires resume_session=<id>",
+            hint=(
+                "fork continues a captured session under a new id; "
+                "pass resume_session=<id> alongside fork_session=True"
+            ),
         )
     if output is not None:
         if max_iterations != 1:
@@ -174,6 +185,7 @@ def run(
         completion_signal=completion_signal,
         idle_timeout=_seconds(idle_timeout),
         idle_warning_interval=_maybe_seconds(idle_warning_interval),
+        completion_timeout=_maybe_seconds(completion_timeout),
         name=name,
         hooks=hooks if hooks is not None else Hooks(),
         timeouts=timeouts if timeouts is not None else Timeouts(),
@@ -183,6 +195,7 @@ def run(
         prompt_args=prompt_args,
         output=output,
         resume_session=resume_session,
+        fork_session=fork_session,
         copy_to_worktree=copy_to_worktree,
         throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )

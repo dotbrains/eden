@@ -106,6 +106,20 @@ def test_failure_raises_prompt_error() -> None:
     assert "bad" in excinfo.value.message
 
 
+def test_failure_surfaces_exit_code_as_attribute() -> None:
+    """``PromptError.exit_code`` is set so callers can branch programmatically."""
+    h = _FakeHandle({"x": ExecResult(stdout="", stderr="", exit_code=127)})
+    with pytest.raises(PromptError) as excinfo:
+        expand_shell_blocks("!`x`", handle=h)
+    assert excinfo.value.exit_code == 127
+
+
+def test_non_exec_prompt_error_has_no_exit_code() -> None:
+    """``exit_code`` stays ``None`` for non-subprocess failures."""
+    e = PromptError(code="prompt.unknown_key", message="bad key")
+    assert e.exit_code is None
+
+
 def test_block_strips_trailing_newline_only() -> None:
     h = _FakeHandle({"x": ExecResult(stdout="line1\nline2\n", stderr="", exit_code=0)})
     out = expand_shell_blocks("!`x`", handle=h)

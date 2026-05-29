@@ -76,6 +76,7 @@ from eden.providers._types import (
 from eden.sandboxes import Sandbox, create_sandbox
 from eden.session._claude import ClaudeSessionStorage
 from eden.session._codex import CodexSessionStorage
+from eden.session._pi import PiSessionStorage
 from eden.session._protocol import SessionStorage
 from eden.session._transfer import transfer_session
 from eden.streaming import StreamEvent
@@ -126,6 +127,7 @@ __all__ = [
     "Mount",
     "Output",
     "OutputDefinition",
+    "PiSessionStorage",
     "PromptError",
     "RestAuthError",
     "RestError",

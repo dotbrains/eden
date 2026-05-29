@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from eden._types import Iteration, RunResult, Usage
+from eden._types import Iteration, RunResult, Usage, _RunContext
 
 
 def assemble(
@@ -23,6 +23,7 @@ def assemble(
     session_file_path: Path | None,
     usage: Usage | None,
     output: object | None = None,
+    ctx: _RunContext | None = None,
 ) -> RunResult:
     return RunResult(
         iterations=iterations,
@@ -41,4 +42,5 @@ def assemble(
         session_file_path=session_file_path,
         usage=usage,
         output=output,
+        _ctx=ctx,
     )

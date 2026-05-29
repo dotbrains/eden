@@ -5,7 +5,9 @@ from __future__ import annotations
 import os
 import subprocess
 import threading
+import time
 from collections.abc import Callable, Generator, Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from queue import Empty, Queue
 from typing import IO, Any
@@ -15,6 +17,16 @@ from eden.orchestrator._idle import IdleWatchdog
 
 _SENTINEL: Any = object()
 _GRACE_SECONDS = 5.0
+
+
+@dataclass(frozen=True)
+class DrainResult:
+    """Outcome of :meth:`_AgentRunner.drain_remaining`."""
+
+    lines: list[str]
+    """Trailing lines accumulated before the drain exited."""
+    timed_out: bool
+    """``True`` iff the drain exited because ``total_timeout`` elapsed."""
 
 
 def _drain(stream: IO[str], queue: Queue[Any]) -> None:
@@ -115,25 +127,58 @@ class _AgentRunner:
             self._watchdog.record_activity()
             yield item.rstrip("\n")
 
-    def drain_remaining(self, *, per_item_timeout: float = 0.5) -> list[str]:
+    def drain_remaining(
+        self,
+        *,
+        total_timeout: float | None = None,
+        per_item_timeout: float = 0.5,
+    ) -> DrainResult:
         """Return buffered lines remaining after the completion signal.
 
-        Called once the completion signal is matched so that trailing lines
+        Called once the completion signal is matched so trailing lines
         (e.g. the ``result`` JSON emitted by ``claude --output-format
-        stream-json``) are captured before the process is terminated.  Each
-        ``get`` waits up to *per_item_timeout* seconds; the loop exits as soon
-        as the queue is empty for that window or a sentinel (EOF) arrives.
+        stream-json``) are captured before the process is terminated.
+
+        Three exit conditions:
+
+        * **EOF** — sentinel arrives → process has cleanly closed stdout.
+        * **idle** — no line for ``per_item_timeout`` seconds → drain
+          considered complete; process may still be running.
+        * **timeout** — total wall time ``total_timeout`` elapses → drain
+          aborted because the agent emitted the completion signal but a
+          child process kept the stdout pipe open. Mirrors sandcastle's
+          ``completionTimeoutSeconds`` (v0.6.6, ddc26ba).
+
+        ``total_timeout=None`` disables the bounded budget — only EOF or
+        idle exit the loop (the pre-v0.6.6 behaviour).
         """
+        deadline = time.monotonic() + total_timeout if total_timeout is not None else None
         lines: list[str] = []
+        timed_out = False
         while True:
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    timed_out = True
+                    break
+                wait = min(per_item_timeout, remaining)
+            else:
+                wait = per_item_timeout
             try:
-                item = self._stdout_q.get(timeout=per_item_timeout)
+                item = self._stdout_q.get(timeout=wait)
             except Empty:
+                # ``Empty`` is ambiguous when the wait was clamped by the
+                # deadline: the queue may have had items pending but the
+                # clamped window expired first. Re-check the deadline so
+                # a noisy-child scenario reports ``timed_out=True`` rather
+                # than a false "idle" exit.
+                if deadline is not None and time.monotonic() >= deadline:
+                    timed_out = True
                 break
             if item is _SENTINEL:
                 break
             lines.append(item.rstrip("\n"))
-        return lines
+        return DrainResult(lines=lines, timed_out=timed_out)
 
     def terminate(self) -> None:
         proc = self._proc
