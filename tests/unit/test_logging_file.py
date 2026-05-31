@@ -154,3 +154,27 @@ def test_default_log_path_strips_windows_unsafe_chars(tmp_path: Path) -> None:
     sanitized = stem.rsplit("-", 1)[0]
     for c in ':"*<>?|':
         assert c not in sanitized
+
+
+def test_default_log_path_includes_target_branch_and_name(tmp_path: Path) -> None:
+    p = default_log_path(
+        host_repo_path=tmp_path,
+        target_branch="main",
+        branch="eden/20260501-abc",
+        name="Review #42",
+        now=_ts(),
+    )
+    assert p.name.startswith("main-eden-20260501-abc-Review-42-")
+
+
+def test_default_log_path_truncates_prefix_before_run_name(tmp_path: Path) -> None:
+    p = default_log_path(
+        host_repo_path=tmp_path,
+        target_branch="main",
+        branch="eden/" + ("x" * 120),
+        name="review issue 123",
+        now=_ts(),
+    )
+    sanitized = p.stem.rsplit("-", 1)[0]
+    assert len(sanitized) <= 64
+    assert sanitized.endswith("review-issue-123")

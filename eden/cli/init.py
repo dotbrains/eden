@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -46,13 +49,159 @@ _TEMPLATES_REQUIRING_BACKLOG = {
     "github-agent-workflows",
 }
 _VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
+_TemplateRenderer = Callable[..., dict[str, str]]
 
-_DEFAULT_MODEL: dict[str, str] = {
-    "claude-code": "claude-opus-4-7",
-    "codex": "gpt-5",
-    "opencode": "claude-opus-4",
-    "pi": "pi-3.5",
+
+@dataclass(frozen=True)
+class AgentMetadata:
+    name: str
+    label: str
+    default_model: str
+
+
+@dataclass(frozen=True)
+class TemplateMetadata:
+    name: str
+    description: str
+    dependencies: tuple[str, ...] = ()
+
+
+_AGENTS: dict[str, AgentMetadata] = {
+    "claude-code": AgentMetadata(
+        name="claude-code",
+        label="Claude Code",
+        default_model="claude-opus-4-7",
+    ),
+    "codex": AgentMetadata(name="codex", label="Codex", default_model="gpt-5"),
+    "opencode": AgentMetadata(name="opencode", label="opencode", default_model="claude-opus-4"),
+    "pi": AgentMetadata(name="pi", label="Pi", default_model="pi-3.5"),
 }
+
+_TEMPLATE_METADATA: dict[str, TemplateMetadata] = {
+    "blank": TemplateMetadata(
+        name="blank",
+        description="Bare scaffold; write your own prompt and orchestration.",
+    ),
+    "simple-loop": TemplateMetadata(
+        name="simple-loop",
+        description="Pick backlog items one by one and close them.",
+    ),
+    "sequential-reviewer": TemplateMetadata(
+        name="sequential-reviewer",
+        description="Implement backlog items with a review step after each.",
+    ),
+    "parallel-planner": TemplateMetadata(
+        name="parallel-planner",
+        description="Plan parallelizable tasks, execute branches, then merge.",
+    ),
+    "parallel-planner-with-review": TemplateMetadata(
+        name="parallel-planner-with-review",
+        description="Plan parallel tasks with per-branch review before merge.",
+    ),
+    "plan-implement-review": TemplateMetadata(
+        name="plan-implement-review",
+        description="Plan, implement, and review each item in sequence.",
+    ),
+    "github-agent-workflows": TemplateMetadata(
+        name="github-agent-workflows",
+        description="Create GitHub Actions workflows for Eden-powered agents.",
+    ),
+}
+
+_TEMPLATE_RENDERERS: dict[str, _TemplateRenderer] = {
+    "blank": render_blank,
+    "simple-loop": render_simple_loop,
+    "sequential-reviewer": render_sequential_reviewer,
+    "parallel-planner": render_parallel_planner,
+    "parallel-planner-with-review": render_parallel_planner_with_review,
+    "plan-implement-review": render_plan_implement_review,
+    "github-agent-workflows": render_github_agent_workflows,
+}
+
+
+def _default_model(agent: str) -> str:
+    try:
+        return _AGENTS[agent].default_model
+    except KeyError as exc:
+        raise typer.BadParameter(
+            f"agent must be one of {list(_VALID_AGENTS)}, got {agent!r}",
+        ) from exc
+
+
+def _detect_package_manager(repo: Path) -> str:
+    """Return npm/pnpm/yarn/bun using package.json or lockfiles."""
+    package_json = repo / "package.json"
+    if package_json.exists():
+        try:
+            raw = json.loads(package_json.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            raw = {}
+        package_manager = raw.get("packageManager")
+        if isinstance(package_manager, str):
+            manager = package_manager.split("@", 1)[0]
+            if manager in {"npm", "pnpm", "yarn", "bun"}:
+                return manager
+    lockfiles = (
+        ("bun.lockb", "bun"),
+        ("bun.lock", "bun"),
+        ("pnpm-lock.yaml", "pnpm"),
+        ("yarn.lock", "yarn"),
+        ("package-lock.json", "npm"),
+    )
+    for filename, manager in lockfiles:
+        if (repo / filename).exists():
+            return manager
+    return "npm"
+
+
+def _add_dependency_command(package_manager: str, dependency: str) -> str:
+    if package_manager == "pnpm":
+        return f"pnpm add {dependency}"
+    if package_manager == "yarn":
+        return f"yarn add {dependency}"
+    if package_manager == "bun":
+        return f"bun add {dependency}"
+    return f"npm install {dependency}"
+
+
+def _has_host_dependency(repo: Path, dependency: str) -> bool:
+    package_json = repo / "package.json"
+    if not package_json.exists():
+        return False
+    try:
+        raw = json.loads(package_json.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    for key in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
+        deps = raw.get(key)
+        if isinstance(deps, dict) and dependency in deps:
+            return True
+    return False
+
+
+def _render_template(
+    *,
+    template: str,
+    sandbox: str,
+    agent: str,
+    model: str,
+    image_name: str,
+    backlog: str | None,
+) -> dict[str, str]:
+    renderer = _TEMPLATE_RENDERERS[template]
+    common = {
+        "sandbox": sandbox,
+        "agent": agent,
+        "model": model,
+        "image_name": image_name,
+    }
+    if template not in _TEMPLATES_REQUIRING_BACKLOG:
+        return renderer(**common)
+    assert backlog is not None
+    return renderer(
+        **common,
+        backlog=get_backlog_manager(cast(BacklogName, backlog)),
+    )
 
 
 def init_command(
@@ -84,22 +233,14 @@ def init_command(
         agent = agent or typer.prompt("Agent", default="claude-code")
         # Default model depends on agent; resolve agent first so the prompt
         # default reflects the chosen agent.
-        if agent not in _DEFAULT_MODEL:
-            raise typer.BadParameter(
-                f"agent must be one of {list(_VALID_AGENTS)}, got {agent!r}",
-            )
-        model = model or typer.prompt("Model", default=_DEFAULT_MODEL[agent])
+        model = model or typer.prompt("Model", default=_default_model(agent))
         template = template or typer.prompt("Template", default="blank")
         if template in _TEMPLATES_REQUIRING_BACKLOG:
             backlog = backlog or typer.prompt("Backlog manager", default="github")
     else:
         sandbox = sandbox or "docker"
         agent = agent or "claude-code"
-        if agent not in _DEFAULT_MODEL:
-            raise typer.BadParameter(
-                f"agent must be one of {list(_VALID_AGENTS)}, got {agent!r}",
-            )
-        model = model or _DEFAULT_MODEL[agent]
+        model = model or _default_model(agent)
         template = template or "blank"
         if template in _TEMPLATES_REQUIRING_BACKLOG:
             backlog = backlog or "github"
@@ -124,67 +265,14 @@ def init_command(
                 f"backlog must be one of {list(_VALID_BACKLOGS)}, got {backlog!r}",
             )
 
-    if template == "blank":
-        files = render_blank(
-            sandbox=sandbox,
-            agent=agent,
-            model=model,
-            image_name=image_name,
-        )
-    elif template == "simple-loop":
-        assert backlog is not None
-        files = render_simple_loop(
-            sandbox=sandbox,
-            agent=agent,
-            model=model,
-            image_name=image_name,
-            backlog=get_backlog_manager(cast(BacklogName, backlog)),
-        )
-    elif template == "sequential-reviewer":
-        assert backlog is not None
-        files = render_sequential_reviewer(
-            sandbox=sandbox,
-            agent=agent,
-            model=model,
-            image_name=image_name,
-            backlog=get_backlog_manager(cast(BacklogName, backlog)),
-        )
-    elif template == "parallel-planner":
-        assert backlog is not None
-        files = render_parallel_planner(
-            sandbox=sandbox,
-            agent=agent,
-            model=model,
-            image_name=image_name,
-            backlog=get_backlog_manager(cast(BacklogName, backlog)),
-        )
-    elif template == "parallel-planner-with-review":
-        assert backlog is not None
-        files = render_parallel_planner_with_review(
-            sandbox=sandbox,
-            agent=agent,
-            model=model,
-            image_name=image_name,
-            backlog=get_backlog_manager(cast(BacklogName, backlog)),
-        )
-    elif template == "plan-implement-review":
-        assert backlog is not None
-        files = render_plan_implement_review(
-            sandbox=sandbox,
-            agent=agent,
-            model=model,
-            image_name=image_name,
-            backlog=get_backlog_manager(cast(BacklogName, backlog)),
-        )
-    else:  # github-agent-workflows
-        assert backlog is not None
-        files = render_github_agent_workflows(
-            sandbox=sandbox,
-            agent=agent,
-            model=model,
-            image_name=image_name,
-            backlog=get_backlog_manager(cast(BacklogName, backlog)),
-        )
+    files = _render_template(
+        template=template,
+        sandbox=sandbox,
+        agent=agent,
+        model=model,
+        image_name=image_name,
+        backlog=backlog,
+    )
     repo = Path.cwd().resolve()
     outputs: list[tuple[Path, str]] = []
     for name, contents in files.items():
@@ -203,11 +291,21 @@ def init_command(
         out.write_text(contents, encoding="utf-8")
 
     typer.secho(f"✓ scaffolded {target}", fg="green")
+    meta = _TEMPLATE_METADATA[template]
+    typer.echo(f"Template: {meta.name} - {meta.description}")
     typer.echo("Next steps:")
     typer.echo("  1. cp .eden/.env.example .env  # then fill in your API keys")
+    step = 2
+    dependencies = tuple(dep for dep in meta.dependencies if not _has_host_dependency(repo, dep))
+    if dependencies:
+        package_manager = _detect_package_manager(repo)
+        for dependency in dependencies:
+            typer.echo(f"  {step}. {_add_dependency_command(package_manager, dependency)}")
+            step += 1
     typer.echo(
-        f"  2. docker build "
+        f"  {step}. {sandbox} build "
         f"--build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) "
         f"-t {image_name} -f .eden/Dockerfile ."
     )
-    typer.echo("  3. python .eden/main.py")
+    step += 1
+    typer.echo(f"  {step}. python .eden/main.py")

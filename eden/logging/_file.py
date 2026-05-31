@@ -18,20 +18,54 @@ from eden.streaming import StreamEvent
 # underscore, and dash.
 _BRANCH_SANITIZE = re.compile(r"[^A-Za-z0-9._-]+")
 _BRANCH_MAX = 64
+_NAME_MAX_WHEN_TRUNCATED = 20
+
+
+def _sanitize_label(value: str) -> str:
+    return _BRANCH_SANITIZE.sub("-", value).strip("-")
+
+
+def _join_log_labels(parts: list[str]) -> str:
+    safe_parts = [safe for part in parts if (safe := _sanitize_label(part))]
+    if not safe_parts:
+        return "run"
+    safe = "-".join(safe_parts)
+    if len(safe) <= _BRANCH_MAX:
+        return safe
+    if len(safe_parts) == 1:
+        return safe[:_BRANCH_MAX]
+
+    # Preserve the final label, usually ``name``, because that is the
+    # human-chosen discriminator in parallel runs. Long target/branch labels
+    # are still visible as the prefix.
+    suffix = safe_parts[-1][:_NAME_MAX_WHEN_TRUNCATED]
+    prefix = "-".join(safe_parts[:-1])
+    prefix_len = max(1, _BRANCH_MAX - len(suffix) - 1)
+    return f"{prefix[:prefix_len].rstrip('-')}-{suffix}"
 
 
 def default_log_path(
     *,
     host_repo_path: Path,
     branch: str,
+    target_branch: str | None = None,
+    name: str | None = None,
     now: datetime | None = None,
 ) -> Path:
-    """Compute .eden/logs/<sanitized-branch>-<utc>.log under host_repo_path."""
-    safe = _BRANCH_SANITIZE.sub("-", branch).strip("-")
-    if not safe:
-        safe = "run"
-    if len(safe) > _BRANCH_MAX:
-        safe = safe[:_BRANCH_MAX]
+    """Compute a default run log path under ``<repo>/.eden/logs``.
+
+    The filename includes the resolved worktree branch, and optionally the
+    target branch and caller-provided run name. That makes parallel runs easier
+    to distinguish while keeping the legacy ``<branch>-<utc>.log`` shape when
+    the extra labels are omitted.
+    """
+    parts: list[str] = []
+    if target_branch:
+        parts.append(target_branch)
+    parts.append(branch)
+    if name:
+        parts.append(name)
+    safe = _join_log_labels(parts)
     moment = now or datetime.now(UTC)
     stamp = moment.strftime("%Y%m%dT%H%M%SZ")
     return host_repo_path / ".eden" / "logs" / f"{safe}-{stamp}.log"

@@ -246,6 +246,8 @@ def _run_loop(
             default_log_path(
                 host_repo_path=setup.cwd,
                 branch=wt.branch,
+                target_branch=target_branch,
+                name=name,
             )
         )
         log_path = log_cfg.path
