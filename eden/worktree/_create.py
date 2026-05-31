@@ -13,6 +13,7 @@ from eden.providers._types import BranchStrategy
 from eden.worktree._git import (
     branch_exists,
     list_worktrees,
+    refresh_from_origin,
     status_porcelain,
     worktree_add,
     worktree_remove,
@@ -161,6 +162,17 @@ def create_worktree(
             for record in list_worktrees(repo_path=host_repo_path):
                 if record.branch == branch:
                     lock = acquire_lock(_lock_path_for(host_repo_path, branch))
+                    # Refresh a clean reused worktree from origin so the agent
+                    # never runs against stale code; a dirty tree is reused
+                    # untouched. All refresh failures fall back to plain reuse.
+                    has_changes = bool(status_porcelain(repo_path=record.path).strip())
+                    if has_changes:
+                        print(
+                            f"eden: reusing worktree at {record.path} "
+                            f"(branch {branch!r}) — worktree has uncommitted changes"
+                        )
+                    else:
+                        refresh_from_origin(worktree_path=record.path, branch=branch)
                     return WorktreeHandle(
                         branch=branch,
                         worktree_path=record.path,

@@ -251,3 +251,93 @@ def worktree_remove(*, repo_path: Path, worktree_path: Path) -> None:
             ("git", "worktree", "remove", "--force", str(worktree_path)),
             cwd=repo_path,
         )
+
+
+def _symbolic_head(*, repo_path: Path) -> str | None:
+    """Return the branch HEAD points at, or ``None`` when detached.
+
+    ``git symbolic-ref --quiet HEAD`` exits non-zero on a detached HEAD; we
+    map both that and any timeout to ``None`` so callers treat them the same
+    as "not on a branch".
+    """
+    try:
+        proc = subprocess.run(
+            ("git", "symbolic-ref", "--quiet", "HEAD"),
+            cwd=str(repo_path),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=_DEFAULT_GIT_TIMEOUT,
+            env=c_locale_env(),
+        )
+    except subprocess.TimeoutExpired:
+        return None
+    if proc.returncode != 0:
+        return None
+    ref = proc.stdout.strip()
+    prefix = "refs/heads/"
+    return ref[len(prefix) :] if ref.startswith(prefix) else None
+
+
+def _rev_parse_head(*, repo_path: Path) -> str:
+    try:
+        stdout, _ = _run_git(("git", "rev-parse", "HEAD"), cwd=repo_path)
+    except (GitCommandFailed, GitCommandTimeout):
+        return ""
+    return stdout.strip()
+
+
+def refresh_from_origin(*, worktree_path: Path, branch: str) -> None:
+    """Fast-forward a reused, clean worktree to ``origin/<branch>`` when safe.
+
+    Mirrors upstream's ``fastForwardFromOrigin`` (v0.7.0). Every failure
+    mode is non-fatal by design: the worst case is the same stale-but-usable
+    worktree the caller would have had before this refresh existed. Skipped
+    (with an explanatory log) when:
+
+    * HEAD is detached / not on ``<branch>`` — e.g. a worktree paused
+      mid-rebase has a clean working tree but a detached HEAD pointing at the
+      pause point; a ``merge --ff-only`` there would silently advance HEAD
+      past the pause and break ``git rebase --continue``;
+    * ``git fetch origin <branch>`` fails — no ``origin`` remote, an
+      unreachable network, or the branch missing upstream; or
+    * the branch has diverged from ``origin/<branch>`` (unpushed commits +
+      moved origin) — ``--ff-only`` refuses and the unpushed work is
+      preserved exactly as it was.
+    """
+    head = _symbolic_head(repo_path=worktree_path)
+    if head != branch:
+        print(
+            f"eden: reusing worktree at {worktree_path} (branch {branch!r}) — "
+            f"HEAD is not on {branch!r}, skipping origin refresh"
+        )
+        return
+    try:
+        _run_git(
+            ("git", *_NO_CONFIG_LOCK_FLAGS, "fetch", "origin", branch),
+            cwd=worktree_path,
+        )
+    except (GitCommandFailed, GitCommandTimeout):
+        print(
+            f"eden: could not fetch from origin "
+            f"(reusing worktree at {worktree_path} as-is, branch {branch!r})"
+        )
+        return
+    before = _rev_parse_head(repo_path=worktree_path)
+    try:
+        _run_git(
+            ("git", *_NO_CONFIG_LOCK_FLAGS, "merge", "--ff-only", f"origin/{branch}"),
+            cwd=worktree_path,
+        )
+    except (GitCommandFailed, GitCommandTimeout):
+        print(
+            f"eden: branch {branch!r} has diverged from origin "
+            f"(reusing worktree at {worktree_path} as-is)"
+        )
+        return
+    after = _rev_parse_head(repo_path=worktree_path)
+    if before and after and before != after:
+        print(
+            f"eden: fast-forwarded worktree at {worktree_path} "
+            f"(branch {branch!r}) to origin/{branch}"
+        )

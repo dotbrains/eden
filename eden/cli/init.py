@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -119,6 +120,37 @@ _TEMPLATE_RENDERERS: dict[str, _TemplateRenderer] = {
 }
 
 
+def _resolve_option(
+    value: str | None,
+    *,
+    flag: str,
+    label: str,
+    default: str,
+    interactive: bool,
+    yes: bool,
+) -> str:
+    """Resolve an init option from a flag, a prompt, or a default.
+
+    Precedence: an explicit ``value`` always wins. Otherwise, when attached
+    to a TTY (and not ``--yes``) we prompt with ``default``; under ``--yes``
+    we take ``default`` silently. When stdin is not a TTY and the flag is
+    absent, we fail fast naming the flag rather than hanging on (or aborting
+    out of) the prompt library. Mirrors upstream v0.7.0's fully
+    non-interactive ``init``.
+    """
+    if value is not None:
+        return value
+    if interactive:
+        return cast(str, typer.prompt(label, default=default))
+    if yes:
+        return default
+    raise typer.BadParameter(
+        f"{flag} is required when stdin is not a TTY; "
+        f"pass {flag} or --yes to accept the default ({default!r})",
+        param_hint=flag,
+    )
+
+
 def _default_model(agent: str) -> str:
     try:
         return _AGENTS[agent].default_model
@@ -227,23 +259,53 @@ def init_command(
         console.print(f"[red]refusing to overwrite existing {target}[/red]")
         raise typer.Exit(code=1)
 
-    # Resolve flags interactively if not supplied (and not --yes).
-    if not yes:
-        sandbox = sandbox or typer.prompt("Sandbox", default="docker")
-        agent = agent or typer.prompt("Agent", default="claude-code")
-        # Default model depends on agent; resolve agent first so the prompt
-        # default reflects the chosen agent.
-        model = model or typer.prompt("Model", default=_default_model(agent))
-        template = template or typer.prompt("Template", default="blank")
-        if template in _TEMPLATES_REQUIRING_BACKLOG:
-            backlog = backlog or typer.prompt("Backlog manager", default="github")
-    else:
-        sandbox = sandbox or "docker"
-        agent = agent or "claude-code"
-        model = model or _default_model(agent)
-        template = template or "blank"
-        if template in _TEMPLATES_REQUIRING_BACKLOG:
-            backlog = backlog or "github"
+    # Resolve each option from its flag, an interactive prompt, or a default.
+    # When stdin is not a TTY and a flag is missing, _resolve_option fails
+    # fast naming the flag instead of hanging on the prompt.
+    interactive = sys.stdin.isatty() and not yes
+    sandbox = _resolve_option(
+        sandbox,
+        flag="--sandbox",
+        label="Sandbox",
+        default="docker",
+        interactive=interactive,
+        yes=yes,
+    )
+    agent = _resolve_option(
+        agent,
+        flag="--agent",
+        label="Agent",
+        default="claude-code",
+        interactive=interactive,
+        yes=yes,
+    )
+    # Default model depends on agent; resolve agent first so the prompt
+    # default reflects the chosen agent.
+    model = _resolve_option(
+        model,
+        flag="--model",
+        label="Model",
+        default=_default_model(agent),
+        interactive=interactive,
+        yes=yes,
+    )
+    template = _resolve_option(
+        template,
+        flag="--template",
+        label="Template",
+        default="blank",
+        interactive=interactive,
+        yes=yes,
+    )
+    if template in _TEMPLATES_REQUIRING_BACKLOG:
+        backlog = _resolve_option(
+            backlog,
+            flag="--backlog",
+            label="Backlog manager",
+            default="github",
+            interactive=interactive,
+            yes=yes,
+        )
 
     image_name = image_name or f"eden:{Path.cwd().name.lower()}"
 
