@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import os
 import subprocess
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -23,6 +26,25 @@ _NO_CONFIG_LOCK_FLAGS: tuple[str, ...] = (
     "-c",
     "push.autoSetupRemote=false",
 )
+_WORKTREE_MUTEXES: dict[Path, threading.Lock] = {}
+_WORKTREE_MUTEXES_GUARD = threading.Lock()
+
+
+@contextmanager
+def _git_worktree_mutex(repo_path: Path) -> Iterator[None]:
+    """Serialize Git worktree metadata mutations within this process.
+
+    Git itself writes multiple files under ``.git/worktrees`` during
+    ``worktree add/remove``. On macOS Git 2.54, two concurrent adds can observe
+    each other's half-written metadata and fail while reading ``commondir``.
+    Eden branch locks are intentionally per branch, so add this narrow mutex
+    around the Git mutation while preserving concurrency for the agent runs.
+    """
+    key = repo_path.resolve()
+    with _WORKTREE_MUTEXES_GUARD:
+        lock = _WORKTREE_MUTEXES.setdefault(key, threading.Lock())
+    with lock:
+        yield
 
 
 def c_locale_env() -> dict[str, str]:
@@ -206,24 +228,26 @@ def worktree_add(
     branch: str,
     base: str,
 ) -> None:
-    _check_collisions(repo_path=repo_path, branch=branch)
-    _run_git(
-        (
-            "git",
-            *_NO_CONFIG_LOCK_FLAGS,
-            "worktree",
-            "add",
-            "-b",
-            branch,
-            str(worktree_path),
-            base,
-        ),
-        cwd=repo_path,
-    )
+    with _git_worktree_mutex(repo_path):
+        _check_collisions(repo_path=repo_path, branch=branch)
+        _run_git(
+            (
+                "git",
+                *_NO_CONFIG_LOCK_FLAGS,
+                "worktree",
+                "add",
+                "-b",
+                branch,
+                str(worktree_path),
+                base,
+            ),
+            cwd=repo_path,
+        )
 
 
 def worktree_remove(*, repo_path: Path, worktree_path: Path) -> None:
-    _run_git(
-        ("git", "worktree", "remove", "--force", str(worktree_path)),
-        cwd=repo_path,
-    )
+    with _git_worktree_mutex(repo_path):
+        _run_git(
+            ("git", "worktree", "remove", "--force", str(worktree_path)),
+            cwd=repo_path,
+        )
