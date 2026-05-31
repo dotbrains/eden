@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import threading
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -114,3 +115,49 @@ def test_worktree_add_disables_branch_auto_setup(
         "push.autoSetupRemote=false",
         "worktree",
     )
+
+
+def test_worktree_add_serializes_git_metadata_mutation(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Concurrent adds must not overlap inside Git's .git/worktrees mutation."""
+    monkeypatch.setattr("eden.worktree._git._check_collisions", lambda **_: None)
+
+    active = 0
+    max_active = 0
+    guard = threading.Lock()
+
+    def _capture(argv: tuple[str, ...], *, cwd: Path, timeout: float = 60.0) -> tuple[str, str]:
+        nonlocal active, max_active
+        with guard:
+            active += 1
+            max_active = max(max_active, active)
+        try:
+            # Let the sibling thread enter worktree_add while this fake git
+            # call is active. The repo mutex should keep it outside _run_git.
+            threading.Event().wait(0.02)
+            return "", ""
+        finally:
+            with guard:
+                active -= 1
+
+    monkeypatch.setattr("eden.worktree._git._run_git", _capture)
+
+    threads = [
+        threading.Thread(
+            target=worktree_add,
+            kwargs={
+                "repo_path": tmp_path,
+                "worktree_path": tmp_path / name,
+                "branch": f"eden/{name}",
+                "base": "HEAD",
+            },
+        )
+        for name in ("a", "b")
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert max_active == 1
