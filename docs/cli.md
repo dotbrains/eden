@@ -12,7 +12,7 @@ Scaffold a fresh `.eden/` directory in the current working directory. Refuses to
 eden init --sandbox docker --agent claude-code --yes
 ```
 
-Without `--yes`, any flag you omit is collected interactively (with sensible defaults). With `--yes`, omitted flags fall back to defaults non-interactively.
+On an interactive terminal, any flag you omit is collected via a prompt (with sensible defaults). With `--yes`, omitted flags fall back to defaults non-interactively. When stdin is **not** a TTY (CI, pipes) and you pass neither the flag nor `--yes`, init fails fast naming the missing flag rather than hanging on the prompt — so pass every flag, or `--yes`.
 
 ### Flags
 

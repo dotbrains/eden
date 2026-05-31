@@ -7,6 +7,30 @@ ships.
 
 ## Unreleased
 
+### Fixed
+
+- **Reused named-branch worktrees refresh from origin** — when
+  `create_worktree(strategy=BranchStrategy.named(...),
+  throw_on_duplicate_worktree=False)` reuses an existing on-disk
+  worktree, eden now runs `git fetch origin <branch>` +
+  `git merge --ff-only origin/<branch>` on a clean worktree so the agent
+  doesn't run against stale code. Every failure mode is non-fatal and
+  falls back to plain reuse: a detached HEAD (e.g. paused mid-rebase) is
+  left untouched, a failed fetch (no `origin`, offline, branch missing
+  upstream) reuses as-is, and a diverged branch (where `--ff-only`
+  refuses) preserves unpushed work. A dirty worktree is reused untouched
+  with no fetch. _(Upstream parity sandcastle v0.7.0,
+  `fastForwardFromOrigin`.)_
+
+### Changed
+
+- **`eden init` fully non-interactive** — when stdin is not a TTY and a
+  required option flag (`--sandbox`, `--agent`, `--model`, `--template`,
+  `--backlog`) is missing, init now fails fast naming the absent flag
+  instead of hanging on (or aborting cryptically out of) the prompt
+  library. Pass every flag, or `--yes` to accept defaults. Interactive
+  TTY behaviour is unchanged. _(Upstream parity sandcastle v0.7.0.)_
+
 ### Added
 
 - **`RunResult.resume(prompt)` and `RunResult.fork(prompt)` methods** —

@@ -357,3 +357,38 @@ def test_init_github_agent_workflows_refuses_existing_workflow_before_writing_ed
 
     assert result.exit_code == 1
     assert not (repo_dir / ".eden").exists()
+
+
+def test_init_non_tty_missing_flag_fails_fast(
+    runner: CliRunner,
+    repo_dir: Path,
+) -> None:
+    """Without --yes and with no TTY, init names the absent flag, not a hang."""
+    result = runner.invoke(app, ["init"])
+    assert result.exit_code != 0
+    combined = (result.output or "") + (result.stderr or "")
+    assert "--sandbox" in combined
+    assert not (repo_dir / ".eden").exists()
+
+
+def test_init_non_tty_all_flags_succeeds_without_yes(
+    runner: CliRunner,
+    repo_dir: Path,
+) -> None:
+    """Every option supplied as a flag → fully non-interactive, no --yes."""
+    result = runner.invoke(
+        app,
+        [
+            "init",
+            "--sandbox",
+            "docker",
+            "--agent",
+            "codex",
+            "--model",
+            "gpt-5",
+            "--template",
+            "blank",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (repo_dir / ".eden").is_dir()
