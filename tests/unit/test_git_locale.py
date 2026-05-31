@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
-from eden.worktree._git import _run_git, branch_exists, c_locale_env
+from eden.worktree._git import _run_git, branch_exists, c_locale_env, worktree_add
 
 pytestmark = pytest.mark.unit
 
@@ -82,3 +82,35 @@ def test_branch_exists_passes_c_locale_env(tmp_path: Path) -> None:
 
     assert seen["env"]["LC_ALL"] == "C"
     assert seen["env"]["LANG"] == "C"
+
+
+def test_worktree_add_disables_branch_auto_setup(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Generated worktrees must not contend on .git/config tracking writes."""
+    seen: list[tuple[str, ...]] = []
+
+    monkeypatch.setattr("eden.worktree._git._check_collisions", lambda **_: None)
+
+    def _capture(argv: tuple[str, ...], *, cwd: Path, timeout: float = 60.0) -> tuple[str, str]:
+        seen.append(argv)
+        return "", ""
+
+    monkeypatch.setattr("eden.worktree._git._run_git", _capture)
+
+    worktree_add(
+        repo_path=tmp_path,
+        worktree_path=tmp_path / "wt",
+        branch="eden/x",
+        base="HEAD",
+    )
+
+    argv = seen[0]
+    assert argv[:6] == (
+        "git",
+        "-c",
+        "branch.autoSetupMerge=false",
+        "-c",
+        "push.autoSetupRemote=false",
+        "worktree",
+    )

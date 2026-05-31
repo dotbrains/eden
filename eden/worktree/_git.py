@@ -14,6 +14,16 @@ from eden.worktree.errors import GitCommandFailed, GitCommandTimeout, WorktreeCo
 # Eden indefinitely. 60 s matches sandcastle's default.
 _DEFAULT_GIT_TIMEOUT: float = 60.0
 
+# Prevent ``git worktree add -b`` from writing upstream tracking config into
+# ``.git/config`` when user-level branch auto-setup is enabled. That avoids
+# needless ``.git/config.lock`` contention during parallel Eden runs.
+_NO_CONFIG_LOCK_FLAGS: tuple[str, ...] = (
+    "-c",
+    "branch.autoSetupMerge=false",
+    "-c",
+    "push.autoSetupRemote=false",
+)
+
 
 def c_locale_env() -> dict[str, str]:
     """Inherit ``os.environ`` and pin git's locale to ``C``.
@@ -200,6 +210,7 @@ def worktree_add(
     _run_git(
         (
             "git",
+            *_NO_CONFIG_LOCK_FLAGS,
             "worktree",
             "add",
             "-b",
