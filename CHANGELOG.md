@@ -21,6 +21,12 @@ ships.
   refuses) preserves unpushed work. A dirty worktree is reused untouched
   with no fetch. _(Upstream parity sandcastle v0.7.0,
   `fastForwardFromOrigin`.)_
+- **Init non-TTY test no longer brittle under colour** — the
+  `eden init` non-interactive assertion stripped ANSI escapes, rich box
+  borders, and wrapping whitespace before matching the flag name, since
+  Typer renders the `BadParameter` error through rich and splits
+  `--sandbox` into per-character colour spans on colour-capable CI
+  terminals. Test-only; the `init` behaviour itself was already correct.
 
 ### Changed
 
