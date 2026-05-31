@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -11,6 +12,18 @@ from eden.cli import init as init_mod
 from eden.cli.main import app
 
 pytestmark = pytest.mark.unit
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _strip_ansi(text: str) -> str:
+    """Drop ANSI color codes so substring asserts survive rich styling.
+
+    Typer renders BadParameter errors via rich, which wraps flag names in
+    per-character color spans (``\\x1b[1;36m-\\x1b[0m\\x1b[1;36m-sandbox``).
+    CI terminals get color; a plain local run does not — strip it either way.
+    """
+    return _ANSI_RE.sub("", text)
 
 
 @pytest.fixture
@@ -366,8 +379,12 @@ def test_init_non_tty_missing_flag_fails_fast(
     """Without --yes and with no TTY, init names the absent flag, not a hang."""
     result = runner.invoke(app, ["init"])
     assert result.exit_code != 0
-    combined = (result.output or "") + (result.stderr or "")
+    # Normalize: drop color, drop rich's box borders, collapse the wrapping
+    # whitespace it inserts, so the message reads as one contiguous string.
+    raw = _strip_ansi((result.output or "") + (result.stderr or ""))
+    combined = re.sub(r"\s+", " ", raw.replace("│", " "))
     assert "--sandbox" in combined
+    assert "is required when stdin is not a TTY" in combined
     assert not (repo_dir / ".eden").exists()
 
 
