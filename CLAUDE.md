@@ -2,6 +2,8 @@ Use `.venv/bin/python -m mypy eden tests` for type checking (mypy is pinned in `
 
 Use `.venv/bin/python -m pytest tests/ -q` to run unit + e2e tests. Linux-only integration tests live behind `-m integration`.
 
+On Linux/macOS, `flox activate` (env under `.flox/`) provisions the toolchain and builds `.venv`; the `.venv/bin/...` commands above run unchanged inside it. Windows has no Flox — use the manual `pip install -e ".[dev]"` path.
+
 Check [`AGENTS.md`](./AGENTS.md) first for the full project overview, architecture map, sandbox/agent conventions, and contribution constraints. Skim [`docs/python-api.md`](./docs/python-api.md) for the public API contract before changing anything in `eden/__init__.py` — `tests/unit/test_docs_consistency.py` enforces coverage of public exports.
 
 For user-facing changes, append an entry to [`CHANGELOG.md`](./CHANGELOG.md). Follow conventional-commit prefixes (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `ci:`, `chore:`) on the commit subject; this drives the changelog format.
