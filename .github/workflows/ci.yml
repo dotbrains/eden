@@ -15,13 +15,44 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: test (${{ matrix.os }} / py${{ matrix.python-version }})
+  # Linux/macOS run inside the committed Flox environment (.flox/), which is
+  # the source of truth for the toolchain. EDEN_PYTHON selects which of the
+  # manifest's three Pythons the venv is built from, preserving the
+  # 3.11/3.12/3.13 matrix.
+  test-flox:
+    name: test-flox (${{ matrix.os }} / py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+    env:
+      EDEN_PYTHON: python${{ matrix.python }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: Run pre-commit hooks (ruff format + lint, mypy --strict)
+        run: flox activate -- pre-commit run --all-files --show-diff-on-failure
+
+      - name: pytest (unit + e2e)
+        run: flox activate -- pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
+
+      - name: pytest (integration)
+        if: runner.os == 'Linux'
+        run: flox activate -- pytest -v -m integration
+
+  # Flox is Linux/macOS only, but eden ships Windows-specific path handling.
+  # This leg stays native to keep Windows coverage.
+  test-windows:
+    name: test-windows (py${{ matrix.python-version }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +74,3 @@ jobs:
 
       - name: pytest (unit + e2e)
         run: pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
-
-      - name: pytest (integration)
-        if: runner.os == 'Linux'
-        run: pytest -v -m integration

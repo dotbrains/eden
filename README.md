@@ -61,6 +61,25 @@ docker build -t eden:$(basename $(pwd)) -f .eden/Dockerfile .
 python .eden/main.py
 ```
 
+## Development with Flox
+
+On Linux/macOS the repo ships a declarative, lockfile-pinned dev environment
+under [`.flox/`](.flox/). With [Flox](https://flox.dev) installed:
+
+```bash
+flox activate          # provisions toolchain + builds .venv on first run
+pytest -m "unit or e2e"
+pre-commit run --all-files
+```
+
+`flox activate` provides Python 3.11/3.12/3.13, git, gh, docker/podman clients,
+pre-commit, and make, then auto-builds `.venv` via `pip install -e ".[dev]"`.
+Pick the interpreter with `EDEN_PYTHON` (e.g. `EDEN_PYTHON=python3.12 flox
+activate`; defaults to `python3.11`). Flox is Linux/macOS only — on Windows use
+`python -m pip install -e ".[dev]"` directly. See
+[`AGENTS.md`](AGENTS.md#setup-and-development-commands) for the full command
+list.
+
 ## Documentation
 
 Full documentation lives in [`docs/`](docs/README.md):

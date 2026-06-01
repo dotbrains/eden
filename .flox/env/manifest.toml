@@ -1,0 +1,58 @@
+schema-version = "1.12.0"
+
+[install]
+# Distinct priorities resolve the unversioned-file clash (bin/python3,
+# bin/2to3, ...). 3.11 wins those names; version-suffixed binaries
+# (python3.12, python3.13) are unique and stay on PATH regardless.
+python311.pkg-path = "python311"
+python311.priority = 4
+python312.pkg-path = "python312"
+python312.priority = 6
+python313.pkg-path = "python313"
+python313.priority = 7
+git.pkg-path = "git"
+gh.pkg-path = "gh"
+docker.pkg-path = "docker"
+podman.pkg-path = "podman"
+pre-commit.pkg-path = "pre-commit"
+gnumake.pkg-path = "gnumake"
+
+[vars]
+# Which interpreter the venv is built from. Override per CI matrix leg.
+EDEN_PYTHON = "python3.11"
+
+[hook]
+on-activate = '''
+  cd "$FLOX_ENV_PROJECT" || exit 1
+  PYBIN="${EDEN_PYTHON:-python3.11}"
+  STAMP=".venv/.eden-deps-stamp"
+
+  # (Re)create the venv if it is missing or its interpreter is broken.
+  if [ ! -x .venv/bin/python ] || ! .venv/bin/python -c 'import sys' 2>/dev/null; then
+    "$PYBIN" -m venv .venv
+    rm -f "$STAMP"
+  fi
+
+  # Reinstall deps only when pyproject.toml is newer than the stamp, so
+  # repeat activations stay fast.
+  if [ ! -f "$STAMP" ] || [ pyproject.toml -nt "$STAMP" ]; then
+    .venv/bin/python -m pip install --upgrade pip >/dev/null
+    .venv/bin/python -m pip install -e ".[dev]" >/dev/null
+    touch "$STAMP"
+  fi
+
+  # Put the venv on PATH here (not just in [profile]): the hook runs for
+  # both interactive `flox activate` and non-interactive
+  # `flox activate -- <cmd>` (used in CI), whereas [profile] only runs for
+  # interactive shells.
+  export VIRTUAL_ENV="$FLOX_ENV_PROJECT/.venv"
+  export PATH="$VIRTUAL_ENV/bin:$PATH"
+'''
+
+[options]
+systems = [
+  "aarch64-darwin",
+  "aarch64-linux",
+  "x86_64-darwin",
+  "x86_64-linux",
+]
