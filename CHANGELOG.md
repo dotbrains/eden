@@ -7,6 +7,24 @@ ships.
 
 ## Unreleased
 
+### Added
+
+- **Flox dev environment + Flox-based Linux/macOS CI** — a declarative,
+  lockfile-pinned [Flox](https://flox.dev) environment lives under `.flox/`
+  and is the source of truth for the toolchain on Linux/macOS. `flox activate`
+  provisions Python 3.11/3.12/3.13, git, gh, docker/podman clients,
+  pre-commit, and make, then auto-builds `.venv` via
+  `pip install -e ".[dev]"` (guarded by a stamp so repeat activations stay
+  fast). `EDEN_PYTHON` selects which interpreter the venv is built from
+  (default `python3.11`), so the 3.11/3.12/3.13 matrix is preserved. The
+  venv is exported onto `PATH` from the activation hook so both interactive
+  `flox activate` and `flox activate -- <cmd>` (CI) resolve the venv. CI's
+  Ubuntu/macOS legs now run inside Flox; the **Windows leg stays native**
+  (`actions/setup-python` + pip) because Flox is Linux/macOS only and eden
+  ships Windows-specific path handling. ruff and mypy remain pip-pinned in
+  the venv (exact `pyproject.toml [dev]` versions), not in the Flox
+  manifest, to keep local/CI parity.
+
 ### Fixed
 
 - **Reused named-branch worktrees refresh from origin** — when

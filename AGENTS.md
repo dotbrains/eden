@@ -10,6 +10,21 @@ The package is published as `eden-agent`; the installed CLI entry point is `eden
 
 ## Setup and development commands
 
+**Recommended (Linux/macOS): Flox.** The repo ships a declarative,
+lockfile-pinned dev environment under [`.flox/`](./.flox/). With
+[Flox](https://flox.dev) installed, run `flox activate` from the repo root: it
+provisions the toolchain (Python 3.11/3.12/3.13, git, gh, docker/podman clients,
+pre-commit, make) and auto-builds `.venv` via `pip install -e ".[dev]"` on first
+activation. All the `pytest` / `pre-commit` / `eden` commands below then work
+unchanged inside the activated shell. Select the interpreter the venv is built
+from with `EDEN_PYTHON` (e.g. `EDEN_PYTHON=python3.12 flox activate`); it
+defaults to `python3.11`. ruff and mypy stay pip-pinned in `.venv` (exact
+versions from `pyproject.toml [dev]`), not in the Flox manifest, so local and CI
+can't drift. docker/podman are clients only — the daemon/VM is host-provided.
+Windows is unsupported by Flox; use the manual path below.
+
+Manual path (no Flox, and required on Windows):
+
 - Install the package with development dependencies: `python -m pip install -e ".[dev]"`
 - Upgrade pip before install in fresh environments: `python -m pip install --upgrade pip`
 - Install local commit hooks after installing dev dependencies: `pre-commit install`
@@ -23,7 +38,7 @@ The package is published as `eden-agent`; the installed CLI entry point is `eden
 - Build the package: `python -m build`
 - Check the installed CLI version: `eden version`
 
-CI installs `".[dev]"`, runs `pre-commit run --all-files --show-diff-on-failure`, then runs `pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70` across Python 3.11, 3.12, and 3.13 on Ubuntu, macOS, and Windows. Integration tests run separately on Linux.
+CI runs `pre-commit run --all-files --show-diff-on-failure` then `pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70` across Python 3.11, 3.12, and 3.13 on Ubuntu, macOS, and Windows. The Ubuntu/macOS legs (`test-flox`) run inside `flox activate` with `EDEN_PYTHON` set per leg; the Windows leg (`test-windows`) runs natively with `actions/setup-python` + pip. Integration tests run separately on Linux (inside Flox).
 
 For Warp environment setup, use: `cd eden && python -m pip install --upgrade pip && python -m pip install -e ".[dev]"`.
 
