@@ -22,6 +22,7 @@ jobs:
   test-flox:
     name: test-flox (${{ matrix.os }} / py${{ matrix.python }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +51,7 @@ jobs:
   test-windows:
     name: test-windows (py${{ matrix.python-version }})
     runs-on: windows-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
