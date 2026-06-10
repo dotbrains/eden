@@ -7,6 +7,8 @@ ships.
 
 ## Unreleased
 
+## [0.2.0] - 2026-06-10
+
 ### Added
 
 - **`Timeouts.git_setup`** — a per-command deadline (default `60.0` s) for the
