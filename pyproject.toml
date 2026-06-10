@@ -54,6 +54,11 @@ dev = [
     "types-requests>=2.32",
     "opentelemetry-sdk>=1.20",  # in-memory exporter for tracing tests
 ]
+# forkd microVM sandbox provider (eden/sandboxes/forkd). Linux + KVM only;
+# the SDK is imported lazily so the provider module stays cross-platform.
+forkd = [
+    "forkd>=0.4",
+]
 
 [project.scripts]
 eden = "eden.cli.main:app"
@@ -75,7 +80,7 @@ addopts = [
 ]
 markers = [
     "unit: fast unit tests with no external services",
-    "integration: tests that touch real Docker/Podman/cloud services",
+    "integration: tests that touch real Docker/Podman/cloud/microVM services",
     "smoke: end-to-end smoke tests",
     "e2e: end-to-end orchestrator runs with simulated_agent (no external services)",
 ]

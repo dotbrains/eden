@@ -9,6 +9,17 @@ ships.
 
 ### Added
 
+- **`forkd` sandbox provider** — a new isolated/finalizing provider
+  (`eden.sandboxes.forkd`) that runs agents inside
+  [forkd](https://github.com/deeplethe/forkd) Firecracker microVMs via forkd's
+  E2B-compatible Python SDK. Spawns a child VM from a warm `snapshot`, runs the
+  agent, and patch-syncs changes back to the host worktree on `finalize()` —
+  the same diff/pull/apply flow as the daytona/vercel providers. The SDK is an
+  optional dependency (`pip install eden-agent[forkd]`) imported lazily inside
+  `create()`, so the module stays importable on hosts without forkd;
+  `ProviderUnavailable` is raised at create time. Linux + KVM only. Pass
+  `sandbox_factory=` to fully control SDK construction (controller URL, memory
+  limits, live-branch checkpoints).
 - **Flox dev environment + Flox-based Linux/macOS CI** — a declarative,
   lockfile-pinned [Flox](https://flox.dev) environment lives under `.flox/`
   and is the source of truth for the toolchain on Linux/macOS. `flox activate`

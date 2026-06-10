@@ -6,9 +6,9 @@ Implement the `SandboxProvider` Protocol — and one of `BindMountSandboxHandle`
 
 ## When to write one
 
-The six in-tree providers (`no_sandbox`, `docker`, `podman`, `isolated`, `daytona`, `vercel`) cover most workflows; see [sandbox-providers.md](sandbox-providers.md) for the matrix. Reach for a custom provider when:
+The seven in-tree providers (`no_sandbox`, `docker`, `podman`, `isolated`, `daytona`, `vercel`, `forkd`) cover most workflows; see [sandbox-providers.md](sandbox-providers.md) for the matrix. Reach for a custom provider when:
 
-- You target a runtime Eden does not ship — Firecracker, gVisor, Kata, Nomad, Kubernetes Jobs, Modal, E2B, Fly Machines, Lambda, RunPod, or your own VM fleet.
+- You target a runtime Eden does not ship — gVisor, Kata, Nomad, Kubernetes Jobs, Modal, Fly Machines, Lambda, RunPod, or your own VM fleet. (Firecracker microVMs are covered in-tree by `forkd`, and E2B-compatible SDKs can reuse its approach.)
 - You need a transport Eden does not ship — gRPC, SSH, WebSocket, etc.
 - You want to wrap an existing in-tree provider with extra behavior (telemetry, caching, custom mount semantics).
 
