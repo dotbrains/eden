@@ -9,6 +9,17 @@ ships.
 
 ### Added
 
+- **`Timeouts.git_setup`** — a per-command deadline (default `60.0` s) for the
+  host-side git plumbing `run()` executes while carving and tearing down a
+  worktree: `git worktree add`/`remove`, branch/worktree listing, `status`, and
+  the `origin` fast-forward when reusing a clean worktree. Previously these were
+  bound by a hard-coded 60 s constant with no override; raise it on slow
+  filesystems (NFS, networked volumes) or very large repos where worktree
+  creation legitimately takes longer. Honored by `run()`, `interactive()`, and
+  `create_sandbox(timeouts=...)`; the standalone `create_worktree()` helper
+  carves at the 60 s default (pass `git_timeout=` to override). Mirrors
+  sandcastle's `gitSetupMs`. See `docs/python-api.md` and
+  `docs/configuration.md`.
 - **Per-agent Flox runtime** — every agent factory now accepts an optional
   `flox_env=<dir>` pointing at a directory that ships its own Flox env
   (`.flox/env/manifest.toml`). When set, Eden runs the agent CLI inside it via

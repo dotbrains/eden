@@ -201,3 +201,29 @@ def test_cwd_stored_on_sandbox(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPat
         assert s.cwd == Path("/some/cwd")
     finally:
         s.close()
+
+
+def test_git_setup_timeout_threads_to_worktree(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from eden._types import Timeouts
+
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    s = create_sandbox(sandbox=p, timeouts=Timeouts(git_setup=3.5))
+    try:
+        assert s.worktree._git_timeout == 3.5
+    finally:
+        s.close()
+
+
+def test_git_setup_timeout_defaults_to_60s(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    s = create_sandbox(sandbox=p)
+    try:
+        assert s.worktree._git_timeout == 60.0
+    finally:
+        s.close()

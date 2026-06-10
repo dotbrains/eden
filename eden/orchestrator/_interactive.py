@@ -156,17 +156,18 @@ def interactive(
 
     target_branch = resolve_target_branch(host_repo_path=cwd_path)
 
+    from eden._types import Timeouts
+
+    timeouts = Timeouts()
     wt = create_worktree(
         host_repo_path=cwd_path,
         strategy=strategy,
         name_hint=name,
         throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+        git_timeout=timeouts.git_setup,
     )
     handle = None
     hooks_or_default = hooks if hooks is not None else Hooks()
-    from eden._types import Timeouts
-
-    timeouts = Timeouts()
     try:
         apply_copy_to_worktree(
             paths=copy_to_worktree,

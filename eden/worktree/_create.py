@@ -11,6 +11,7 @@ from typing import Literal
 
 from eden.providers._types import BranchStrategy
 from eden.worktree._git import (
+    _DEFAULT_GIT_TIMEOUT,
     branch_exists,
     list_worktrees,
     refresh_from_origin,
@@ -43,6 +44,7 @@ class WorktreeHandle:
     managed: bool
     _lock_handle: _LockHandle = field(repr=False)
     _closed: list[bool] = field(default_factory=lambda: [False], repr=False)
+    _git_timeout: float = field(default=_DEFAULT_GIT_TIMEOUT, repr=False)
 
     def __enter__(self) -> WorktreeHandle:
         return self
@@ -57,13 +59,16 @@ class WorktreeHandle:
         try:
             if not self.managed:
                 return CloseResult(action="released_only")
-            dirty = bool(status_porcelain(repo_path=self.worktree_path).strip())
+            dirty = bool(
+                status_porcelain(repo_path=self.worktree_path, timeout=self._git_timeout).strip()
+            )
             if dirty:
                 print(f"eden: leaving dirty worktree on disk at {self.worktree_path}")
                 return CloseResult(action="preserved", reason="dirty")
             worktree_remove(
                 repo_path=self.host_repo_path,
                 worktree_path=self.worktree_path,
+                timeout=self._git_timeout,
             )
             return CloseResult(action="removed")
         finally:
@@ -121,6 +126,7 @@ def create_worktree(
     strategy: BranchStrategy,
     name_hint: str | None = None,
     throw_on_duplicate_worktree: bool = True,
+    git_timeout: float = _DEFAULT_GIT_TIMEOUT,
 ) -> WorktreeHandle:
     """Carve (or reuse) a worktree per ``strategy``.
 
@@ -131,13 +137,18 @@ def create_worktree(
     raises :class:`BranchExists`. Other strategies are unaffected:
     ``head`` uses the host repo directly and ``merge_to_head`` always
     generates a fresh branch name.
+
+    ``git_timeout`` is the per-command deadline for every host-side git
+    invocation this carve runs; it is also stored on the returned handle so
+    ``close()`` reuses it for the teardown ``git worktree remove``. Callers
+    in the run loop pass ``Timeouts.git_setup``.
     """
     # Ensure .eden/ is gitignored regardless of strategy so metadata files
     # created by any path don't surface as untracked in the host repo.
     _ensure_eden_gitignore(host_repo_path)
 
     if strategy.tag == "head":
-        dirty = status_porcelain(repo_path=host_repo_path).strip()
+        dirty = status_porcelain(repo_path=host_repo_path, timeout=git_timeout).strip()
         if dirty:
             files = tuple(line[3:] for line in dirty.splitlines() if len(line) > 3)[:10]
             raise DirtyHostBlocked(host_repo_path=host_repo_path, dirty_files=files)
@@ -148,6 +159,7 @@ def create_worktree(
             host_repo_path=host_repo_path,
             managed=False,
             _lock_handle=lock,
+            _git_timeout=git_timeout,
         )
 
     if strategy.tag == "merge_to_head":
@@ -155,30 +167,35 @@ def create_worktree(
     else:  # named
         assert strategy.branch is not None
         branch = strategy.branch
-        if branch_exists(repo_path=host_repo_path, branch=branch):
+        if branch_exists(repo_path=host_repo_path, branch=branch, timeout=git_timeout):
             if throw_on_duplicate_worktree:
                 raise BranchExists(branch=branch)
             # Reuse path: find the existing worktree for this branch.
-            for record in list_worktrees(repo_path=host_repo_path):
+            for record in list_worktrees(repo_path=host_repo_path, timeout=git_timeout):
                 if record.branch == branch:
                     lock = acquire_lock(_lock_path_for(host_repo_path, branch))
                     # Refresh a clean reused worktree from origin so the agent
                     # never runs against stale code; a dirty tree is reused
                     # untouched. All refresh failures fall back to plain reuse.
-                    has_changes = bool(status_porcelain(repo_path=record.path).strip())
+                    has_changes = bool(
+                        status_porcelain(repo_path=record.path, timeout=git_timeout).strip()
+                    )
                     if has_changes:
                         print(
                             f"eden: reusing worktree at {record.path} "
                             f"(branch {branch!r}) — worktree has uncommitted changes"
                         )
                     else:
-                        refresh_from_origin(worktree_path=record.path, branch=branch)
+                        refresh_from_origin(
+                            worktree_path=record.path, branch=branch, timeout=git_timeout
+                        )
                     return WorktreeHandle(
                         branch=branch,
                         worktree_path=record.path,
                         host_repo_path=host_repo_path,
                         managed=False,
                         _lock_handle=lock,
+                        _git_timeout=git_timeout,
                     )
             # Branch exists but isn't checked out by any worktree — we have
             # no on-disk worktree to reuse. Fall through to BranchExists so
@@ -193,6 +210,7 @@ def create_worktree(
             worktree_path=wt_path,
             branch=branch,
             base=strategy.base,
+            timeout=git_timeout,
         )
     except Exception:
         lock.release()
@@ -204,4 +222,5 @@ def create_worktree(
         host_repo_path=host_repo_path,
         managed=True,
         _lock_handle=lock,
+        _git_timeout=git_timeout,
     )
