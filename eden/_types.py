@@ -46,6 +46,13 @@ class Timeouts:
     hook_step: float = 60.0
     iteration_step: float | None = None
     copy_to_worktree: float = 60.0
+    git_setup: float = 60.0
+    """Per-command deadline for host-side git plumbing during worktree setup
+    and teardown (``git worktree add``/``remove``, branch/worktree listing,
+    status, and the ``origin`` fast-forward when reusing a clean worktree). A
+    wedged local git — NFS stall, filesystem repair, runaway hook — would
+    otherwise hang Eden indefinitely. Mirrors upstream's ``gitSetupMs``.
+    """
 
 
 @dataclass(frozen=True)

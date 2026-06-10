@@ -87,12 +87,12 @@ def _run_git(
     return proc.stdout, proc.stderr
 
 
-def status_porcelain(*, repo_path: Path) -> str:
-    stdout, _ = _run_git(("git", "status", "--porcelain"), cwd=repo_path)
+def status_porcelain(*, repo_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT) -> str:
+    stdout, _ = _run_git(("git", "status", "--porcelain"), cwd=repo_path, timeout=timeout)
     return stdout
 
 
-def branch_exists(*, repo_path: Path, branch: str) -> bool:
+def branch_exists(*, repo_path: Path, branch: str, timeout: float = _DEFAULT_GIT_TIMEOUT) -> bool:
     try:
         proc = subprocess.run(
             ("git", "rev-parse", "--verify", f"refs/heads/{branch}"),
@@ -100,13 +100,13 @@ def branch_exists(*, repo_path: Path, branch: str) -> bool:
             capture_output=True,
             text=True,
             check=False,
-            timeout=_DEFAULT_GIT_TIMEOUT,
+            timeout=timeout,
             env=c_locale_env(),
         )
     except subprocess.TimeoutExpired as exc:
         raise GitCommandTimeout(
             argv=("git", "rev-parse", "--verify", f"refs/heads/{branch}"),
-            timeout=_DEFAULT_GIT_TIMEOUT,
+            timeout=timeout,
         ) from exc
     return proc.returncode == 0
 
@@ -146,9 +146,11 @@ def _parse_worktree_list(porcelain: str) -> tuple[_WorktreeRecord, ...]:
     return tuple(out)
 
 
-def list_worktrees(*, repo_path: Path) -> tuple[_WorktreeRecord, ...]:
+def list_worktrees(
+    *, repo_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT
+) -> tuple[_WorktreeRecord, ...]:
     """Return every worktree git knows about for ``repo_path``."""
-    stdout, _ = _run_git(("git", "worktree", "list", "--porcelain"), cwd=repo_path)
+    stdout, _ = _run_git(("git", "worktree", "list", "--porcelain"), cwd=repo_path, timeout=timeout)
     return _parse_worktree_list(stdout)
 
 
@@ -187,7 +189,9 @@ def _detect_in_progress(*, repo_path: Path) -> Path | None:
     return None
 
 
-def _check_collisions(*, repo_path: Path, branch: str) -> None:
+def _check_collisions(
+    *, repo_path: Path, branch: str, timeout: float = _DEFAULT_GIT_TIMEOUT
+) -> None:
     """Raise WorktreeCollision if ``git worktree add`` would conflict.
 
     Two conditions are detected up front so the caller sees a structured
@@ -208,7 +212,7 @@ def _check_collisions(*, repo_path: Path, branch: str) -> None:
                 "`git cherry-pick --abort`)."
             ),
         )
-    for record in list_worktrees(repo_path=repo_path):
+    for record in list_worktrees(repo_path=repo_path, timeout=timeout):
         if record.branch == branch:
             raise WorktreeCollision(
                 branch=branch,
@@ -227,9 +231,10 @@ def worktree_add(
     worktree_path: Path,
     branch: str,
     base: str,
+    timeout: float = _DEFAULT_GIT_TIMEOUT,
 ) -> None:
     with _git_worktree_mutex(repo_path):
-        _check_collisions(repo_path=repo_path, branch=branch)
+        _check_collisions(repo_path=repo_path, branch=branch, timeout=timeout)
         _run_git(
             (
                 "git",
@@ -242,18 +247,22 @@ def worktree_add(
                 base,
             ),
             cwd=repo_path,
+            timeout=timeout,
         )
 
 
-def worktree_remove(*, repo_path: Path, worktree_path: Path) -> None:
+def worktree_remove(
+    *, repo_path: Path, worktree_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT
+) -> None:
     with _git_worktree_mutex(repo_path):
         _run_git(
             ("git", "worktree", "remove", "--force", str(worktree_path)),
             cwd=repo_path,
+            timeout=timeout,
         )
 
 
-def _symbolic_head(*, repo_path: Path) -> str | None:
+def _symbolic_head(*, repo_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT) -> str | None:
     """Return the branch HEAD points at, or ``None`` when detached.
 
     ``git symbolic-ref --quiet HEAD`` exits non-zero on a detached HEAD; we
@@ -267,7 +276,7 @@ def _symbolic_head(*, repo_path: Path) -> str | None:
             capture_output=True,
             text=True,
             check=False,
-            timeout=_DEFAULT_GIT_TIMEOUT,
+            timeout=timeout,
             env=c_locale_env(),
         )
     except subprocess.TimeoutExpired:
@@ -279,15 +288,17 @@ def _symbolic_head(*, repo_path: Path) -> str | None:
     return ref[len(prefix) :] if ref.startswith(prefix) else None
 
 
-def _rev_parse_head(*, repo_path: Path) -> str:
+def _rev_parse_head(*, repo_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT) -> str:
     try:
-        stdout, _ = _run_git(("git", "rev-parse", "HEAD"), cwd=repo_path)
+        stdout, _ = _run_git(("git", "rev-parse", "HEAD"), cwd=repo_path, timeout=timeout)
     except (GitCommandFailed, GitCommandTimeout):
         return ""
     return stdout.strip()
 
 
-def refresh_from_origin(*, worktree_path: Path, branch: str) -> None:
+def refresh_from_origin(
+    *, worktree_path: Path, branch: str, timeout: float = _DEFAULT_GIT_TIMEOUT
+) -> None:
     """Fast-forward a reused, clean worktree to ``origin/<branch>`` when safe.
 
     Mirrors upstream's ``fastForwardFromOrigin`` (v0.7.0). Every failure
@@ -305,7 +316,7 @@ def refresh_from_origin(*, worktree_path: Path, branch: str) -> None:
       moved origin) — ``--ff-only`` refuses and the unpushed work is
       preserved exactly as it was.
     """
-    head = _symbolic_head(repo_path=worktree_path)
+    head = _symbolic_head(repo_path=worktree_path, timeout=timeout)
     if head != branch:
         print(
             f"eden: reusing worktree at {worktree_path} (branch {branch!r}) — "
@@ -316,6 +327,7 @@ def refresh_from_origin(*, worktree_path: Path, branch: str) -> None:
         _run_git(
             ("git", *_NO_CONFIG_LOCK_FLAGS, "fetch", "origin", branch),
             cwd=worktree_path,
+            timeout=timeout,
         )
     except (GitCommandFailed, GitCommandTimeout):
         print(
@@ -323,11 +335,12 @@ def refresh_from_origin(*, worktree_path: Path, branch: str) -> None:
             f"(reusing worktree at {worktree_path} as-is, branch {branch!r})"
         )
         return
-    before = _rev_parse_head(repo_path=worktree_path)
+    before = _rev_parse_head(repo_path=worktree_path, timeout=timeout)
     try:
         _run_git(
             ("git", *_NO_CONFIG_LOCK_FLAGS, "merge", "--ff-only", f"origin/{branch}"),
             cwd=worktree_path,
+            timeout=timeout,
         )
     except (GitCommandFailed, GitCommandTimeout):
         print(
@@ -335,7 +348,7 @@ def refresh_from_origin(*, worktree_path: Path, branch: str) -> None:
             f"(reusing worktree at {worktree_path} as-is)"
         )
         return
-    after = _rev_parse_head(repo_path=worktree_path)
+    after = _rev_parse_head(repo_path=worktree_path, timeout=timeout)
     if before and after and before != after:
         print(
             f"eden: fast-forwarded worktree at {worktree_path} "
