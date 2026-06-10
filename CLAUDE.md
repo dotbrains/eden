@@ -18,7 +18,7 @@ Architectural choices live as numbered files under [`docs/adr/`](./docs/adr/). R
 
 ### Sandbox providers
 
-Six in-tree providers live under [`eden/sandboxes/`](./eden/sandboxes/) and follow the Protocols in [`eden/providers/_protocols.py`](./eden/providers/_protocols.py). [`docs/custom-providers.md`](./docs/custom-providers.md) documents the extension seam; [`docs/sandbox-providers.md`](./docs/sandbox-providers.md) is the user-facing matrix.
+Seven in-tree providers live under [`eden/sandboxes/`](./eden/sandboxes/) and follow the Protocols in [`eden/providers/_protocols.py`](./eden/providers/_protocols.py). [`docs/custom-providers.md`](./docs/custom-providers.md) documents the extension seam; [`docs/sandbox-providers.md`](./docs/sandbox-providers.md) is the user-facing matrix.
 
 ### Agents
 
