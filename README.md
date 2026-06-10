@@ -63,8 +63,14 @@ python .eden/main.py
 
 ## Development with Flox
 
-On Linux/macOS the repo ships a declarative, lockfile-pinned dev environment
-under [`.flox/`](.flox/). With [Flox](https://flox.dev) installed:
+Eden uses [Flox](https://flox.dev) in two distinct ways — don't conflate them:
+
+1. **The repo dev toolchain** — the [`.flox/`](.flox/) environment that sets up *your* machine to work on Eden.
+2. **Per-agent runtimes** — an optional, separate environment each agent declares for *its own* CLI.
+
+### Repo dev toolchain
+
+On Linux/macOS the repo ships a declarative, lockfile-pinned dev environment under [`.flox/`](.flox/). With Flox installed:
 
 ```bash
 flox activate          # provisions toolchain + builds .venv on first run
@@ -72,19 +78,13 @@ pytest -m "unit or e2e"
 pre-commit run --all-files
 ```
 
-`flox activate` provides Python 3.11/3.12/3.13, git, gh, docker/podman clients,
-pre-commit, and make, then auto-builds `.venv` via `pip install -e ".[dev]"`.
-Pick the interpreter with `EDEN_PYTHON` (e.g. `EDEN_PYTHON=python3.12 flox
-activate`; defaults to `python3.11`). Flox is Linux/macOS only — on Windows use
-`python -m pip install -e ".[dev]"` directly. See
-[`AGENTS.md`](AGENTS.md#setup-and-development-commands) for the full command
-list.
+`flox activate` provides Python 3.11/3.12/3.13, git, gh, the docker/podman clients, pre-commit, and make, then builds `.venv` via `pip install -e ".[dev]"`. Pick the interpreter with `EDEN_PYTHON` (e.g. `EDEN_PYTHON=python3.12 flox activate`; defaults to `python3.11`).
 
-This `.flox/` env is Eden's *own* dev toolchain. Separately, each **agent** can
-declare its *own* Flox runtime via `flox_env=` on its factory — Eden then runs
-that agent's CLI inside `flox activate -d <dir> -- <argv>` so it gets a
-declared, lockfile-pinned toolchain instead of inheriting the host's. See
-[Agents — Per-agent Flox runtime](docs/agents.md#per-agent-flox-runtime).
+Flox is Linux/macOS only — on Windows, install directly with `python -m pip install -e ".[dev]"`. See [`AGENTS.md`](AGENTS.md#setup-and-development-commands) for the full command list.
+
+### Per-agent runtimes
+
+Separately, each **agent** can declare its own Flox runtime via `flox_env=` on its factory. Eden then runs that agent's CLI inside `flox activate -d <dir> -- <argv>`, so the agent gets a declared, lockfile-pinned toolchain instead of inheriting the host's. See [Agents — Per-agent Flox runtime](docs/agents.md#per-agent-flox-runtime).
 
 ## Documentation
 
