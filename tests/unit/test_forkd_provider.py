@@ -222,6 +222,32 @@ def test_handle_copy_file_in_base64_shells(tmp_path: Path) -> None:
     assert "/workspace/dst.bin" in cmd
 
 
+def test_handle_copy_file_in_quotes_paths_with_metacharacters(tmp_path: Path) -> None:
+    """Paths with shell metacharacters are shlex-quoted, not interpolated raw."""
+    src = tmp_path / "payload.bin"
+    src.write_bytes(b"x")
+    commands = _FakeCommands(results=[_FakeResult(exit_code=0)])
+    sandbox = _FakeSandbox(commands=commands)
+    handle = _handle(sandbox, host=tmp_path)
+    handle.copy_file_in(src, Path("/workspace/a b; rm -rf x/dst.bin"))  # type: ignore[attr-defined]
+    cmd = commands.calls[0]["cmd"]
+    assert isinstance(cmd, str)
+    # Both the mkdir parent and the redirect target are single-quoted, so the
+    # shell treats the metacharacters as literal path characters, not syntax.
+    assert "mkdir -p '/workspace/a b; rm -rf x' &&" in cmd
+    assert "> '/workspace/a b; rm -rf x/dst.bin'" in cmd
+
+
+def test_handle_copy_file_out_quotes_path(tmp_path: Path) -> None:
+    commands = _FakeCommands(results=[_FakeResult(stdout="", exit_code=0)])
+    sandbox = _FakeSandbox(commands=commands)
+    handle = _handle(sandbox, host=tmp_path)
+    handle.copy_file_out(Path("/workspace/odd name.txt"), tmp_path / "out.txt")  # type: ignore[attr-defined]
+    cmd = commands.calls[0]["cmd"]
+    assert isinstance(cmd, str)
+    assert cmd == "base64 '/workspace/odd name.txt'"
+
+
 def test_handle_copy_file_in_raises_exec_failed_on_nonzero(tmp_path: Path) -> None:
     src = tmp_path / "payload.bin"
     src.write_bytes(b"x")

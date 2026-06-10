@@ -24,6 +24,7 @@ construction (custom controller URL, memory limits, live-branch snapshots, …).
 from __future__ import annotations
 
 import base64
+import shlex
 import tempfile
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -192,8 +193,8 @@ class _ForkdHandle:
         data = host.read_bytes()
         b64 = base64.b64encode(data).decode("ascii")
         result = self.exec(
-            f"mkdir -p {sandbox.parent.as_posix()} && "
-            f"echo {b64} | base64 -d > {sandbox.as_posix()}",
+            f"mkdir -p {shlex.quote(sandbox.parent.as_posix())} && "
+            f"echo {b64} | base64 -d > {shlex.quote(sandbox.as_posix())}",
         )
         if result.exit_code != 0:
             raise ExecFailed(
@@ -202,7 +203,7 @@ class _ForkdHandle:
             )
 
     def copy_file_out(self, sandbox: Path, host: Path) -> None:
-        result = self.exec(f"base64 {sandbox.as_posix()}")
+        result = self.exec(f"base64 {shlex.quote(sandbox.as_posix())}")
         if result.exit_code != 0:
             raise ExecFailed(
                 result=result,
@@ -274,7 +275,8 @@ def _upload_tree(
         b64 = base64.b64encode(path.read_bytes()).decode("ascii")
         target = dst / rel
         result = exec_fn(
-            f"mkdir -p {target.parent.as_posix()} && echo {b64} | base64 -d > {target.as_posix()}",
+            f"mkdir -p {shlex.quote(target.parent.as_posix())} && "
+            f"echo {b64} | base64 -d > {shlex.quote(target.as_posix())}",
         )
         if result.exit_code != 0:
             raise RuntimeError(f"upload of {rel} failed: {result.stderr}")
@@ -295,7 +297,7 @@ def _snapshot_via_exec(
     and is portable across GNU/BSD find.
     """
     result = exec_fn(
-        f"cd {root.as_posix()} && "
+        f"cd {shlex.quote(root.as_posix())} && "
         "find . -type f "
         "-not -path './.git/*' -not -path './.eden/*' "
         "-exec sha256sum {} + 2>/dev/null"
