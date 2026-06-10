@@ -7,12 +7,12 @@
 
 Python orchestrator for AI coding agents in sandboxed git worktrees.
 
-Eden creates a fresh git worktree on a new branch, runs a coding agent (Claude Code, Codex, opencode, pi, or any line-streaming CLI) inside a sandbox (Docker, Podman, isolated, Daytona, or Vercel), captures its output, and commits the changes back. You get a branch with one clean commit per iteration, ready to review or merge.
+Eden creates a fresh git worktree on a new branch, runs a coding agent (Claude Code, Codex, opencode, pi, or any line-streaming CLI) inside a sandbox (Docker, Podman, isolated, Daytona, Vercel, or forkd microVMs), captures its output, and commits the changes back. You get a branch with one clean commit per iteration, ready to review or merge.
 
 ```mermaid
 flowchart LR
     Repo[(Host repo)] --> WT[Fresh worktree<br/>on new branch]
-    WT --> SB[Sandbox<br/>docker • podman • isolated<br/>daytona • vercel • no_sandbox]
+    WT --> SB[Sandbox<br/>docker • podman • isolated<br/>daytona • vercel • forkd • no_sandbox]
     SB --> Agent[Coding agent<br/>claude_code • codex<br/>opencode • pi • cli_agent]
     Agent -->|stdout stream| Loop{iteration loop}
     Loop -->|commit per iteration| Branch[Eden branch]
@@ -95,7 +95,7 @@ Full documentation lives in [`docs/`](docs/README.md):
 - [Tutorial: build your first agent loop](docs/tutorial-first-loop.md) — 10-minute walkthrough that ends with a real agent fixing a real bug
 - [Python API reference](docs/python-api.md) — every name importable from `eden`
 - [How it works](docs/how-it-works.md) — branch strategies, sandbox lifecycle, iteration loop
-- [Sandbox providers](docs/sandbox-providers.md) — six provider catalog
+- [Sandbox providers](docs/sandbox-providers.md) — seven provider catalog
 - [Agents](docs/agents.md) — six agent factories
 
 ## License
