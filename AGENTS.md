@@ -59,7 +59,7 @@ Important modules:
 - `eden/orchestrator/` contains `run()`, `interactive()`, setup resolution, the iteration loop, completion matching, idle watchdogs, result assembly, and recovery formatting.
 - `eden/worktree/` owns git worktree creation, branch strategies, and advisory locks.
 - `eden/providers/` defines sandbox Protocols and shared implementations for containers, REST-backed providers, directory upload, and patch sync.
-- `eden/sandboxes/` exposes concrete providers: `no_sandbox`, `docker`, `podman`, `isolated`, `daytona`, and `vercel`, plus `create_sandbox()` for caller-managed multi-agent runs.
+- `eden/sandboxes/` exposes concrete providers: `no_sandbox`, `docker`, `podman`, `isolated`, `daytona`, `vercel`, and `forkd`, plus `create_sandbox()` for caller-managed multi-agent runs.
 - `eden/agents/` contains agent factories. Dedicated agents live in one subpackage per agent; `cli_agent` is the generic line-streaming adapter.
 - `eden/prompt/` renders prompt sources, arguments, and shell blocks.
 - `eden/lifecycle/` defines host/sandbox hooks and hook execution phases.
@@ -96,7 +96,7 @@ Pytest markers are declared in `pyproject.toml`:
 
 - `unit`: fast tests without external services.
 - `e2e`: in-process orchestrator runs with `simulated_agent`.
-- `integration`: tests that touch Docker, Podman, or cloud services.
+- `integration`: tests that touch Docker, Podman, cloud, or forkd microVM services.
 - `smoke`: end-to-end smoke tests.
 
 Prefer `unit` or focused e2e tests while iterating. Run the CI command before considering a change complete.
