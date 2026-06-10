@@ -252,11 +252,13 @@ class Timeouts:
     hook_step: float = 60.0
     iteration_step: float | None = None
     copy_to_worktree: float = 60.0
+    git_setup: float = 60.0
 ```
 
 - `hook_step` — seconds budget for any individual hook command. Exceeded → `HookTimeout`.
 - `iteration_step` — seconds budget for one agent iteration. `None` defers to `idle_timeout`. Exceeded → `StepTimeout`.
 - `copy_to_worktree` — seconds budget for the isolated provider's worktree clone. Exceeded → `CopyToWorktreeError(timed_out=True)`. Set the provider's own `copy_timeout` to override per-call; pass `None` to disable the budget.
+- `git_setup` — per-command budget for the host-side git plumbing `run()` runs while carving and tearing down a worktree (`git worktree add`/`remove`, branch/worktree listing, `status`, and the `origin` fast-forward when reusing a clean worktree). Exceeded → `GitCommandTimeout`. Raise it on slow filesystems (NFS, networked volumes) or large repos where worktree creation legitimately takes longer than 60s. Applies to the `run()` and `interactive()` paths; `create_sandbox()` and the standalone `create_worktree()` carve at the 60s default.
 
 ### `Logging`
 

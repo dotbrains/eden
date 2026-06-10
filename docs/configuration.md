@@ -42,7 +42,7 @@ When `run()` invokes a hook or an agent process, it merges the host process envi
 
 ## `Timeouts`
 
-Frozen dataclass passed as `run(timeouts=...)`. See [python-api.md#configuration-types](python-api.md#configuration-types) for fields. Defaults (`hook_step=60.0`, `iteration_step=None`) suit most workloads — override only when you have a specific reason. `iteration_step=None` defers to the agent's `idle_timeout`.
+Frozen dataclass passed as `run(timeouts=...)`. See [python-api.md#configuration-types](python-api.md#configuration-types) for fields. Defaults (`hook_step=60.0`, `iteration_step=None`, `copy_to_worktree=60.0`, `git_setup=60.0`) suit most workloads — override only when you have a specific reason. `iteration_step=None` defers to the agent's `idle_timeout`; raise `git_setup` when worktree creation runs against slow filesystems (NFS, networked volumes) or very large repos.
 
 ## `Logging`
 

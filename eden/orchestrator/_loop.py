@@ -134,6 +134,7 @@ def _run_loop(
             strategy=strategy,
             name_hint=name,
             throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+            git_timeout=timeouts.git_setup,
         )
 
     target_branch = resolve_target_branch(host_repo_path=setup.cwd)
