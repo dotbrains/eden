@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from eden.agents._context import IterationContext
 from eden.agents._protocol import Agent
@@ -22,6 +23,7 @@ class _OpenCodeAgent:
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
     _dangerously_skip_permissions: bool = False
+    flox_env: str | Path | None = None
 
     def build_command(self, ctx: IterationContext) -> list[str]:
         return build_argv(
@@ -46,6 +48,7 @@ def opencode(
     env: Mapping[str, str] | None = None,
     dangerously_skip_permissions: bool = False,
     extra_args: tuple[str, ...] = (),
+    flox_env: str | Path | None = None,
 ) -> Agent:
     """opencode CLI agent (sst/opencode). Assumes ``opencode`` binary is on PATH.
 
@@ -71,6 +74,11 @@ def opencode(
             on per-tool permission prompts. Safe inside isolated sandboxes;
             think twice before enabling for ``no_sandbox()``.
         extra_args: Inserted between the flag block and the prompt.
+        flox_env: Optional path to a directory containing a Flox env
+            (``.flox/env/manifest.toml``). When set, the orchestrator runs
+            opencode inside it via ``flox activate -d <dir> -- <argv>``.
+            Enforced when present: a missing manifest or ``flox`` binary raises
+            ``FloxEnvError`` (set ``EDEN_ALLOW_NO_FLOX=1`` to skip activation).
 
     The agent's ``parse_stream`` decodes opencode JSONL events (``step_start``
     → ``session_id``, ``text`` → ``text``, ``tool_use`` → ``tool_call``,
@@ -85,6 +93,7 @@ def opencode(
         _env=dict(env) if env is not None else {},
         _extra_args=tuple(extra_args),
         _dangerously_skip_permissions=dangerously_skip_permissions,
+        flox_env=flox_env,
     )
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from eden.agents._argv_guards import assert_prompt_fits_argv
 from eden.agents._context import IterationContext
@@ -23,6 +24,7 @@ class _CursorAgent:
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
     _force: bool = False
+    flox_env: str | Path | None = None
 
     def build_command(self, ctx: IterationContext) -> list[str]:
         assert_prompt_fits_argv(prompt=ctx.prompt, agent_name=self.name)
@@ -44,6 +46,7 @@ def cursor(
     env: Mapping[str, str] | None = None,
     force: bool = False,
     extra_args: tuple[str, ...] = (),
+    flox_env: str | Path | None = None,
 ) -> Agent:
     """Cursor CLI agent. Assumes the ``agent`` binary (Cursor's CLI) is on PATH.
 
@@ -67,6 +70,11 @@ def cursor(
             on per-tool permission prompts. Cursor's equivalent of Claude's
             ``dangerously_skip_permissions``.
         extra_args: Inserted between the standard flags and the prompt.
+        flox_env: Optional path to a directory containing a Flox env
+            (``.flox/env/manifest.toml``). When set, the orchestrator runs
+            cursor inside it via ``flox activate -d <dir> -- <argv>``. Enforced
+            when present: a missing manifest or ``flox`` binary raises
+            ``FloxEnvError`` (set ``EDEN_ALLOW_NO_FLOX=1`` to skip activation).
 
     The agent's ``parse_stream`` handles cursor's ``tool_call`` events
     plus the Claude-compatible ``assistant`` / ``result`` event shapes.
@@ -78,6 +86,7 @@ def cursor(
         _env=dict(env) if env is not None else {},
         _extra_args=tuple(extra_args),
         _force=force,
+        flox_env=flox_env,
     )
 
 

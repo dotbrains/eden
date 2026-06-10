@@ -19,7 +19,7 @@ from eden import (
     Hook, HookPhase, Hooks, HostHooks, SandboxHooks,
     IsolatedSandboxHandle,
     EdenError, ConfigError, CwdError, EdenTimeoutError, EnvMergeError,
-    HookError, HookFailed, HookTimeout, IdleTimeout, InvalidOptions,
+    FloxEnvError, HookError, HookFailed, HookTimeout, IdleTimeout, InvalidOptions,
     PromptError, RestAuthError, RestError, RestNotFoundError,
     RestRateLimited, SessionCaptureFailed, StepTimeout,
     __version__,
@@ -537,6 +537,8 @@ class IterationContext:
 
 Six factories ship in-tree. Each returns an `Agent`. See [agents.md](agents.md) for capability comparisons.
 
+Every CLI-backed factory (`claude_code`, `codex`, `opencode`, `pi`, `cursor`, `copilot`, `cli_agent`) accepts an optional `flox_env: str | Path | None = None`. When set to a directory containing a Flox env (`.flox/env/manifest.toml`), the orchestrator runs that agent's CLI inside it via `flox activate -d <dir> -- <argv>`, giving each agent type its own declared, lockfile-pinned toolchain. Enforced when present: a missing manifest or `flox` binary raises [`FloxEnvError`](#errors); set `EDEN_ALLOW_NO_FLOX=1` to skip activation where Flox is unavailable. See [agents.md](agents.md#per-agent-flox-runtime) and ADR-0014.
+
 #### `simulated_agent(...)`
 
 ```python
@@ -1031,7 +1033,7 @@ Maps any `EdenError` (including the sandbox / worktree subclasses) to a single m
 
 `hint` is preserved when the error already carries one (e.g. `InvalidOptions(..., hint=...)`). For tagged provider errors that don't carry a hint — `ProviderUnavailable`, `ImageNotFound`, `ContainerStartFailed`, `ExecTimeout`, etc. — the formatter synthesises a context-aware suggestion ("Is Docker running?", "Build the image first: `docker build ...`", "Increase `Timeouts.iteration_step`"). Use this in CLI surfaces so users get the same recovery message regardless of which error subclass surfaced.
 
-The 19 concrete error classes re-exported from `eden`:
+The 20 concrete error classes re-exported from `eden`:
 
 - `EdenError` — base class for everything.
 - `AgentError` — the agent subprocess exited non-zero without hitting the completion signal. Carries `agent_name`, `exit_code`, `stderr`, and `parsed_error` (extracted from stdout for Codex / Pi / OpenCode, which surface errors there rather than on stderr).
@@ -1040,6 +1042,7 @@ The 19 concrete error classes re-exported from `eden`:
 - `CwdError` — invalid `cwd=` (missing, not a directory, not in a git repo).
 - `EdenTimeoutError` — base for time-budget exceedances; subclasses `TimeoutError`.
 - `EnvMergeError` — conflicting `env` overrides between caller, agent, and provider.
+- `FloxEnvError` — an agent declared a `flox_env` that can't be activated: the directory has no `.flox/env/manifest.toml`, or the `flox` binary isn't on `PATH`. Raised before the first iteration (fail-fast). Set `EDEN_ALLOW_NO_FLOX=1` to skip activation when `flox` is unavailable. Code `config.flox_env`.
 - `HookError` — base for hook failures.
 - `HookFailed` — a hook command exited non-zero.
 - `HookTimeout` — a hook exceeded `Timeouts.hook_step` (or its own `timeout`).

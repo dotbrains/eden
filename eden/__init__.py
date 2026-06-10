@@ -39,6 +39,7 @@ from eden.errors import (
     EdenError,
     EdenTimeoutError,
     EnvMergeError,
+    FloxEnvError,
     HookError,
     HookFailed,
     HookTimeout,
@@ -108,6 +109,7 @@ __all__ = [
     "ExecResult",
     "FileDisplay",
     "FinalizeResult",
+    "FloxEnvError",
     # lifecycle
     "Hook",
     "HookError",

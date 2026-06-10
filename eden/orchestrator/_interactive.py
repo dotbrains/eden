@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from eden.agents._context import IterationContext
+from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
 from eden.env import load_eden_env, merge_env
 from eden.errors import InvalidOptions
@@ -225,6 +226,11 @@ def interactive(
         )
         build_interactive = getattr(agent, "build_interactive_command", None)
         argv = build_interactive(ctx) if callable(build_interactive) else agent.build_command(ctx)
+        # Per-agent Flox runtime (ADR-0014): wrap before the handle wraps argv
+        # in ``<binary> exec -it``, so for container providers ``flox`` runs
+        # inside the container (and so must be present in the image, alongside
+        # the declared env dir). For no_sandbox the wrap runs on the host.
+        argv = flox_wrap(argv, flox_env=getattr(agent, "flox_env", None))
 
         # Dispatch via the handle's ``interactive_exec`` method when available
         # — bind-mount providers (no_sandbox, docker, podman) implement it; the

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 from eden.abort import AbortSignal, register_shutdown
 from eden.agents._context import IterationContext
 from eden.agents._errors import parse_stdout_error
+from eden.agents._flox import flox_wrap, validate_flox_env
 from eden.agents._protocol import Agent
 from eden.errors import AgentError, SessionCaptureFailed
 from eden.lifecycle import HookPhase, Hooks
@@ -273,6 +274,12 @@ def _run_loop(
             except Exception:
                 pass
 
+        # Per-agent Flox runtime (ADR-0014): resolve + validate once so a
+        # dangling flox_env fails before the first iteration, then wrap each
+        # iteration's argv in ``flox activate -d <dir> -- <argv>``.
+        _raw_flox_env = getattr(agent, "flox_env", None)
+        flox_env_dir = validate_flox_env(_raw_flox_env) if _raw_flox_env is not None else None
+
         for i in range(max_iterations):
             signal.raise_if_aborted()
             iter_session_id: str | None = None
@@ -320,6 +327,7 @@ def _run_loop(
                     fork_session=fork_session,
                 )
             )
+            argv = flox_wrap(argv, flox_env=flox_env_dir)
 
             wd = IdleWatchdog(
                 idle_timeout=idle_timeout,

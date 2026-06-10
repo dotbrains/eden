@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Literal
 
 from eden.agents.claude_code._agent import _ClaudeCodeAgent
@@ -19,6 +20,7 @@ def claude_code(
     capture_sessions: bool = True,
     dangerously_skip_permissions: bool = False,
     extra_args: tuple[str, ...] = (),
+    flox_env: str | Path | None = None,
 ) -> _ClaudeCodeAgent:
     """Build a Claude Code-backed Agent.
 
@@ -40,6 +42,12 @@ def claude_code(
             unprompted access to the host filesystem.
         extra_args: Escape hatch for unsurfaced Claude CLI flags. Inserted
             before the ``--`` prompt separator.
+        flox_env: Optional path to a directory containing a Flox env
+            (``.flox/env/manifest.toml``). When set, the orchestrator runs the
+            agent CLI inside it via ``flox activate -d <dir> -- <argv>`` so the
+            agent gets its own declared toolchain. Enforced when present: a
+            missing manifest or ``flox`` binary raises ``FloxEnvError`` (set
+            ``EDEN_ALLOW_NO_FLOX=1`` to skip activation without Flox installed).
     """
     from eden.session._claude import ClaudeSessionStorage
 
@@ -52,6 +60,7 @@ def claude_code(
         _extra_args=tuple(extra_args),
         _dangerously_skip_permissions=dangerously_skip_permissions,
         _session_storage=ClaudeSessionStorage() if capture_sessions else None,
+        flox_env=flox_env,
     )
 
 

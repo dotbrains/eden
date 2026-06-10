@@ -57,6 +57,7 @@ classDiagram
     ConfigError <|-- PromptError
     ConfigError <|-- EnvMergeError
     ConfigError <|-- CwdError
+    ConfigError <|-- FloxEnvError
 
     HookError <|-- HookFailed
     HookError <|-- HookTimeout
@@ -129,6 +130,12 @@ Conflicting `env` overrides between caller, agent, and provider. Default `code="
 The `cwd=` argument is missing, not a directory, or not inside a git repo. Default `code="config.cwd"`.
 
 **Recovery:** pass a valid path inside a git repo. `cd` into the repo before running, or pass `cwd=Path("/abs/path/to/repo")`.
+
+#### `FloxEnvError`
+
+An agent declared a `flox_env` that can't be activated: the directory has no `.flox/env/manifest.toml`, or the `flox` binary isn't on `PATH`. Raised before the first iteration (fail-fast), so a dangling reference surfaces immediately rather than mid-run. Default `code="config.flox_env"`. See [agents.md](agents.md#per-agent-flox-runtime).
+
+**Recovery:** point `flox_env` at a directory containing `.flox/env/manifest.toml` (run `flox init` there), install Flox so the env can be activated, or set `EDEN_ALLOW_NO_FLOX=1` to run without it (Windows / CI smoke tests). Drop the `flox_env` declaration to restore the prior host-toolchain behavior.
 
 ### `HookError`
 
