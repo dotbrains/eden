@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from eden.agents._context import IterationContext
 from eden.agents._protocol import Agent
@@ -29,6 +30,7 @@ class _CliAgent:
     _parse_stream: _ParseStream | None = None
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
+    flox_env: str | Path | None = None
 
     def build_command(self, ctx: IterationContext) -> list[str]:
         if self._build_argv is not None:
@@ -51,6 +53,7 @@ def cli_agent(
     captures_sessions: bool = False,
     env: Mapping[str, str] | None = None,
     extra_args: tuple[str, ...] = (),
+    flox_env: str | Path | None = None,
 ) -> Agent:
     """Build an Agent for any line-streaming CLI tool.
 
@@ -68,6 +71,11 @@ def cli_agent(
             ``~/.claude/projects/<slug>/<id>.jsonl``). Default ``False``.
         env: Per-agent environment additions (merged by the orchestrator).
         extra_args: Default-build_argv inserts these between binary and prompt.
+        flox_env: Optional path to a directory containing a Flox env
+            (``.flox/env/manifest.toml``). When set, the orchestrator runs the
+            CLI inside it via ``flox activate -d <dir> -- <argv>``. Enforced
+            when present: a missing manifest or ``flox`` binary raises
+            ``FloxEnvError`` (set ``EDEN_ALLOW_NO_FLOX=1`` to skip activation).
     """
     return _CliAgent(
         name=name,
@@ -78,6 +86,7 @@ def cli_agent(
         _parse_stream=parse_stream,
         _env=dict(env) if env is not None else {},
         _extra_args=tuple(extra_args),
+        flox_env=flox_env,
     )
 
 

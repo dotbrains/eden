@@ -80,6 +80,12 @@ activate`; defaults to `python3.11`). Flox is Linux/macOS only — on Windows us
 [`AGENTS.md`](AGENTS.md#setup-and-development-commands) for the full command
 list.
 
+This `.flox/` env is Eden's *own* dev toolchain. Separately, each **agent** can
+declare its *own* Flox runtime via `flox_env=` on its factory — Eden then runs
+that agent's CLI inside `flox activate -d <dir> -- <argv>` so it gets a
+declared, lockfile-pinned toolchain instead of inheriting the host's. See
+[Agents — Per-agent Flox runtime](docs/agents.md#per-agent-flox-runtime).
+
 ## Documentation
 
 Full documentation lives in [`docs/`](docs/README.md):

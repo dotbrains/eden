@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from eden.agents._context import IterationContext
@@ -25,6 +26,7 @@ class _ClaudeCodeAgent:
     _extra_args: tuple[str, ...] = ()
     _dangerously_skip_permissions: bool = False
     _session_storage: SessionStorage | None = None
+    flox_env: str | Path | None = None
 
     @property
     def session_storage(self) -> SessionStorage | None:

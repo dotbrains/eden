@@ -42,6 +42,32 @@ class InvalidOptions(ConfigError):
         super().__init__(_format(code, message, hint))
 
 
+class FloxEnvError(ConfigError):
+    """Raised when an agent declares a ``flox_env`` that cannot be activated.
+
+    Enforced-when-present: an agent that declares a ``flox_env`` must point at a
+    directory containing ``.flox/env/manifest.toml``, and the ``flox`` binary
+    must be on ``PATH``. A dangling reference or a missing ``flox`` binary fails
+    loudly here rather than silently dropping the agent's declared runtime.
+    Set ``EDEN_ALLOW_NO_FLOX=1`` to skip activation when ``flox`` is unavailable
+    (escape hatch for Windows / CI smoke tests).
+    """
+
+    def __init__(
+        self,
+        *,
+        code: str = "config.flox_env",
+        message: str,
+        hint: str | None = None,
+        cause: Exception | None = None,
+    ) -> None:
+        self.code = code
+        self.message = message
+        self.hint = hint
+        self.cause = cause
+        super().__init__(_format(code, message, hint))
+
+
 class PromptError(ConfigError):
     """Prompt resolution or expansion failed.
 
