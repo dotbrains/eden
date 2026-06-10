@@ -73,7 +73,7 @@ Eden uses [Flox](https://flox.dev) in two distinct ways — don't conflate them:
 On Linux/macOS the repo ships a declarative, lockfile-pinned dev environment under [`.flox/`](.flox/). With Flox installed:
 
 ```bash
-flox activate          # provisions toolchain + builds .venv on first run
+flox activate # provisions toolchain + builds .venv on first run
 pytest -m "unit or e2e"
 pre-commit run --all-files
 ```
