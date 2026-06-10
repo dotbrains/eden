@@ -15,10 +15,11 @@ ships.
   the `origin` fast-forward when reusing a clean worktree. Previously these were
   bound by a hard-coded 60 s constant with no override; raise it on slow
   filesystems (NFS, networked volumes) or very large repos where worktree
-  creation legitimately takes longer. Threaded through the `run()` and
-  `interactive()` paths; `create_sandbox()` and the standalone `create_worktree()`
-  carve at the 60 s default. Mirrors sandcastle's `gitSetupMs`. See
-  `docs/python-api.md` and `docs/configuration.md`.
+  creation legitimately takes longer. Honored by `run()`, `interactive()`, and
+  `create_sandbox(timeouts=...)`; the standalone `create_worktree()` helper
+  carves at the 60 s default (pass `git_timeout=` to override). Mirrors
+  sandcastle's `gitSetupMs`. See `docs/python-api.md` and
+  `docs/configuration.md`.
 - **Per-agent Flox runtime** — every agent factory now accepts an optional
   `flox_env=<dir>` pointing at a directory that ships its own Flox env
   (`.flox/env/manifest.toml`). When set, Eden runs the agent CLI inside it via

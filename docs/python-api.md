@@ -203,10 +203,13 @@ def create_sandbox(
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
     copy_to_worktree: list[str] | None = None,
+    timeouts: Timeouts | None = None,
 ) -> Sandbox: ...
 ```
 
 `copy_to_worktree` (when supplied) seeds host-relative files into the worktree before the sandbox boots — same semantics as on [`run()`](#run), and the copy happens once at `create_sandbox()` time (not on every subsequent `sb.run()`). Incompatible with `BranchStrategy.head()`.
+
+`timeouts` caps the one-time carve's git plumbing via `Timeouts.git_setup` (reused by `Sandbox.close()` for the teardown `git worktree remove`). Per-run deadlines like `iteration_step` are passed separately to each [`Sandbox.run(timeouts=...)`](#sandboxrun).
 
 The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, plus a `.run(...)` method (same shape as the top-level `run()` minus `agent`/`sandbox` already supplied). It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle and worktree on exit.
 
@@ -258,7 +261,7 @@ class Timeouts:
 - `hook_step` — seconds budget for any individual hook command. Exceeded → `HookTimeout`.
 - `iteration_step` — seconds budget for one agent iteration. `None` defers to `idle_timeout`. Exceeded → `StepTimeout`.
 - `copy_to_worktree` — seconds budget for the isolated provider's worktree clone. Exceeded → `CopyToWorktreeError(timed_out=True)`. Set the provider's own `copy_timeout` to override per-call; pass `None` to disable the budget.
-- `git_setup` — per-command budget for the host-side git plumbing `run()` runs while carving and tearing down a worktree (`git worktree add`/`remove`, branch/worktree listing, `status`, and the `origin` fast-forward when reusing a clean worktree). Exceeded → `GitCommandTimeout`. Raise it on slow filesystems (NFS, networked volumes) or large repos where worktree creation legitimately takes longer than 60s. Applies to the `run()` and `interactive()` paths; `create_sandbox()` and the standalone `create_worktree()` carve at the 60s default.
+- `git_setup` — per-command budget for the host-side git plumbing `run()` runs while carving and tearing down a worktree (`git worktree add`/`remove`, branch/worktree listing, `status`, and the `origin` fast-forward when reusing a clean worktree). Exceeded → `GitCommandTimeout`. Raise it on slow filesystems (NFS, networked volumes) or large repos where worktree creation legitimately takes longer than 60s. Honored by `run()`, `interactive()`, and `create_sandbox(timeouts=...)`; the standalone `create_worktree()` helper carves at the 60s default (pass `git_timeout=` to override).
 
 ### `Logging`
 

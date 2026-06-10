@@ -166,6 +166,7 @@ def create_sandbox(
     name: str | None = None,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
+    timeouts: Timeouts | None = None,
 ) -> Sandbox:
     """Resolve branch/strategy, carve a worktree, and create the sandbox handle.
 
@@ -175,6 +176,11 @@ def create_sandbox(
     ``copy_to_worktree`` is a list of host-relative file/directory paths to
     copy from the host repo into the freshly-carved worktree before the
     sandbox boots. Incompatible with the ``head`` branch strategy.
+
+    ``timeouts`` caps the carve's git plumbing via ``Timeouts.git_setup``
+    (and is reused by ``close()`` for the teardown ``git worktree remove``).
+    It governs this one-time carve only; per-run deadlines (``iteration_step``
+    etc.) are passed to each subsequent ``sb.run(timeouts=...)``.
     """
     if branch is not None and branch_strategy is not None:
         raise ValueError("branch and branch_strategy are mutually exclusive")
@@ -212,12 +218,14 @@ def create_sandbox(
             ),
         )
 
+    resolved_timeouts = timeouts if timeouts is not None else Timeouts()
     host_repo_path = Path.cwd()
     wt = create_worktree(
         host_repo_path=host_repo_path,
         strategy=strategy,
         name_hint=name,
         throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+        git_timeout=resolved_timeouts.git_setup,
     )
 
     # .eden/.env values flow into the container at create time so entrypoints

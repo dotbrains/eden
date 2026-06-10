@@ -119,6 +119,7 @@ async def create_sandbox(
     name: str | None = None,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
+    timeouts: Timeouts | None = None,
 ) -> Sandbox:
     """Async wrapper around :func:`eden.create_sandbox`.
 
@@ -139,6 +140,7 @@ async def create_sandbox(
         name=name,
         copy_to_worktree=copy_to_worktree,
         throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+        timeouts=timeouts,
     )
 
 
