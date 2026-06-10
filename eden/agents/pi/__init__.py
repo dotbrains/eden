@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from eden.agents._context import IterationContext
@@ -30,6 +31,7 @@ class _PiAgent:
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
     _session_storage: PiSessionStorage | None = None
+    flox_env: str | Path | None = None
 
     @property
     def session_storage(self) -> PiSessionStorage | None:
@@ -49,6 +51,7 @@ def pi(
     extra_args: tuple[str, ...] = (),
     thinking: PiThinking | None = None,
     capture_sessions: bool = True,
+    flox_env: str | Path | None = None,
 ) -> Agent:
     """pi CLI agent. Assumes `pi` binary is on PATH.
 
@@ -65,6 +68,12 @@ def pi(
     ``.eden/sessions/<branch>/iter-<i>-<id>.jsonl`` and can be resumed
     via ``run(..., resume_session=<id>)``. Mirrors upstream's
     ``PiOptions.captureSessions`` (v0.6.6, 932aa70).
+
+    ``flox_env``, when set to a directory containing a Flox env
+    (``.flox/env/manifest.toml``), runs pi inside it via
+    ``flox activate -d <dir> -- <argv>``. Enforced when present: a missing
+    manifest or ``flox`` binary raises ``FloxEnvError`` (set
+    ``EDEN_ALLOW_NO_FLOX=1`` to skip activation).
 
     The agent's ``parse_stream`` decodes pi JSONL events (``session`` →
     session_id, ``message_update`` / ``text_delta``,
@@ -93,6 +102,7 @@ def pi(
         _env=dict(env) if env is not None else {},
         _extra_args=merged_extra_args,
         _session_storage=session_storage,
+        flox_env=flox_env,
     )
 
 

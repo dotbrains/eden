@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from eden.agents._context import IterationContext
@@ -25,6 +26,7 @@ class _CodexAgent:
     _extra_args: tuple[str, ...] = ()
     _dangerously_bypass_approvals_and_sandbox: bool = True
     _session_storage: SessionStorage | None = None
+    flox_env: str | Path | None = None
 
     @property
     def session_storage(self) -> SessionStorage | None:

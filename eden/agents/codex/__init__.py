@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 
 from eden.agents.codex._agent import _CodexAgent
 from eden.agents.codex._argv import Effort
@@ -17,6 +18,7 @@ def codex(
     capture_sessions: bool = True,
     dangerously_bypass_approvals_and_sandbox: bool = True,
     extra_args: tuple[str, ...] = (),
+    flox_env: str | Path | None = None,
 ) -> _CodexAgent:
     """OpenAI Codex CLI agent.
 
@@ -45,6 +47,11 @@ def codex(
             Default ``True``.
         extra_args: Escape hatch for unsurfaced codex CLI flags. Appended
             after the standard flags.
+        flox_env: Optional path to a directory containing a Flox env
+            (``.flox/env/manifest.toml``). When set, the orchestrator runs
+            codex inside it via ``flox activate -d <dir> -- <argv>``. Enforced
+            when present: a missing manifest or ``flox`` binary raises
+            ``FloxEnvError`` (set ``EDEN_ALLOW_NO_FLOX=1`` to skip activation).
 
     The agent's ``parse_stream`` decodes codex JSONL events
     (``thread.started`` → ``session_id``, ``item.completed``/``agent_message``
@@ -62,6 +69,7 @@ def codex(
         _extra_args=tuple(extra_args),
         _dangerously_bypass_approvals_and_sandbox=dangerously_bypass_approvals_and_sandbox,
         _session_storage=CodexSessionStorage() if capture_sessions else None,
+        flox_env=flox_env,
     )
 
 
