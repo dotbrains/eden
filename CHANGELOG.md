@@ -7,6 +7,20 @@ ships.
 
 ## Unreleased
 
+### Added
+
+- **`claude_code(permission_mode=...)`** — graduated tool-approval control for
+  the Claude Code agent, appended as `--permission-mode <mode>`. Accepts
+  `"default"`, `"acceptEdits"`, `"plan"`, or `"bypassPermissions"`, giving a
+  middle ground between prompting on every tool and the existing all-or-nothing
+  `dangerously_skip_permissions` — e.g. `"acceptEdits"` for safe autonomous
+  editing inside a sandbox or `"plan"` for a read-only planning iteration. The
+  two options are mutually exclusive; passing both (or an unrecognised mode)
+  raises `InvalidOptions`. `dangerously_skip_permissions` is unchanged and stays
+  the equivalent of `permission_mode="bypassPermissions"`. Mirrors sandcastle's
+  `claudeCode(model, { permissionMode })`. See `docs/agents.md` and
+  `docs/python-api.md`.
+
 ## [0.2.0] - 2026-06-10
 
 ### Added

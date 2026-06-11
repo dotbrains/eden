@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from eden.agents._context import IterationContext
-from eden.agents.claude_code._argv import build_argv
+from eden.agents.claude_code._argv import ClaudePermissionMode, build_argv
 from eden.agents.claude_code._stream import parse_line
 from eden.streaming import StreamEvent
 
@@ -25,6 +25,7 @@ class _ClaudeCodeAgent:
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
     _dangerously_skip_permissions: bool = False
+    _permission_mode: ClaudePermissionMode | None = None
     _session_storage: SessionStorage | None = None
     flox_env: str | Path | None = None
 
@@ -46,6 +47,7 @@ class _ClaudeCodeAgent:
             resume_session=ctx.resume_session,
             fork_session=ctx.fork_session,
             dangerously_skip_permissions=self._dangerously_skip_permissions,
+            permission_mode=self._permission_mode,
         )
 
     def stdin_content(self, ctx: IterationContext) -> str | None:
@@ -64,6 +66,8 @@ class _ClaudeCodeAgent:
             argv.extend(["--thinking-effort", self._effort])
         if self._dangerously_skip_permissions:
             argv.append("--dangerously-skip-permissions")
+        if self._permission_mode is not None:
+            argv.extend(["--permission-mode", self._permission_mode])
         argv.extend(self._extra_args)
         if ctx.prompt:
             argv.append(ctx.prompt)

@@ -121,6 +121,45 @@ def test_dangerously_skip_permissions_propagates_to_interactive() -> None:
     assert "--dangerously-skip-permissions" in argv
 
 
+def test_permission_mode_default_off() -> None:
+    a = claude_code(model="m")
+    argv = a.build_command(_ctx())
+    assert "--permission-mode" not in argv
+
+
+def test_permission_mode_appends_flag() -> None:
+    a = claude_code(model="m", permission_mode="acceptEdits")
+    argv = a.build_command(_ctx())
+    assert "--permission-mode" in argv
+    assert argv[argv.index("--permission-mode") + 1] == "acceptEdits"
+    assert argv.index("--permission-mode") < argv.index("-p")
+
+
+def test_permission_mode_propagates_to_interactive() -> None:
+    a = claude_code(model="m", permission_mode="plan")
+    argv = a.build_interactive_command(_ctx(prompt=""))
+    assert "--permission-mode" in argv
+    assert argv[argv.index("--permission-mode") + 1] == "plan"
+
+
+def test_permission_mode_invalid_value_raises() -> None:
+    from eden.errors import InvalidOptions
+
+    with pytest.raises(InvalidOptions, match="permission_mode"):
+        claude_code(model="m", permission_mode="bogus")  # type: ignore[arg-type]
+
+
+def test_permission_mode_conflicts_with_skip_permissions() -> None:
+    from eden.errors import InvalidOptions
+
+    with pytest.raises(InvalidOptions, match="at most one"):
+        claude_code(
+            model="m",
+            permission_mode="acceptEdits",
+            dangerously_skip_permissions=True,
+        )
+
+
 def test_parse_stream_returns_text_for_assistant_block() -> None:
     a = claude_code(model="m")
     line = json.dumps(
