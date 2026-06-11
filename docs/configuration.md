@@ -46,21 +46,22 @@ Frozen dataclass passed as `run(timeouts=...)`. See [python-api.md#configuration
 
 ## `Logging`
 
-Frozen dataclass passed as `run(logging=...)` controlling JSONL stream-event logging. The simplest form is the `Logging.file(...)` factory:
+Frozen dataclass passed as `run(logging=...)` controlling JSONL stream-event logging. The simplest forms are the `Logging.file(...)` and `Logging.stdout(...)` factories:
 
 ```python
 from eden import Logging, run
 
 run(..., logging=Logging.file("run.jsonl", level="info"))
+run(..., logging=Logging.stdout())  # CI-friendly: log lines go to the job log
 ```
 
 Fields:
 
-- `type` — currently always `"file"` (one sink shipped in v0.1).
-- `path` — `Path` to write logs to. Required.
+- `type` — `"file"` (default sink) or `"stdout"`.
+- `path` — `Path` to write logs to. Required for `"file"`, must be omitted for `"stdout"`.
 - `level` — one of `"debug"`, `"info"` (default), `"warn"`, `"error"`.
 
-When set, every [`StreamEvent`](python-api.md#streamevent) the orchestrator emits is written to the file as a JSON line. `run()` returns the resolved path back as `RunResult.log_file_path`.
+When set, every [`StreamEvent`](python-api.md#streamevent) the orchestrator emits is written to the sink as a JSON line. For the file sink, `run()` returns the resolved path back as `RunResult.log_file_path`; for the stdout sink, `RunResult.log_file_path` is `None`.
 
 Read source: `eden/logging/_config.py`.
 

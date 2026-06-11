@@ -23,6 +23,7 @@ from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.logging._file import FileLogSink, default_log_path
+from eden.logging._stdout import StdoutLogSink
 from eden.orchestrator._bounded_tail import BoundedTail
 from eden.orchestrator._completion import match
 from eden.orchestrator._copy_files import apply_copy_to_worktree
@@ -139,7 +140,7 @@ def _run_loop(
 
     target_branch = resolve_target_branch(host_repo_path=setup.cwd)
 
-    sink: FileLogSink | None = None
+    sink: FileLogSink | StdoutLogSink | None = None
     handle: SandboxHandle | None = existing_handle if caller_managed else None
     iterations: list[Iteration] = []
     # Bounded rolling tail — capped to keep memory finite on long agent
@@ -252,12 +253,19 @@ def _run_loop(
                 name=name,
             )
         )
-        log_path = log_cfg.path
-        sink = FileLogSink.open(
-            log_cfg.path,
-            level=log_cfg.level,
-            env_values=tuple(setup.merged_env.values()),
-        )
+        if log_cfg.type == "file" and log_cfg.path is not None:
+            log_path = log_cfg.path
+            sink = FileLogSink.open(
+                log_cfg.path,
+                level=log_cfg.level,
+                env_values=tuple(setup.merged_env.values()),
+            )
+        else:
+            # Logging.stdout() — no log file; RunResult.log_file_path stays None.
+            sink = StdoutLogSink(
+                level=log_cfg.level,
+                env_values=tuple(setup.merged_env.values()),
+            )
         agent_stream_cb = log_cfg.on_agent_stream_event
 
         def _forward_agent_event(ev: StreamEvent) -> None:

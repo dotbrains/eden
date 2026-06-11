@@ -98,7 +98,7 @@ Parameters:
 - `hooks` — `Hooks(host=..., sandbox=...)` lifecycle bundle. Default `Hooks()`.
 - `timeouts` — `Timeouts(...)` per-step deadlines. Default `Timeouts()`.
 - `on_event` — callback invoked with every `StreamEvent`. Use to forward to UIs, logs, or queues.
-- `logging` — `Logging.file(path, on_agent_stream_event=...)` to mirror events to a log file; the optional callback fires for agent-emitted text/tool/usage events only and swallows exceptions.
+- `logging` — `Logging.file(path, on_agent_stream_event=...)` to mirror events to a log file, or `Logging.stdout(...)` to write them to the host process's stdout (CI-friendly; `RunResult.log_file_path` is then `None`); the optional callback fires for agent-emitted text/tool/usage events only and swallows exceptions.
 - `signal` — `AbortSignal` for cooperative cancellation. If omitted, `run` allocates its own (unused) signal.
 - `output` — `Output.object(...)` / `Output.string(...)` to extract a typed payload from a `<tag>` block in stdout. Requires `max_iterations=1` and that `<tag>` literally appear in the prompt. Failure raises [`StructuredOutputError`](#structuredoutputerror).
 - `resume_session` — Claude Code session id to resume; appends `--resume <id>` to the agent argv. Requires `max_iterations=1`.
@@ -265,13 +265,13 @@ class Timeouts:
 
 ### `Logging`
 
-File sink for `StreamEvent`s. Each call to `run()` opens the file in append mode and prepends a `--- Run started: <UTC ISO ts> ---` delimiter so a shared log file remains readable.
+Log sink for `StreamEvent`s — a file (default) or the host process's stdout. For the file sink, each call to `run()` opens the file in append mode and prepends a `--- Run started: <UTC ISO ts> ---` delimiter so a shared log file remains readable.
 
 ```python
 @dataclass(frozen=True)
 class Logging:
-    type: Literal["file"]
-    path: Path
+    type: Literal["file", "stdout"]
+    path: Path | None = None
     level: Literal["debug", "info", "warn", "error"] = "info"
     on_agent_stream_event: Callable[[StreamEvent], None] | None = None
 
@@ -281,9 +281,15 @@ class Logging:
         level: ... = "info",
         on_agent_stream_event: Callable[[StreamEvent], None] | None = None,
     ) -> Logging: ...
+
+    @staticmethod
+    def stdout(
+        level: ... = "info",
+        on_agent_stream_event: Callable[[StreamEvent], None] | None = None,
+    ) -> Logging: ...
 ```
 
-Use `Logging.file("run.log")` to capture every event the orchestrator emits.
+Use `Logging.file("run.log")` to capture every event the orchestrator emits. Use `Logging.stdout()` to write the same formatted, redacted lines to the host process's stdout instead — useful in CI, where the job log is the natural destination; `RunResult.log_file_path` is `None` for stdout-logged runs. Constructing `Logging(type="file")` without a `path` (or `type="stdout"` with one) raises `InvalidOptions`.
 
 `on_agent_stream_event` (optional) is invoked for every agent-derived event (`text`, `tool_call`, `usage`) in addition to file output. Intended for forwarding the agent's stream to external observability. Idle warnings and orchestrator-internal text are NOT forwarded — use the top-level `on_event` argument to `run()` for those. Errors raised by the callback are swallowed so a broken forwarder cannot kill the run.
 
