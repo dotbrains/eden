@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from eden.agents._context import IterationContext
-from eden.agents.codex._argv import Effort, build_argv
+from eden.agents.codex._argv import ApprovalsReviewer, Effort, build_argv
 from eden.agents.codex._stream import parse_line
 from eden.streaming import StreamEvent
 
@@ -25,6 +25,7 @@ class _CodexAgent:
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
     _dangerously_bypass_approvals_and_sandbox: bool = True
+    _approvals_reviewer: ApprovalsReviewer | None = None
     _session_storage: SessionStorage | None = None
     flox_env: str | Path | None = None
 
@@ -48,6 +49,7 @@ class _CodexAgent:
             dangerously_bypass_approvals_and_sandbox=(
                 self._dangerously_bypass_approvals_and_sandbox
             ),
+            approvals_reviewer=self._approvals_reviewer,
         )
 
     def stdin_content(self, ctx: IterationContext) -> str | None:

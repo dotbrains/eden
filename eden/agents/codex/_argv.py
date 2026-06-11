@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 Effort = Literal["low", "medium", "high", "xhigh"]
+ApprovalsReviewer = Literal["user", "auto_review"]
 
 
 def build_argv(
@@ -15,6 +16,7 @@ def build_argv(
     resume_session: str | None = None,
     fork_session: bool = False,
     dangerously_bypass_approvals_and_sandbox: bool = True,
+    approvals_reviewer: ApprovalsReviewer | None = None,
 ) -> list[str]:
     """Return the argv vector for a single codex invocation.
 
@@ -36,13 +38,33 @@ def build_argv(
     codex CLI does not block on per-tool approval prompts inside an isolated
     eden sandbox. Pass ``False`` to keep codex's interactive approvals
     (e.g. when running under ``no_sandbox()``).
+
+    ``approvals_reviewer="auto_review"`` swaps the bypass flag for an
+    interactive approval policy plus codex's most permissive sandbox
+    (``-a on-request -s danger-full-access -c approvals_reviewer="auto_review"``)
+    — auto-review only fires on interactive approvals, and the safety boundary
+    becomes the reviewer agent rather than codex's filesystem sandbox (eden's
+    sandbox provider still owns the outer boundary). Mirrors upstream's
+    ``codex(model, { approvalsReviewer })`` (v0.8.0). ``"user"`` (and ``None``)
+    keep the default bypass behaviour.
     """
     argv: list[str] = ["codex", "exec"]
     if resume_session is not None:
         subcommand = "fork" if fork_session else "resume"
         argv.extend([subcommand, resume_session])
     argv.append("--json")
-    if dangerously_bypass_approvals_and_sandbox:
+    if approvals_reviewer == "auto_review":
+        argv.extend(
+            [
+                "-a",
+                "on-request",
+                "-s",
+                "danger-full-access",
+                "-c",
+                'approvals_reviewer="auto_review"',
+            ]
+        )
+    elif dangerously_bypass_approvals_and_sandbox:
         argv.append("--dangerously-bypass-approvals-and-sandbox")
     argv.extend(["-m", model])
     if effort is not None:

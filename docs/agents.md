@@ -161,6 +161,7 @@ def codex(
     env: Mapping[str, str] | None = None,
     capture_sessions: bool = True,
     dangerously_bypass_approvals_and_sandbox: bool = True,
+    approvals_reviewer: Literal["user", "auto_review"] | None = None,
     extra_args: tuple[str, ...] = (),
 ) -> Agent: ...
 ```
@@ -171,7 +172,8 @@ Builds the invocation `codex exec [resume <id>] --json [--dangerously-bypass-app
 
 - `effort` — optional reasoning-effort level. When set, threads `-c model_reasoning_effort="<level>"` into the invocation. One of `"low"`, `"medium"`, `"high"`, `"xhigh"`.
 - `capture_sessions` — when `True` (default), the orchestrator post-processes each iteration's session JSONL into `.eden/sessions/` via [`CodexSessionStorage`](python-api.md#codexsessionstorage). Resume a captured session via the top-level `run(..., resume_session=<id>)` (requires `max_iterations=1`).
-- `dangerously_bypass_approvals_and_sandbox` — when `True` (default), appends `--dangerously-bypass-approvals-and-sandbox` so codex does not block on per-tool approval prompts. Safe inside an isolated sandbox; think twice before enabling for `no_sandbox()`.
+- `dangerously_bypass_approvals_and_sandbox` — when `True` (default), appends `--dangerously-bypass-approvals-and-sandbox` so codex does not block on per-tool approval prompts. Safe inside an isolated sandbox; think twice before enabling for `no_sandbox()`. Superseded by `approvals_reviewer="auto_review"`.
+- `approvals_reviewer` — maps to codex's `approvals_reviewer` config key (`-c approvals_reviewer="<value>"`). When `"auto_review"`, swaps the bypass flag for an interactive approval policy plus codex's most permissive sandbox (`-a on-request -s danger-full-access`), so an AI reviewer mediates per-action approvals instead of skipping them outright — eden's sandbox provider still owns the outer filesystem boundary. `"user"` (and unset) keep the default bypass behaviour. An unrecognised value raises `InvalidOptions`.
 
 ### parse_stream
 
