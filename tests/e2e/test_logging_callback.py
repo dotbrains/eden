@@ -68,3 +68,16 @@ def test_no_callback_keeps_run_unchanged(e2e_git_repo: Path) -> None:
         logging=eden.Logging.file(path=e2e_git_repo / "out.log"),
     )
     assert result.completion_signal == "<promise>COMPLETE</promise>"
+
+
+def test_stdout_sink_logs_to_stdout(e2e_git_repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    result = eden.run(
+        agent=eden.simulated_agent(output="stdout sink line\n<promise>COMPLETE</promise>\n"),
+        sandbox=no_sandbox(),
+        prompt="x",
+        max_iterations=1,
+        logging=eden.Logging.stdout(),
+    )
+    assert result.completion_signal == "<promise>COMPLETE</promise>"
+    assert result.log_file_path is None
+    assert "stdout sink line" in capsys.readouterr().out
