@@ -203,6 +203,106 @@ def test_cwd_stored_on_sandbox(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPat
         s.close()
 
 
+def test_worktree_mutually_exclusive_with_branch_args(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from eden.orchestrator import create_worktree
+
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    with create_worktree() as wt:
+        with pytest.raises(ValueError):
+            create_sandbox(sandbox=p, worktree=wt, branch="x")
+        with pytest.raises(ValueError):
+            create_sandbox(sandbox=p, worktree=wt, branch_strategy=BranchStrategy.head())
+        with pytest.raises(ValueError):
+            create_sandbox(sandbox=p, worktree=wt, base_branch="main")
+
+
+def test_caller_worktree_survives_sandbox_close(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Split ownership: Sandbox.close() tears down the container only."""
+    from eden.orchestrator import create_worktree
+
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    wt = create_worktree()
+    try:
+        s = create_sandbox(sandbox=p, worktree=wt)
+        assert s.owns_worktree is False
+        assert s.worktree is wt
+        handle = s.handle
+        s.close()
+        assert handle.closed[0] is True  # type: ignore[attr-defined]
+        # Worktree is still on disk and still open — the caller owns it.
+        assert wt.worktree_path.exists()
+    finally:
+        result = wt.close()
+    # close() above is the FIRST close of the handle: a clean worktree is
+    # removed, not reported as already-closed.
+    assert result.action == "removed"
+
+
+def test_one_worktree_hosts_sequential_sandboxes(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from eden.orchestrator import create_worktree
+
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    with create_worktree() as wt:
+        with create_sandbox(sandbox=p, worktree=wt) as first:
+            assert first.worktree.branch == wt.branch
+        with create_sandbox(sandbox=p, worktree=wt) as second:
+            assert second.worktree.branch == wt.branch
+        assert len(p.seen_opts) == 2
+        assert all(o.worktree_path == wt.worktree_path for o in p.seen_opts)
+
+
+def test_provider_failure_leaves_caller_worktree_open(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from eden.orchestrator import create_worktree
+
+    @dataclass
+    class _ExplodingProvider(_StubProvider):
+        def create(self, opts: CreateOptions) -> Any:
+            raise RuntimeError("boom")
+
+    monkeypatch.chdir(tmp_git_repo)
+    with create_worktree() as wt:
+        with pytest.raises(RuntimeError):
+            create_sandbox(sandbox=_ExplodingProvider(), worktree=wt)
+        # The factory must not close a worktree it does not own.
+        assert wt.worktree_path.exists()
+        # Reusable after the failure.
+        with create_sandbox(sandbox=_StubProvider(), worktree=wt):
+            pass
+
+
+def test_copy_to_worktree_rejected_for_head_style_worktree(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from eden.errors import InvalidOptions
+    from eden.providers._types import BranchStrategy as _BS
+    from eden.worktree._create import create_worktree as _carve
+
+    monkeypatch.chdir(tmp_git_repo)
+    # The head-style check fires before any copy happens, so the source file
+    # need not exist (and the host tree must stay clean for the head carve).
+    wt = _carve(host_repo_path=tmp_git_repo, strategy=_BS.head())
+    try:
+        with pytest.raises(InvalidOptions):
+            create_sandbox(
+                sandbox=_StubProvider(),
+                worktree=wt,
+                copy_to_worktree=["seed.txt"],
+            )
+    finally:
+        wt.close()
+
+
 def test_git_setup_timeout_threads_to_worktree(
     tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

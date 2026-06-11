@@ -19,6 +19,18 @@ ships.
   `"user"` (and unset) keep the existing bypass behaviour; an unrecognised
   value raises `InvalidOptions`. Mirrors sandcastle's
   `codex(model, { approvalsReviewer })` (v0.8.0). See `docs/agents.md`.
+- **`create_sandbox(worktree=...)`** — reuse a caller-managed worktree from
+  `create_worktree()` instead of carving a fresh one, with split ownership:
+  `Sandbox.close()` then tears down the container only, and the caller's
+  `worktree.close()` decides the worktree's fate (preserved if dirty, removed
+  if clean). One worktree can now host several sequential sandboxes — explore
+  interactively then run AFK, or run implement/review agents under different
+  container images on one branch. The returned `Sandbox` grows an
+  `owns_worktree` flag (`True` for self-carved worktrees, preserving existing
+  behaviour). `worktree=` is mutually exclusive with
+  `branch`/`branch_strategy`/`base_branch`; `eden.aio.create_sandbox` mirrors
+  the new parameter. Mirrors sandcastle's `wt.createSandbox(...)` split
+  ownership. See `docs/python-api.md`.
 - **`Logging.stdout()`** — a stdout log sink alongside the existing file sink.
   Writes the same formatted, redacted stream-event lines to the host process's
   stdout instead of a file under `.eden/logs/` — useful in CI, where the job
