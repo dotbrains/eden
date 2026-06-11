@@ -59,12 +59,22 @@ class Sandbox:
         (``create_sandbox(worktree=...)``), ownership is split: ``close()``
         tears down the container only and the caller's ``worktree.close()``
         decides the worktree's fate (preserved if dirty, removed if clean).
+
+        If both teardown steps fail, the handle's exception propagates — the
+        worktree close is still attempted, but its failure is reported and
+        suppressed so it cannot replace the primary error.
         """
         try:
             self.handle.close()
-        finally:
+        except BaseException:
             if self.owns_worktree:
-                self.worktree.close()
+                try:
+                    self.worktree.close()
+                except Exception as cleanup_exc:
+                    print(f"eden: worktree close also failed: {cleanup_exc}")
+            raise
+        if self.owns_worktree:
+            self.worktree.close()
 
     def run(
         self,
@@ -301,9 +311,13 @@ def create_sandbox(
         )
     except Exception:
         # A caller-provided worktree outlives this sandbox by design — only
-        # close what this factory carved itself.
+        # close what this factory carved itself. A cleanup failure must not
+        # replace the creation error, so it is reported and suppressed.
         if owns_worktree:
-            wt.close()
+            try:
+                wt.close()
+            except Exception as cleanup_exc:
+                print(f"eden: worktree cleanup also failed: {cleanup_exc}")
         raise
 
     return Sandbox(
