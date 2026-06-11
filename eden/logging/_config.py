@@ -19,6 +19,11 @@ class Logging:
     on_agent_stream_event: Callable[[StreamEvent], None] | None = field(default=None)
 
     def __post_init__(self) -> None:
+        if self.type not in ("file", "stdout"):
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=f'Logging.type must be "file" or "stdout"; got {self.type!r}',
+            )
         if self.type == "file" and self.path is None:
             raise InvalidOptions(
                 code="config.invalid_options",
@@ -39,9 +44,9 @@ class Logging:
         """Configure file logging.
 
         ``on_agent_stream_event`` is invoked for every agent-emitted stream
-        event (``text``, ``tool_call``, ``usage``) in addition to writing to
-        the log file. Intended for forwarding the agent's output stream to an
-        external observability system. Errors raised by the callback are
+        event (``text``, ``tool_call``, ``usage``, ``session_id``) in addition
+        to writing to the log file. Intended for forwarding the agent's output
+        stream to an external observability system. Errors raised by the callback are
         swallowed so a broken forwarder cannot kill the run.
 
         Idle warnings and orchestrator-internal text events are NOT forwarded
