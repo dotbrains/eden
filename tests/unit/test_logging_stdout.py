@@ -51,6 +51,11 @@ def test_logging_stdout_with_path_rejected() -> None:
         Logging(type="stdout", path=Path("x.log"))
 
 
+def test_logging_unknown_type_rejected() -> None:
+    with pytest.raises(InvalidOptions):
+        Logging(type="syslog")  # type: ignore[arg-type]
+
+
 def test_stdout_sink_writes_redacted_text(capsys: pytest.CaptureFixture[str]) -> None:
     sink = StdoutLogSink(level="info", env_values=("mySecret",))
     try:
