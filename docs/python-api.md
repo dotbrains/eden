@@ -198,6 +198,7 @@ def create_sandbox(
     sandbox: SandboxProvider,
     branch: str | None = None,
     branch_strategy: BranchStrategy | None = None,
+    worktree: WorktreeHandle | None = None,
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
@@ -207,11 +208,22 @@ def create_sandbox(
 ) -> Sandbox: ...
 ```
 
+`worktree` (when supplied) reuses a caller-managed `WorktreeHandle` from [`create_worktree()`](#create_worktree) instead of carving a fresh one. Ownership is then split: `Sandbox.close()` tears down the container only, and the caller's `worktree.close()` decides the worktree's fate (preserved if dirty, removed if clean) — so one worktree can host several sequential sandboxes. Mutually exclusive with `branch`/`branch_strategy`/`base_branch`.
+
+```python
+with eden.create_worktree(branch="eden/feature/x") as wt:
+    with eden.create_sandbox(sandbox=docker_provider(...), worktree=wt) as s:
+        s.run(agent=eden.claude_code("..."), prompt_file="implement.md")
+    # First container is gone; the branch and its files are still on disk.
+    with eden.create_sandbox(sandbox=docker_provider(image="review:latest"), worktree=wt) as s:
+        s.run(agent=eden.claude_code("..."), prompt_file="review.md")
+```
+
 `copy_to_worktree` (when supplied) seeds host-relative files into the worktree before the sandbox boots — same semantics as on [`run()`](#run), and the copy happens once at `create_sandbox()` time (not on every subsequent `sb.run()`). Incompatible with `BranchStrategy.head()`.
 
 `timeouts` caps the one-time carve's git plumbing via `Timeouts.git_setup` (reused by `Sandbox.close()` for the teardown `git worktree remove`). Per-run deadlines like `iteration_step` are passed separately to each [`Sandbox.run(timeouts=...)`](#sandboxrun).
 
-The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, plus a `.run(...)` method (same shape as the top-level `run()` minus `agent`/`sandbox` already supplied). It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle and worktree on exit.
+The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus a `.run(...)` method (same shape as the top-level `run()` minus `agent`/`sandbox` already supplied). It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
 
 ### `Sandbox.run(...)`
 
@@ -240,6 +252,8 @@ def create_worktree(
 ```
 
 Provide either `branch` (named) or `branch_strategy` (any of the three strategies); supplying both raises `ValueError`. Defaults to `BranchStrategy.merge_to_head()`. Returns a `WorktreeHandle` with `.branch`, `.worktree_path`, and `.close()` (works as a context manager).
+
+Pass the handle to [`create_sandbox(worktree=...)`](#create_sandbox) to host one or more sequential sandboxes on it without giving up ownership — each `Sandbox.close()` removes only its container; the worktree lives until your `wt.close()`.
 
 ---
 
