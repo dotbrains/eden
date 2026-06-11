@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+ClaudePermissionMode = Literal["default", "acceptEdits", "plan", "bypassPermissions"]
+
 _BASE: tuple[str, ...] = (
     "claude",
     "--print",
@@ -21,6 +23,7 @@ def build_argv(
     resume_session: str | None = None,
     fork_session: bool = False,
     dangerously_skip_permissions: bool = False,
+    permission_mode: ClaudePermissionMode | None = None,
 ) -> list[str]:
     """Return the argv vector for a single Claude Code invocation.
 
@@ -35,6 +38,13 @@ def build_argv(
     ``dangerously_skip_permissions``, when ``True``, appends
     ``--dangerously-skip-permissions`` so Claude does not block on
     per-tool permission prompts inside a sandboxed container.
+    ``permission_mode``, when set, appends ``--permission-mode <mode>`` for
+    graduated tool-approval control (``"default"``, ``"acceptEdits"``,
+    ``"plan"``, ``"bypassPermissions"``) instead of the all-or-nothing
+    ``dangerously_skip_permissions``. Mirrors upstream's
+    ``claudeCode(model, { permissionMode })``. The caller (the ``claude_code``
+    factory) enforces that ``permission_mode`` and
+    ``dangerously_skip_permissions`` are not both set.
     """
     argv: list[str] = [*_BASE, "--model", model]
     if effort is not None:
@@ -45,6 +55,8 @@ def build_argv(
             argv.append("--fork-session")
     if dangerously_skip_permissions:
         argv.append("--dangerously-skip-permissions")
+    if permission_mode is not None:
+        argv.extend(["--permission-mode", permission_mode])
     argv.extend(extra_args)
     argv.extend(["-p", "-"])
     return argv

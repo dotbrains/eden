@@ -105,6 +105,7 @@ def claude_code(
     env: Mapping[str, str] | None = None,
     capture_sessions: bool = True,
     dangerously_skip_permissions: bool = False,
+    permission_mode: Literal["default", "acceptEdits", "plan", "bypassPermissions"] | None = None,
     extra_args: tuple[str, ...] = (),
 ) -> _ClaudeCodeAgent: ...
 ```
@@ -114,12 +115,13 @@ def claude_code(
 - `effort` — optional `--thinking-effort` level (`"low"`, `"medium"`, `"high"`).
 - `env` — per-agent environment additions; the orchestrator merges them with the host env.
 - `capture_sessions` — when `True`, the orchestrator post-processes each iteration's session JSONL into `.eden/sessions/`. Default `True`.
-- `dangerously_skip_permissions` — when `True`, appends `--dangerously-skip-permissions` so Claude does not block on per-tool permission prompts. Safe inside an isolated sandbox; think twice before enabling for `no_sandbox()`, where Claude would gain unprompted access to the host filesystem. Default `False`.
+- `dangerously_skip_permissions` — when `True`, appends `--dangerously-skip-permissions` so Claude does not block on per-tool permission prompts. Safe inside an isolated sandbox; think twice before enabling for `no_sandbox()`, where Claude would gain unprompted access to the host filesystem. Equivalent to `permission_mode="bypassPermissions"`. Default `False`.
+- `permission_mode` — graduated tool-approval control, appended as `--permission-mode <mode>`: `"default"` (prompt per tool), `"acceptEdits"` (auto-accept file edits, prompt for the rest), `"plan"` (plan only, no edits), or `"bypassPermissions"` (skip all prompts). Use this instead of the all-or-nothing `dangerously_skip_permissions` for a middle ground — e.g. `"acceptEdits"` for safe autonomous editing or `"plan"` for a read-only planning iteration. Mirrors upstream's `claudeCode(model, { permissionMode })`. Mutually exclusive with `dangerously_skip_permissions=True` (passing both raises `InvalidOptions`). Default `None` (omit the flag).
 - `extra_args` — escape hatch for unsurfaced Claude CLI flags. Inserted before the stdin sigil (`-p -`).
 
 ### Argv shape
 
-Eden builds `claude --print --output-format stream-json --verbose --model <model> [--thinking-effort ...] [--resume <id>] [--dangerously-skip-permissions] [extra_args...] -p -` and pipes the prompt via stdin. Stdin delivery dodges the Linux 128 KB execve argv-size limit, so prompts of any size are safe.
+Eden builds `claude --print --output-format stream-json --verbose --model <model> [--thinking-effort ...] [--resume <id>] [--dangerously-skip-permissions] [--permission-mode <mode>] [extra_args...] -p -` and pipes the prompt via stdin. Stdin delivery dodges the Linux 128 KB execve argv-size limit, so prompts of any size are safe.
 
 ### Session capture and resume
 
