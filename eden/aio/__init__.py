@@ -42,6 +42,7 @@ from eden import create_sandbox as _sync_create_sandbox
 from eden import interactive as _sync_interactive
 from eden import run as _sync_run
 from eden.providers._protocols import SandboxProvider
+from eden.worktree._create import WorktreeHandle
 
 
 async def run(
@@ -113,6 +114,7 @@ async def create_sandbox(
     branch: str | None = None,
     branch_strategy: BranchStrategy | None = None,
     base_branch: str | None = None,
+    worktree: WorktreeHandle | None = None,
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
@@ -134,6 +136,7 @@ async def create_sandbox(
         branch=branch,
         branch_strategy=branch_strategy,
         base_branch=base_branch,
+        worktree=worktree,
         cwd=cwd,
         env=env,
         mounts=mounts,

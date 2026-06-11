@@ -44,6 +44,7 @@ class Sandbox:
     handle: SandboxHandle
     sandbox_provider: SandboxProvider
     cwd: Path | None = None
+    owns_worktree: bool = True
 
     def __enter__(self) -> Sandbox:
         return self
@@ -52,10 +53,18 @@ class Sandbox:
         self.close()
 
     def close(self) -> None:
+        """Close the sandbox handle, and the worktree if this sandbox owns it.
+
+        When the sandbox was created over a caller-provided worktree
+        (``create_sandbox(worktree=...)``), ownership is split: ``close()``
+        tears down the container only and the caller's ``worktree.close()``
+        decides the worktree's fate (preserved if dirty, removed if clean).
+        """
         try:
             self.handle.close()
         finally:
-            self.worktree.close()
+            if self.owns_worktree:
+                self.worktree.close()
 
     def run(
         self,
@@ -160,6 +169,7 @@ def create_sandbox(
     branch: str | None = None,
     branch_strategy: BranchStrategy | None = None,
     base_branch: str | None = None,
+    worktree: WorktreeHandle | None = None,
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
@@ -172,6 +182,16 @@ def create_sandbox(
 
     ``base_branch`` overrides the fork point of the default ``merge_to_head``
     strategy. It is mutually exclusive with ``branch_strategy``.
+
+    ``worktree`` reuses a caller-managed :class:`WorktreeHandle` (from
+    :func:`eden.create_worktree`) instead of carving a fresh one. Ownership is
+    split: ``Sandbox.close()`` then tears down the container only, and the
+    caller's ``worktree.close()`` decides the worktree's fate — so one
+    worktree can host several sequential sandboxes (explore interactively,
+    then run AFK; or run agents under different images on one branch).
+    Mutually exclusive with ``branch``/``branch_strategy``/``base_branch``,
+    whose job (picking the branch) was done when the worktree was carved.
+    Mirrors upstream's ``wt.createSandbox(...)``.
 
     ``copy_to_worktree`` is a list of host-relative file/directory paths to
     copy from the host repo into the freshly-carved worktree before the
@@ -189,50 +209,78 @@ def create_sandbox(
             "base_branch is mutually exclusive with branch_strategy; "
             "set base via BranchStrategy.merge_to_head(base=...) or .named(branch, base=...)"
         )
-
-    base = base_branch or "main"
-    if branch is not None:
-        strategy = BranchStrategy.named(branch, base=base)
-    elif branch_strategy is not None:
-        strategy = branch_strategy
-    elif sandbox.kind == "none":
-        strategy = BranchStrategy.head()
-    else:
-        strategy = BranchStrategy.merge_to_head(base=base)
-
-    if not sandbox.supports_strategy(strategy):
-        raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
-
-    if copy_to_worktree and strategy.tag == "head":
-        from eden.errors import InvalidOptions
-
-        raise InvalidOptions(
-            code="config.invalid_options",
-            message=(
-                "copy_to_worktree= is incompatible with branch_strategy 'head'; "
-                "the worktree IS the host repo, so copying would overwrite it"
-            ),
-            hint=(
-                "drop copy_to_worktree or pick a branch strategy that carves "
-                "a separate worktree (merge_to_head or named)"
-            ),
+    if worktree is not None and (
+        branch is not None or branch_strategy is not None or base_branch is not None
+    ):
+        raise ValueError(
+            "worktree is mutually exclusive with branch/branch_strategy/base_branch; "
+            "the branch was fixed when the worktree was carved"
         )
 
     resolved_timeouts = timeouts if timeouts is not None else Timeouts()
-    host_repo_path = Path.cwd()
-    wt = create_worktree(
-        host_repo_path=host_repo_path,
-        strategy=strategy,
-        name_hint=name,
-        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
-        git_timeout=resolved_timeouts.git_setup,
-    )
+
+    if worktree is not None:
+        owns_worktree = False
+        wt = worktree
+        host_repo_path = wt.host_repo_path
+        if copy_to_worktree and wt.worktree_path == wt.host_repo_path:
+            from eden.errors import InvalidOptions
+
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "copy_to_worktree= is incompatible with a head-style worktree; "
+                    "the worktree IS the host repo, so copying would overwrite it"
+                ),
+                hint=(
+                    "drop copy_to_worktree or carve the worktree with a strategy "
+                    "that uses a separate directory (merge_to_head or named)"
+                ),
+            )
+    else:
+        owns_worktree = True
+        base = base_branch or "main"
+        if branch is not None:
+            strategy = BranchStrategy.named(branch, base=base)
+        elif branch_strategy is not None:
+            strategy = branch_strategy
+        elif sandbox.kind == "none":
+            strategy = BranchStrategy.head()
+        else:
+            strategy = BranchStrategy.merge_to_head(base=base)
+
+        if not sandbox.supports_strategy(strategy):
+            raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
+
+        if copy_to_worktree and strategy.tag == "head":
+            from eden.errors import InvalidOptions
+
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "copy_to_worktree= is incompatible with branch_strategy 'head'; "
+                    "the worktree IS the host repo, so copying would overwrite it"
+                ),
+                hint=(
+                    "drop copy_to_worktree or pick a branch strategy that carves "
+                    "a separate worktree (merge_to_head or named)"
+                ),
+            )
+
+        host_repo_path = Path.cwd()
+        wt = create_worktree(
+            host_repo_path=host_repo_path,
+            strategy=strategy,
+            name_hint=name,
+            throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+            git_timeout=resolved_timeouts.git_setup,
+        )
 
     # .eden/.env values flow into the container at create time so entrypoints
     # and on_sandbox_ready hooks see them; explicit env= still wins. The file
-    # is looked up under the host process's CWD (where ``create_worktree``
-    # carves from), not the agent's ``cwd=`` — those have different meanings
-    # in this factory.
+    # is looked up under the repo ``create_worktree`` carved from (the host
+    # process's CWD when this factory carves), not the agent's ``cwd=`` —
+    # those have different meanings in this factory.
     combined_env = {**load_eden_env(host_repo_path), **(dict(env) if env else {})}
 
     try:
@@ -252,7 +300,10 @@ def create_sandbox(
             )
         )
     except Exception:
-        wt.close()
+        # A caller-provided worktree outlives this sandbox by design — only
+        # close what this factory carved itself.
+        if owns_worktree:
+            wt.close()
         raise
 
     return Sandbox(
@@ -260,4 +311,5 @@ def create_sandbox(
         handle=handle,
         sandbox_provider=sandbox,
         cwd=cwd,
+        owns_worktree=owns_worktree,
     )

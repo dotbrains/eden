@@ -50,6 +50,29 @@ def test_sandbox_run_can_be_called_twice(e2e_git_repo: Path) -> None:
         assert a.branch == b.branch
 
 
+def test_caller_worktree_hosts_two_sequential_sandboxes(e2e_git_repo: Path) -> None:
+    """Split ownership: one worktree, two sandboxes, agents see the same branch."""
+    with eden.create_worktree() as wt:
+        with eden.create_sandbox(sandbox=no_sandbox(), worktree=wt) as first:
+            a = first.run(
+                agent=eden.simulated_agent(output="first pass\n<promise>COMPLETE</promise>\n"),
+                prompt="x",
+                max_iterations=1,
+                idle_timeout=10.0,
+            )
+        # First sandbox is closed; the worktree survives for the second one.
+        with eden.create_sandbox(sandbox=no_sandbox(), worktree=wt) as second:
+            b = second.run(
+                agent=eden.simulated_agent(output="second pass\n<promise>COMPLETE</promise>\n"),
+                prompt="y",
+                max_iterations=1,
+                idle_timeout=10.0,
+            )
+        assert "first pass" in a.stdout
+        assert "second pass" in b.stdout
+        assert a.branch == b.branch == wt.branch
+
+
 def test_sandbox_run_rejects_branch_strategy(e2e_git_repo: Path) -> None:
     """branch_strategy is meaningless after the sandbox owns a branch."""
     with eden.create_sandbox(sandbox=no_sandbox()) as sandbox:
