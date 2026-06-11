@@ -9,6 +9,17 @@ ships.
 
 ### Added
 
+- **`codex(approvals_reviewer=...)`** — AI-mediated approval evaluation for the
+  codex agent. `"auto_review"` swaps the default
+  `--dangerously-bypass-approvals-and-sandbox` for an interactive approval
+  policy plus codex's most permissive sandbox
+  (`-a on-request -s danger-full-access -c approvals_reviewer="auto_review"`),
+  so a reviewer agent mediates per-action approvals instead of skipping them
+  outright — eden's sandbox provider still owns the outer filesystem boundary.
+  `"user"` (and unset) keep the existing bypass behaviour; an unrecognised
+  value raises `InvalidOptions`. Mirrors sandcastle's
+  `codex(model, { approvalsReviewer })` (v0.8.0). See `docs/agents.md`.
+
 - **`claude_code(permission_mode=...)`** — graduated tool-approval control for
   the Claude Code agent, appended as `--permission-mode <mode>`. Accepts
   `"default"`, `"acceptEdits"`, `"plan"`, or `"bypassPermissions"`, giving a
