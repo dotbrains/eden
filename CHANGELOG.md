@@ -19,6 +19,13 @@ ships.
   `"user"` (and unset) keep the existing bypass behaviour; an unrecognised
   value raises `InvalidOptions`. Mirrors sandcastle's
   `codex(model, { approvalsReviewer })` (v0.8.0). See `docs/agents.md`.
+- **`Logging.stdout()`** — a stdout log sink alongside the existing file sink.
+  Writes the same formatted, redacted stream-event lines to the host process's
+  stdout instead of a file under `.eden/logs/` — useful in CI, where the job
+  log is the natural destination. `RunResult.log_file_path` is `None` for
+  stdout-logged runs. Constructing `Logging(type="file")` without a `path` (or
+  `type="stdout"` with one) now raises `InvalidOptions`. Mirrors sandcastle's
+  `logging: { type: "stdout" }`. See `docs/configuration.md`.
 
 - **`claude_code(permission_mode=...)`** — graduated tool-approval control for
   the Claude Code agent, appended as `--permission-mode <mode>`. Accepts
