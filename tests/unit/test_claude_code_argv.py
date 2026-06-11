@@ -65,3 +65,27 @@ def test_resume_session_appends_resume_flag() -> None:
 def test_no_resume_session_omits_flag() -> None:
     argv = build_argv(model="m", effort=None, extra_args=(), resume_session=None)
     assert "--resume" not in argv
+
+
+def test_permission_mode_omitted_by_default() -> None:
+    argv = build_argv(model="m", effort=None, extra_args=())
+    assert "--permission-mode" not in argv
+
+
+def test_permission_mode_appends_flag() -> None:
+    argv = build_argv(model="m", effort=None, extra_args=(), permission_mode="acceptEdits")
+    assert "--permission-mode" in argv
+    idx = argv.index("--permission-mode")
+    assert argv[idx + 1] == "acceptEdits"
+    # Mode flag precedes extra_args + stdin sigil.
+    assert idx < argv.index("-p")
+
+
+def test_permission_mode_appears_before_extra_args() -> None:
+    argv = build_argv(
+        model="m",
+        effort=None,
+        extra_args=("--allowed-tools", "Read"),
+        permission_mode="plan",
+    )
+    assert argv.index("--permission-mode") < argv.index("--allowed-tools")
