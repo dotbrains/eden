@@ -303,6 +303,60 @@ def test_copy_to_worktree_rejected_for_head_style_worktree(
         wt.close()
 
 
+def test_close_propagates_handle_error_over_worktree_error(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failing worktree.close() must not replace the handle's exception."""
+    from eden.worktree._create import WorktreeHandle
+
+    monkeypatch.chdir(tmp_git_repo)
+    s = create_sandbox(sandbox=_StubProvider())
+
+    def _handle_boom() -> None:
+        raise RuntimeError("handle boom")
+
+    def _wt_boom(self: WorktreeHandle) -> None:
+        raise OSError("worktree boom")
+
+    monkeypatch.setattr(s.handle, "close", _handle_boom)
+    monkeypatch.setattr(WorktreeHandle, "close", _wt_boom)
+    try:
+        with pytest.raises(RuntimeError, match="handle boom"):
+            s.close()
+    finally:
+        monkeypatch.undo()
+        s.worktree.close()
+
+
+def test_create_failure_propagates_over_worktree_cleanup_error(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failing cleanup close() must not replace the provider's create error."""
+    from eden.worktree._create import WorktreeHandle
+
+    @dataclass
+    class _ExplodingProvider(_StubProvider):
+        def create(self, opts: CreateOptions) -> Any:
+            raise RuntimeError("create boom")
+
+    monkeypatch.chdir(tmp_git_repo)
+    real_close = WorktreeHandle.close
+    carved: list[WorktreeHandle] = []
+
+    def _capture_and_boom(self: WorktreeHandle) -> None:
+        carved.append(self)
+        raise OSError("worktree boom")
+
+    monkeypatch.setattr(WorktreeHandle, "close", _capture_and_boom)
+    try:
+        with pytest.raises(RuntimeError, match="create boom"):
+            create_sandbox(sandbox=_ExplodingProvider())
+    finally:
+        monkeypatch.undo()
+        for wt in carved:
+            real_close(wt)
+
+
 def test_git_setup_timeout_threads_to_worktree(
     tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -51,6 +51,16 @@ ships.
   `claudeCode(model, { permissionMode })`. See `docs/agents.md` and
   `docs/python-api.md`.
 
+### Fixed
+
+- **Sandbox teardown no longer masks the primary error** — when
+  `Sandbox.close()`'s handle teardown raises and the follow-up
+  `worktree.close()` also fails, the handle's exception now propagates (the
+  worktree failure is reported and suppressed) instead of being replaced by
+  the cleanup error. The same applies to the worktree cleanup that runs when
+  `create_sandbox()` fails mid-creation, keeping root-cause diagnosis and
+  type-based retry logic reliable.
+
 ## [0.2.0] - 2026-06-10
 
 ### Added
