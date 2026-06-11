@@ -89,6 +89,32 @@ def test_codex_dangerously_bypass_can_be_disabled() -> None:
     assert "--dangerously-bypass-approvals-and-sandbox" not in argv
 
 
+def test_codex_approvals_reviewer_auto_review_swaps_bypass_flag() -> None:
+    a = codex(approvals_reviewer="auto_review")
+    argv = a.build_command(_ctx())
+    assert "--dangerously-bypass-approvals-and-sandbox" not in argv
+    assert argv[argv.index("-a") + 1] == "on-request"
+    assert argv[argv.index("-s") + 1] == "danger-full-access"
+    assert 'approvals_reviewer="auto_review"' in argv
+    assert argv[argv.index('approvals_reviewer="auto_review"') - 1] == "-c"
+
+
+def test_codex_approvals_reviewer_user_keeps_bypass_flag() -> None:
+    a = codex(approvals_reviewer="user")
+    argv = a.build_command(_ctx())
+    assert "--dangerously-bypass-approvals-and-sandbox" in argv
+    assert "-a" not in argv
+    assert "-s" not in argv
+
+
+def test_codex_approvals_reviewer_invalid_raises() -> None:
+    from eden.errors import InvalidOptions
+
+    with pytest.raises(InvalidOptions) as excinfo:
+        codex(approvals_reviewer="reviewer")  # type: ignore[arg-type]
+    assert "approvals_reviewer" in str(excinfo.value)
+
+
 def test_codex_effort_unset_omits_override() -> None:
     a = codex()
     argv = a.build_command(_ctx())
