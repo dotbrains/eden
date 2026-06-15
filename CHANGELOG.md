@@ -9,6 +9,19 @@ ships.
 
 ### Added
 
+- **`RunResult.commits`** — now populated. After a run, the orchestrator
+  censuses the commits the agent made on the branch with
+  `git rev-list base..HEAD` (newest first) and reports them as `list[Commit]`;
+  the field was previously always empty. Bind-mount providers
+  (`no_sandbox`, `docker`, `podman`) preserve the agent's commits on disk, so
+  this reflects them directly; isolated/cloud providers patch-sync file
+  changes only, so it stays empty there. A new `Timeouts.commit_collection`
+  (default 60s) bounds the census separately from `git_setup`; it is
+  best-effort, so a slow or failing census yields no commits rather than
+  raising. Eden's `result.commits`-aware templates (`plan-implement-review`,
+  `parallel-planner-with-review`, `github-agent-workflows`) now behave
+  correctly. Mirrors upstream's commit collection + `commitCollectionMs`.
+
 - **`codex(approvals_reviewer=...)`** — AI-mediated approval evaluation for the
   codex agent. `"auto_review"` swaps the default
   `--dangerously-bypass-approvals-and-sandbox` for an interactive approval

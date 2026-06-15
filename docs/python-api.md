@@ -270,12 +270,14 @@ class Timeouts:
     iteration_step: float | None = None
     copy_to_worktree: float = 60.0
     git_setup: float = 60.0
+    commit_collection: float = 60.0
 ```
 
 - `hook_step` — seconds budget for any individual hook command. Exceeded → `HookTimeout`.
 - `iteration_step` — seconds budget for one agent iteration. `None` defers to `idle_timeout`. Exceeded → `StepTimeout`.
 - `copy_to_worktree` — seconds budget for the isolated provider's worktree clone. Exceeded → `CopyToWorktreeError(timed_out=True)`. Set the provider's own `copy_timeout` to override per-call; pass `None` to disable the budget.
 - `git_setup` — per-command budget for the host-side git plumbing `run()` runs while carving and tearing down a worktree (`git worktree add`/`remove`, branch/worktree listing, `status`, and the `origin` fast-forward when reusing a clean worktree). Exceeded → `GitCommandTimeout`. Raise it on slow filesystems (NFS, networked volumes) or large repos where worktree creation legitimately takes longer than 60s. Honored by `run()`, `interactive()`, and `create_sandbox(timeouts=...)`; the standalone `create_worktree()` helper carves at the 60s default (pass `git_timeout=` to override).
+- `commit_collection` — seconds budget for the post-run `git rev-list base..HEAD` that censuses the commits the agent made on the branch (populates [`RunResult.commits`](#runresult)). Bounded separately from `git_setup` because it runs after the agent and may walk a long history. Best-effort: a timeout (or any git error) yields no commits rather than raising, so a slow census never sinks an otherwise-good run. Raise it on large repos where the walk legitimately exceeds 60s.
 
 ### `Logging`
 
@@ -371,7 +373,7 @@ class RunResult:
     output: object | None = None
 ```
 
-`completion_signal` is the matched signal that stopped the loop (or `None` if all iterations ran to completion). `merged_to_target_branch` is set when a `merge_to_head` strategy successfully merged. `usage` is the final iteration's token usage. `output` is the validated payload extracted by `output=Output.object(...)` / `Output.string(...)`, or `None` when no `output=` is configured.
+`completion_signal` is the matched signal that stopped the loop (or `None` if all iterations ran to completion). `commits` lists the commits the agent created on the run's branch, newest first — censused after the run via `git rev-list base..HEAD` (see [`Timeouts.commit_collection`](#timeouts)). Bind-mount providers (`no_sandbox`, `docker`, `podman`) preserve the agent's commits on disk, so this reflects them directly; isolated/cloud providers patch-sync file changes only (no commit history returns to the host worktree), so `commits` is empty there even when the agent committed inside the sandbox — inspect `worktree_path`/`stdout` instead. `merged_to_target_branch` is reserved for a future merge-back step and is currently always `None` (Eden leaves the branch in place for review rather than merging it to HEAD). `usage` is the final iteration's token usage. `output` is the validated payload extracted by `output=Output.object(...)` / `Output.string(...)`, or `None` when no `output=` is configured.
 
 ### `Iteration`
 

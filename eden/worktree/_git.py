@@ -296,6 +296,48 @@ def _rev_parse_head(*, repo_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT) -
     return stdout.strip()
 
 
+def head_sha(*, repo_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT) -> str:
+    """Return ``repo_path``'s current HEAD SHA, or ``""`` if it can't be read.
+
+    The run loop snapshots this immediately after carving the worktree and
+    before the agent runs, so the SHA marks the commit census baseline. An
+    unborn branch, detached/garbage HEAD, or timed-out git maps to ``""`` —
+    :func:`new_commits` treats that as "no baseline" and reports no commits
+    rather than raising.
+    """
+    return _rev_parse_head(repo_path=repo_path, timeout=timeout)
+
+
+def new_commits(
+    *, worktree_path: Path, base_sha: str, timeout: float = _DEFAULT_GIT_TIMEOUT
+) -> tuple[str, ...]:
+    """Return SHAs committed on the worktree's branch since ``base_sha``.
+
+    Runs ``git rev-list <base_sha>..HEAD`` in ``worktree_path`` to list the
+    commits the agent created during this run, newest first. The run loop
+    bounds it with ``Timeouts.commit_collection``.
+
+    Best-effort by design: an empty ``base_sha`` (HEAD was unreadable at run
+    start), an invalid ref, or a timed-out git all return ``()`` rather than
+    raising — a failed commit census must never sink an otherwise-good run.
+    Bind-mount providers (no-sandbox/docker/podman) preserve the agent's
+    commits on the branch, so this yields real SHAs; isolated/cloud providers
+    patch-sync file changes only, leaving the host worktree with no new
+    commits, so an empty result there is correct, not a failure.
+    """
+    if not base_sha:
+        return ()
+    try:
+        stdout, _ = _run_git(
+            ("git", "rev-list", f"{base_sha}..HEAD"),
+            cwd=worktree_path,
+            timeout=timeout,
+        )
+    except (GitCommandFailed, GitCommandTimeout):
+        return ()
+    return tuple(line.strip() for line in stdout.splitlines() if line.strip())
+
+
 def refresh_from_origin(
     *, worktree_path: Path, branch: str, timeout: float = _DEFAULT_GIT_TIMEOUT
 ) -> None:
