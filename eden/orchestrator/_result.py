@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from eden._types import Iteration, RunResult, Usage, _RunContext
+from eden._types import Commit, Iteration, RunResult, Usage, _RunContext
 
 
 def assemble(
@@ -22,6 +22,7 @@ def assemble(
     session_id: str | None,
     session_file_path: Path | None,
     usage: Usage | None,
+    commits: list[Commit] | None = None,
     output: object | None = None,
     ctx: _RunContext | None = None,
 ) -> RunResult:
@@ -30,7 +31,7 @@ def assemble(
         completion_signal=completion_signal,
         branch=branch,
         stdout=stdout,
-        commits=[],
+        commits=commits if commits is not None else [],
         worktree_path=worktree_path,
         preserved_worktree_path=preserved_worktree_path,
         merged_to_target_branch=None,

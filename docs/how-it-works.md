@@ -46,7 +46,7 @@ For each iteration (default 1, capped by `max_iterations`):
 3. It spawns the agent process inside the sandbox via the handle's `exec(...)`.
 4. It streams stdout line-by-line, calling `agent.parse_stream(line)` for each line.
 5. Yielded `StreamEvent`s drive logging, idle-warning emission, completion-signal matching, and tool-call accounting.
-6. When the agent exits — whether by hitting the completion signal, exhausting iterations, idle timeout, abort signal, or step timeout — the orchestrator commits any changes on the worktree branch.
+6. When the agent exits — whether by hitting the completion signal, exhausting iterations, idle timeout, abort signal, or step timeout — the orchestrator stops the loop. Eden itself does not commit; the agent commits its own work (the scaffolded prompts instruct it to). After the run, the orchestrator censuses those commits with `git rev-list base..HEAD` and reports them on [`RunResult.commits`](python-api.md#runresult) (bounded by `Timeouts.commit_collection`; empty for isolated/cloud providers, which return file diffs rather than commit history).
 
 ## Finalize
 
@@ -63,7 +63,7 @@ Hooks fire at five named phases. The `HookPhase` enum:
 - `OnWorktreeReady` — host-only, after the worktree is carved.
 - `OnSandboxReady` — sandbox-only, after the sandbox is created.
 - `OnIterationStart` — host and sandbox, before each iteration.
-- `OnIterationEnd` — host and sandbox, after each iteration commits.
+- `OnIterationEnd` — host and sandbox, after each iteration.
 - `OnClose` — host and sandbox, on run exit (success or failure).
 
 Hooks come in two flavors:
@@ -100,12 +100,13 @@ sequenceDiagram
         Run->>Agent: build_command(ctx)
         Run->>Sandbox: handle.exec(argv)
         Sandbox-->>Run: stdout stream → StreamEvents
-        Run->>Run: commit changes
+        Note over Agent: agent commits its own work during exec
         Run->>SandboxHooks: on_iteration_end
         Run->>Host: on_iteration_end
         Note over Run: early exit on completion_signal,<br/>idle_timeout, abort, or step_timeout
     end
 
+    Run->>Run: git rev-list base..HEAD → RunResult.commits
     Run->>Sandbox: handle.finalize(target)
     Note right of Sandbox: skipped for bind-mount providers
     Run->>SandboxHooks: on_close

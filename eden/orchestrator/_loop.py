@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from eden._types import Iteration, RunResult, Timeouts, Usage
+from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
 
 if TYPE_CHECKING:
     from eden.session._protocol import SessionStorage
@@ -51,6 +51,7 @@ from eden.sandboxes.errors import UnsupportedStrategy
 from eden.streaming import StreamEvent
 from eden.tracing import set_attributes, span
 from eden.worktree._create import WorktreeHandle, create_worktree
+from eden.worktree._git import head_sha, new_commits
 
 
 def _utcnow() -> datetime:
@@ -139,6 +140,13 @@ def _run_loop(
         )
 
     target_branch = resolve_target_branch(host_repo_path=setup.cwd)
+
+    # Snapshot the branch tip before the agent runs so the post-run
+    # ``git rev-list base..HEAD`` census attributes only this run's commits
+    # (a caller-managed worktree may already carry commits from earlier
+    # agents in the same sandbox). Best-effort: "" disables the census.
+    commit_base_sha = head_sha(repo_path=wt.worktree_path, timeout=timeouts.git_setup)
+    collected_commits: list[Commit] = []
 
     sink: FileLogSink | StdoutLogSink | None = None
     handle: SandboxHandle | None = existing_handle if caller_managed else None
@@ -692,6 +700,17 @@ def _run_loop(
                 pass
         if sink is not None:
             sink.close()
+        # Census the agent's commits while the worktree is still on disk —
+        # ``wt.close()`` below may remove it. Runs for caller-managed runs
+        # too (their worktree outlives this loop but the SHAs are this run's).
+        collected_commits = [
+            Commit(sha=sha)
+            for sha in new_commits(
+                worktree_path=wt.worktree_path,
+                base_sha=commit_base_sha,
+                timeout=timeouts.commit_collection,
+            )
+        ]
         if not caller_managed:
             close_result = wt.close()
             if close_result.action == "preserved":
@@ -736,6 +755,7 @@ def _run_loop(
         session_id=last.session_id if last else None,
         session_file_path=last.session_file_path if last else None,
         usage=last.usage if last else None,
+        commits=collected_commits,
         output=extracted,
         ctx=_RunContext(agent=agent, sandbox=sandbox, cwd=setup.cwd),
     )

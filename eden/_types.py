@@ -53,6 +53,14 @@ class Timeouts:
     wedged local git — NFS stall, filesystem repair, runaway hook — would
     otherwise hang Eden indefinitely. Mirrors sandcastle's ``gitSetupMs``.
     """
+    commit_collection: float = 60.0
+    """Deadline for the post-run ``git rev-list base..HEAD`` that censuses the
+    commits the agent created on the branch (populates ``RunResult.commits``).
+    Bounded separately from ``git_setup`` because it runs after the agent and
+    can walk a long history; a wedged git here must not hang teardown. The
+    census is best-effort — a timeout yields no commits, never an error.
+    Mirrors sandcastle's ``commitCollectionMs``.
+    """
 
 
 @dataclass(frozen=True)
