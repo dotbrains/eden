@@ -127,6 +127,8 @@ Eden builds `claude --print --output-format stream-json --verbose --model <model
 
 `captures_sessions=True` is the default. The orchestrator watches `~/.claude/projects/<slug>/<id>.jsonl` and copies it to `.eden/sessions/<branch>/<iteration>.jsonl` after each iteration; `Iteration.session_id` and `Iteration.session_file_path` are populated. Set `capture_sessions=False` to skip this work.
 
+Alongside the main transcript, eden also captures any **subagent/workflow transcripts** Claude wrote as *separate* session files this run — sibling `.jsonl` files carrying `isSidechain: true` entries — copying each (path-rewritten) to `.eden/sessions/<branch>/iter-<n>-sub-<id>.jsonl`. The sweep is scoped to the run by file modification time, so a sandbox slug shared across runs doesn't drag in stale transcripts, and it's best-effort (a failed sub-capture never aborts the run). Subagents recorded *inline* in the main transcript need no special handling — they're already in the main capture. This mainly matters for isolated/cloud providers, where only the main session is otherwise pulled back to the host. Mirrors upstream's subagent/workflow transcript capture.
+
 To **resume** a captured session, pass `run(..., resume_session=<id>)` (top-level `run()` argument, not on the factory). Eden appends `--resume <id>` to the argv. Resume requires `max_iterations=1`; otherwise `InvalidOptions` is raised.
 
 ### What binary it wraps

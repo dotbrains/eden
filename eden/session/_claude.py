@@ -7,7 +7,7 @@ from pathlib import Path
 
 from eden.providers._protocols import SandboxHandle
 from eden.providers._types import Mount
-from eden.session import capture_session
+from eden.session import capture_session, capture_sidechain_sessions
 
 
 @dataclass(frozen=True)
@@ -49,6 +49,7 @@ class ClaudeSessionStorage:
         host_repo_path: Path,
         branch: str,
         iteration: int,
+        since: float | None = None,
     ) -> Path | None:
         # Mirror the legacy effective-cwd heuristic: when the worktree
         # path lives inside ``host_repo_path`` (no_sandbox / native),
@@ -59,7 +60,7 @@ class ClaudeSessionStorage:
             effective_cwd = host_repo_path
         else:
             effective_cwd = wt
-        return capture_session(
+        main = capture_session(
             session_id=session_id,
             sandbox_cwd=effective_cwd,
             host_repo_path=host_repo_path,
@@ -67,6 +68,19 @@ class ClaudeSessionStorage:
             iteration=iteration,
             home=self.home,
         )
+        # Also curate any subagent/workflow transcripts that Claude wrote as
+        # separate session files this run. Best-effort by contract — it never
+        # raises — so the main capture's success is what we return.
+        capture_sidechain_sessions(
+            main_session_id=session_id,
+            sandbox_cwd=effective_cwd,
+            host_repo_path=host_repo_path,
+            branch=branch,
+            iteration=iteration,
+            since=since,
+            home=self.home,
+        )
+        return main
 
     def sandbox_transfer(
         self,

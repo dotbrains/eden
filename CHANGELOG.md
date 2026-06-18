@@ -9,6 +9,24 @@ ships.
 
 ### Added
 
+- **`Logging(verbose=True)`** — surfaces each literal, unparsed agent stdout
+  line as a new `StreamEvent(type="raw")`, written to the log alongside the
+  human-readable events and forwarded through `on_agent_stream_event`. Lets
+  external observability see the bytes a parser discards (e.g. the JSON
+  envelope behind a `claude --output-format stream-json` line). Off by
+  default; available on `Logging.file(..., verbose=True)` and
+  `Logging.stdout(verbose=True)`. Mirrors upstream's `logging: { verbose }`
+  + `{ type: "raw" }` event (v0.10.0).
+- **Claude subagent/workflow transcript capture** — eden now curates Claude's
+  *separate-file* subagent transcripts (sibling session JSONLs carrying
+  `isSidechain: true`) into `.eden/sessions/<branch>/iter-<n>-sub-<id>.jsonl`
+  next to the main session, path-rewritten the same way. The sweep is scoped to
+  the run by modification time (so a shared sandbox slug doesn't drag in stale
+  transcripts) and is best-effort (a failed sub-capture never aborts the run).
+  Matters most for isolated/cloud providers, where only the main session was
+  otherwise pulled back to the host. `SessionStorage.host_capture` gains an
+  optional `since` argument to support the scoping. Mirrors upstream's
+  subagent/workflow transcript capture (v0.9.0).
 - **`RunResult.commits`** — now populated. After a run, the orchestrator
   censuses the commits the agent made on the branch with
   `git rev-list base..HEAD` (newest first) and reports them as `list[Commit]`;
@@ -66,6 +84,8 @@ ships.
 
 ### Fixed
 
+- **e2e test fixture** now disables commit/tag gpg-signing, so the suite no
+  longer fails on signing-enabled hosts without a reachable gpg agent.
 - **Sandbox teardown no longer masks the primary error** — when
   `Sandbox.close()`'s handle teardown raises and the follow-up
   `worktree.close()` also fails, the handle's exception now propagates (the

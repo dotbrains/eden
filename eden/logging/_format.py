@@ -14,7 +14,7 @@ def format_line(
 ) -> str:
     iso = event.timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
     prefix = f"{iso} {level} [{event.iteration}] {event.type}:"
-    if event.type == "text":
+    if event.type in ("text", "raw"):
         body = (event.text or "").rstrip("\n")
         return f"{prefix} {body}"
     if event.type == "idle_warning":
