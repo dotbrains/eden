@@ -74,9 +74,13 @@ def _is_sidechain_transcript(path: Path) -> bool:
                     obj = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if obj.get("isSidechain") is True:
+                # A JSONL line may legitimately decode to a non-object
+                # (list/str/number); only mappings carry ``isSidechain``.
+                if isinstance(obj, dict) and obj.get("isSidechain") is True:
                     return True
-    except OSError:
+    except (OSError, UnicodeDecodeError):
+        # Unreadable or non-UTF-8 file → treat as "not a sidechain", per the
+        # best-effort contract; never raise out of the census.
         return False
     return False
 

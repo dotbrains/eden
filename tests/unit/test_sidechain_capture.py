@@ -124,9 +124,41 @@ def test_rewrites_sandbox_paths_to_host(tmp_path: Path) -> None:
     )
 
     assert len(captured) == 1
-    body = captured[0].read_text(encoding="utf-8")
-    assert "/workspace" not in body
-    assert str(host_repo) in body
+    # Parse rather than substring-match: on Windows the rewritten host path is
+    # JSON-escaped (``\\``), so a raw ``str(host_repo)`` check would miss it.
+    rows = [
+        json.loads(line)
+        for line in captured[0].read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert rows
+    assert all(row["cwd"] == str(host_repo) for row in rows)
+    assert all("/workspace" not in row["cwd"] for row in rows)
+
+
+def test_non_dict_json_lines_do_not_crash_scan(tmp_path: Path) -> None:
+    # A JSONL line that decodes to a non-object (list/number/string) must not
+    # raise from the sidechain scan — best-effort contract.
+    home, host_repo, cwd = _setup(tmp_path)
+    slug_dir = home / ".claude" / "projects" / claude_projects_slug(Path(cwd))
+    path = slug_dir / "sub-1.jsonl"
+    path.write_text(
+        "[1, 2, 3]\n"
+        '"just a string with isSidechain in it"\n'
+        "42\n" + json.dumps({"type": "user", "isSidechain": True, "cwd": cwd}) + "\n",
+        encoding="utf-8",
+    )
+
+    captured = capture_sidechain_sessions(
+        main_session_id="main-1",
+        sandbox_cwd=Path(cwd),
+        host_repo_path=host_repo,
+        branch="b",
+        iteration=0,
+        home=home,
+    )
+
+    assert len(captured) == 1
 
 
 def test_missing_slug_dir_is_best_effort(tmp_path: Path) -> None:
