@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack
 from dataclasses import replace
@@ -52,6 +53,12 @@ from eden.streaming import StreamEvent
 from eden.tracing import set_attributes, span
 from eden.worktree._create import WorktreeHandle, create_worktree
 from eden.worktree._git import head_sha, new_commits
+
+# Slack subtracted from an iteration's start time before scoping the subagent
+# transcript sweep, to tolerate second-granularity mtime truncation on some
+# filesystems (a file written at start+0.4s can report an mtime floored below
+# the fractional start instant).
+_SIDECHAIN_MTIME_SLACK = 2.0
 
 
 def _utcnow() -> datetime:
@@ -284,7 +291,7 @@ def _run_loop(
             """
             if agent_stream_cb is None:
                 return
-            if ev.type not in ("text", "tool_call", "usage", "session_id"):
+            if ev.type not in ("text", "tool_call", "usage", "session_id", "raw"):
                 return
             try:
                 agent_stream_cb(ev)
@@ -345,6 +352,12 @@ def _run_loop(
                 )
             )
             argv = flox_wrap(argv, flox_env=flox_env_dir)
+
+            # Wall-clock start of this iteration's agent, used to scope the
+            # subagent/sidechain transcript sweep to this run. A small slack
+            # absorbs second-granularity mtime truncation on some filesystems
+            # so a transcript written moments after start isn't dropped.
+            iter_started_at = time.time() - _SIDECHAIN_MTIME_SLACK
 
             wd = IdleWatchdog(
                 idle_timeout=idle_timeout,
@@ -407,8 +420,30 @@ def _run_loop(
                         if on_event is not None:
                             on_event(ev)
 
+                    def _emit_raw(raw_line: str, _i: int = i) -> None:
+                        """Surface the literal stdout line as a ``raw`` event.
+
+                        Only when ``Logging(verbose=True)``; written to the log
+                        and forwarded to ``on_agent_stream_event`` (not the
+                        generic ``on_event``, which already carries the parsed
+                        ``text`` event for unparsed lines).
+                        """
+                        if not log_cfg.verbose:
+                            return
+                        rev = StreamEvent(
+                            type="raw",
+                            agent_name=agent.name,
+                            iteration=_i,
+                            timestamp=_utcnow(),
+                            text=raw_line,
+                        )
+                        if sink is not None:
+                            sink.write(rev)
+                        _forward_agent_event(rev)
+
                     for line in runner.iter_lines(signal=signal, on_warning=_emit_warning):
                         stdout_chunks.push(line + "\n")
+                        _emit_raw(line)
                         parsed = agent.parse_stream(line)
                         if parsed is not None:
                             # Parser doesn't know the real iteration; rewrap.
@@ -460,6 +495,7 @@ def _run_loop(
                                     on_event(warn_ev)
                             for trailing in drain.lines:
                                 stdout_chunks.push(trailing + "\n")
+                                _emit_raw(trailing)
                                 trailing_parsed = agent.parse_stream(trailing)
                                 if trailing_parsed is not None:
                                     tev = replace(
@@ -550,6 +586,7 @@ def _run_loop(
                         host_repo_path=setup.cwd,
                         branch=target_branch,
                         iteration=i,
+                        since=iter_started_at,
                     )
                 except SessionCaptureFailed as exc:
                     if sink is not None:
