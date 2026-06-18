@@ -19,9 +19,15 @@ class StreamEvent:
     ``"session_id"`` (carries ``session_id`` standalone — emitted by agents
     whose stream announces the session before any usage data is available,
     e.g. codex's ``thread.started``).
+
+    ``"raw"`` (carries ``text``) is the literal, unparsed stdout line as the
+    agent emitted it, surfaced only when ``Logging(verbose=True)`` so external
+    observability systems can see the bytes a parser would otherwise discard
+    (e.g. the JSON envelope behind a ``claude --output-format stream-json``
+    line). Mirrors sandcastle's ``{ type: "raw" }`` verbose event (v0.10.0).
     """
 
-    type: Literal["text", "idle_warning", "tool_call", "usage", "session_id"]
+    type: Literal["text", "idle_warning", "tool_call", "usage", "session_id", "raw"]
     agent_name: str
     iteration: int
     timestamp: datetime
@@ -43,3 +49,5 @@ class StreamEvent:
             raise ValueError('StreamEvent type="usage" requires usage to be non-None')
         if self.type == "session_id" and self.session_id is None:
             raise ValueError('StreamEvent type="session_id" requires session_id to be non-None')
+        if self.type == "raw" and self.text is None:
+            raise ValueError('StreamEvent type="raw" requires text to be non-None')

@@ -91,7 +91,10 @@ class CodexSessionStorage:
         host_repo_path: Path,
         branch: str,
         iteration: int,
+        since: float | None = None,
     ) -> Path | None:
+        # ``since`` is unused: codex has no separate-file subagent transcripts
+        # to scope. Accepted to satisfy the SessionStorage protocol.
         from eden.session._branch import sanitize_branch
 
         src = find_codex_session_path(self._sessions_dir(), session_id)

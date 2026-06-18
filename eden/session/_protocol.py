@@ -54,12 +54,19 @@ class SessionStorage(Protocol):
         host_repo_path: Path,
         branch: str,
         iteration: int,
+        since: float | None = None,
     ) -> Path | None:
         """Pull the per-iteration transcript onto the host.
 
         Returns the path on the host filesystem of the captured
         transcript, or ``None`` if capture is unavailable for this
         iteration (e.g. agent didn't emit a session id yet).
+
+        ``since`` is the agent's start time for this iteration (epoch
+        seconds). Implementations that also capture auxiliary transcripts
+        (e.g. Claude subagent/workflow sidechain files) use it to scope the
+        sweep to this run. Implementations that capture only the main
+        session may ignore it.
 
         Implementations may raise ``eden.errors.SessionCaptureFailed``;
         the orchestrator catches it and surfaces a warning event without

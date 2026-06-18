@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from eden.errors import SessionCaptureFailed
@@ -56,6 +57,104 @@ def capture_session(
     return dest
 
 
+def _is_sidechain_transcript(path: Path) -> bool:
+    """True if any JSONL entry in ``path`` is a Claude subagent (sidechain)
+    line (``"isSidechain": true``).
+
+    Reads lazily and short-circuits on the first match. The cheap substring
+    pre-filter skips JSON parsing for the overwhelming majority of lines
+    (transcripts carry one ``isSidechain`` field per entry, usually ``false``).
+    """
+    try:
+        with path.open(encoding="utf-8") as fh:
+            for line in fh:
+                if '"isSidechain"' not in line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                # A JSONL line may legitimately decode to a non-object
+                # (list/str/number); only mappings carry ``isSidechain``.
+                if isinstance(obj, dict) and obj.get("isSidechain") is True:
+                    return True
+    except (OSError, UnicodeDecodeError):
+        # Unreadable or non-UTF-8 file → treat as "not a sidechain", per the
+        # best-effort contract; never raise out of the census.
+        return False
+    return False
+
+
+def capture_sidechain_sessions(
+    *,
+    main_session_id: str,
+    sandbox_cwd: Path,
+    host_repo_path: Path,
+    branch: str,
+    iteration: int,
+    since: float | None = None,
+    home: Path | None = None,
+) -> list[Path]:
+    """Capture Claude subagent/workflow transcripts stored as *separate*
+    session files in the same project slug dir.
+
+    Each match is copied + path-rewritten next to the main session as
+    ``.eden/sessions/<branch>/iter-<iteration>-sub-<id>.jsonl`` (so
+    ``eden replay`` and the ``iter-<n>-*`` globs pick it up). A sidechain file
+    is any sibling ``.jsonl`` other than the main session that carries at least
+    one ``isSidechain: true`` entry.
+
+    ``since`` (the agent's start time, epoch seconds) scopes the sweep to this
+    run: only files modified at/after it are captured, so a sandbox slug shared
+    across runs (e.g. a fixed ``/workspace`` cwd under Docker) doesn't drag in
+    subagent transcripts left by earlier runs. ``None`` disables the time
+    filter.
+
+    Best-effort: a missing slug dir, unreadable file, or failed copy is skipped,
+    never raised — a partial subagent census must not sink an otherwise-good
+    run. Inline sidechain entries (subagents recorded *within* the main
+    transcript) need no handling here; they're already in the main capture.
+    This covers the separate-file case, notably isolated/cloud providers where
+    only the main session is otherwise pulled back to the host. Mirrors
+    sandcastle's subagent/workflow transcript capture (v0.9.0).
+    """
+    home_path = home if home is not None else Path.home()
+    slug = claude_projects_slug(sandbox_cwd)
+    slug_dir = home_path / ".claude" / "projects" / slug
+    if not slug_dir.is_dir():
+        return []
+    safe_branch = _sanitize_branch(branch)
+    captured: list[Path] = []
+    for src in sorted(slug_dir.glob("*.jsonl")):
+        if src.stem == main_session_id:
+            continue
+        try:
+            if since is not None and src.stat().st_mtime < since:
+                continue
+        except OSError:
+            continue
+        if not _is_sidechain_transcript(src):
+            continue
+        dest = (
+            host_repo_path
+            / ".eden"
+            / "sessions"
+            / safe_branch
+            / f"iter-{iteration}-sub-{src.stem}.jsonl"
+        )
+        try:
+            write_session_copy(
+                src=src,
+                dest=dest,
+                sandbox_prefix=sandbox_cwd.as_posix(),
+                host_prefix=str(host_repo_path),
+            )
+        except OSError:
+            continue
+        captured.append(dest)
+    return captured
+
+
 def _default_claude_session_storage() -> object:
     """Late-bound import of :class:`ClaudeSessionStorage`.
 
@@ -81,6 +180,7 @@ __all__ = [
     "ClaudeSessionStorage",
     "CodexSessionStorage",
     "capture_session",
+    "capture_sidechain_sessions",
     "find_codex_session_path",
     "transfer_session",
 ]

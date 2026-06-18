@@ -17,6 +17,13 @@ class Logging:
     path: Path | None = None
     level: Literal["debug", "info", "warn", "error"] = "info"
     on_agent_stream_event: Callable[[StreamEvent], None] | None = field(default=None)
+    verbose: bool = False
+    """When ``True``, emit a ``StreamEvent(type="raw")`` carrying each literal,
+    unparsed agent stdout line — written to the log alongside the human-readable
+    events and forwarded through ``on_agent_stream_event``. Lets external
+    observability systems see the bytes a parser discards (e.g. the JSON behind
+    a ``claude`` stream-json line). Off by default. Mirrors sandcastle's
+    ``logging: { verbose: true }`` (v0.10.0)."""
 
     def __post_init__(self) -> None:
         if self.type not in ("file", "stdout"):
@@ -40,14 +47,19 @@ class Logging:
         path: str | Path,
         level: Literal["debug", "info", "warn", "error"] = "info",
         on_agent_stream_event: Callable[[StreamEvent], None] | None = None,
+        verbose: bool = False,
     ) -> Logging:
         """Configure file logging.
 
         ``on_agent_stream_event`` is invoked for every agent-emitted stream
-        event (``text``, ``tool_call``, ``usage``, ``session_id``) in addition
-        to writing to the log file. Intended for forwarding the agent's output
-        stream to an external observability system. Errors raised by the callback are
-        swallowed so a broken forwarder cannot kill the run.
+        event (``text``, ``tool_call``, ``usage``, ``session_id``, and — when
+        ``verbose`` — ``raw``) in addition to writing to the log file. Intended
+        for forwarding the agent's output stream to an external observability
+        system. Errors raised by the callback are swallowed so a broken
+        forwarder cannot kill the run.
+
+        ``verbose`` additionally surfaces each literal, unparsed stdout line as
+        a ``raw`` event (see :class:`Logging`).
 
         Idle warnings and orchestrator-internal text events are NOT forwarded
         through this callback — use the top-level ``on_event`` argument to
@@ -58,12 +70,14 @@ class Logging:
             path=Path(path),
             level=level,
             on_agent_stream_event=on_agent_stream_event,
+            verbose=verbose,
         )
 
     @staticmethod
     def stdout(
         level: Literal["debug", "info", "warn", "error"] = "info",
         on_agent_stream_event: Callable[[StreamEvent], None] | None = None,
+        verbose: bool = False,
     ) -> Logging:
         """Configure stdout logging.
 
@@ -74,11 +88,12 @@ class Logging:
         ``None`` for stdout-logged runs. Mirrors sandcastle's
         ``logging: { type: "stdout" }``.
 
-        ``on_agent_stream_event`` behaves as for :meth:`file`.
+        ``on_agent_stream_event`` and ``verbose`` behave as for :meth:`file`.
         """
         return Logging(
             type="stdout",
             path=None,
             level=level,
             on_agent_stream_event=on_agent_stream_event,
+            verbose=verbose,
         )
