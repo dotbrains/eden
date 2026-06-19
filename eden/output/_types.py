@@ -38,11 +38,13 @@ Validator = Callable[[object], T] | type[Any]
 class _OutputObject(Generic[T]):
     tag: str
     schema: Validator[T]
+    max_retries: int = 0
 
 
 @dataclass(frozen=True)
 class _OutputString:
     tag: str
+    max_retries: int = 0
 
 
 OutputDefinition: TypeAlias = "_OutputObject[object] | _OutputString"
@@ -52,7 +54,7 @@ class Output:
     """Helpers for declaring structured output on ``run()``."""
 
     @staticmethod
-    def object(*, tag: str, schema: Validator[T]) -> _OutputObject[T]:
+    def object(*, tag: str, schema: Validator[T], max_retries: int = 0) -> _OutputObject[T]:
         """Declare an object payload extracted from ``<tag>...</tag>``.
 
         ``schema`` can be:
@@ -68,14 +70,23 @@ class Output:
 
         Markdown code fences (```` ```json ... ``` ````) around the JSON are
         stripped before parsing.
+
+        ``max_retries`` (default ``0``) auto-retries the run when extraction or
+        validation fails: ``run()`` resumes the failing session with corrective
+        feedback (or, for agents without session capture, re-runs the prompt)
+        up to ``max_retries`` extra times before raising ``StructuredOutputError``.
+        Mirrors upstream's ``Output.object({ maxRetries })``.
         """
-        return _OutputObject(tag=tag, schema=schema)
+        return _OutputObject(tag=tag, schema=schema, max_retries=max_retries)
 
     @staticmethod
-    def string(*, tag: str) -> _OutputString:
+    def string(*, tag: str, max_retries: int = 0) -> _OutputString:
         """Declare a string payload extracted from ``<tag>...</tag>``.
 
         The matched contents are returned with surrounding whitespace stripped.
         No JSON parsing, no validation.
+
+        ``max_retries`` (default ``0``) auto-retries when the tag is missing —
+        see :meth:`object`.
         """
-        return _OutputString(tag=tag)
+        return _OutputString(tag=tag, max_retries=max_retries)

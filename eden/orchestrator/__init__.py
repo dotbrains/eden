@@ -10,11 +10,11 @@ from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.abort._signal import AbortController
 from eden.agents._protocol import Agent
-from eden.errors import InvalidOptions
+from eden.errors import InvalidOptions, StructuredOutputError
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.orchestrator._loop import _run_loop
-from eden.orchestrator._setup import resolve_setup
+from eden.orchestrator._setup import SetupResult, resolve_setup
 from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy
@@ -61,6 +61,23 @@ def _maybe_seconds(value: float | timedelta | None) -> float | None:
     if value is None:
         return None
     return _seconds(value)
+
+
+def _corrective_output_prompt(output: OutputDefinition, exc: Exception) -> str:
+    """Build the follow-up prompt sent when structured-output extraction fails.
+
+    Quotes the failure so the agent knows what to fix, and re-states the tag so
+    it re-emits a valid block. ``getattr`` keeps it robust to error shape.
+    """
+    message = getattr(exc, "message", str(exc))
+    cause = getattr(exc, "cause", None)
+    detail = f" ({cause})" if cause else ""
+    tag = output.tag
+    return (
+        f"Your previous response could not be used: {message}{detail}. "
+        f"Re-emit the complete <{tag}>...</{tag}> block with corrected, valid "
+        "content and nothing after the closing tag."
+    )
 
 
 def run(
@@ -144,6 +161,12 @@ def run(
                     "looping iterations would discard intermediate matches"
                 ),
             )
+        if output.max_retries < 0:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=f"output max_retries must be >= 0; got {output.max_retries}",
+                hint="use 0 to disable retries (the default), or a positive count",
+            )
         tag_marker = f"<{output.tag}>"
         if tag_marker not in setup.prompt_text:
             raise InvalidOptions(
@@ -175,30 +198,81 @@ def run(
                 ),
             )
     abort = signal if signal is not None else AbortController().signal
-    return _run_loop(
-        agent=agent,
-        sandbox=sandbox,
-        setup=setup,
-        branch_strategy=branch_strategy,
-        base_branch=base_branch,
-        max_iterations=max_iterations,
-        completion_signal=completion_signal,
-        idle_timeout=_seconds(idle_timeout),
-        idle_warning_interval=_maybe_seconds(idle_warning_interval),
-        completion_timeout=_maybe_seconds(completion_timeout),
-        name=name,
-        hooks=hooks if hooks is not None else Hooks(),
-        timeouts=timeouts if timeouts is not None else Timeouts(),
-        on_event=on_event,
-        logging_cfg=logging,
-        signal=abort,
-        prompt_args=prompt_args,
-        output=output,
-        resume_session=resume_session,
-        fork_session=fork_session,
-        copy_to_worktree=copy_to_worktree,
-        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
-    )
+
+    def _invoke(setup_: SetupResult, resume_: str | None, fork_: bool) -> RunResult:
+        return _run_loop(
+            agent=agent,
+            sandbox=sandbox,
+            setup=setup_,
+            branch_strategy=branch_strategy,
+            base_branch=base_branch,
+            max_iterations=max_iterations,
+            completion_signal=completion_signal,
+            idle_timeout=_seconds(idle_timeout),
+            idle_warning_interval=_maybe_seconds(idle_warning_interval),
+            completion_timeout=_maybe_seconds(completion_timeout),
+            name=name,
+            hooks=hooks if hooks is not None else Hooks(),
+            timeouts=timeouts if timeouts is not None else Timeouts(),
+            on_event=on_event,
+            logging_cfg=logging,
+            signal=abort,
+            prompt_args=prompt_args,
+            output=output,
+            resume_session=resume_,
+            fork_session=fork_,
+            copy_to_worktree=copy_to_worktree,
+            throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+        )
+
+    max_retries = output.max_retries if output is not None else 0
+    if max_retries <= 0:
+        return _invoke(setup, resume_session, fork_session)
+
+    # Structured-output retry loop (upstream's Output maxRetries). On an
+    # extraction/validation failure, resume the failing session with corrective
+    # feedback so the agent re-emits a valid block without repeating the work;
+    # for agents without session capture (no session_id), fall back to a fresh
+    # re-run of the original prompt. ``copy_to_worktree`` is dropped on resume
+    # retries: those carve a fresh worktree and the seeded files are already in
+    # the resumed conversation's context.
+    from eden.errors import SessionNotFound
+
+    assert output is not None  # max_retries > 0 implies output was configured
+    cur_setup, cur_resume, cur_fork = setup, resume_session, fork_session
+    attempt = 0
+    while True:
+        try:
+            return _invoke(cur_setup, cur_resume, cur_fork)
+        except StructuredOutputError as exc:
+            if attempt >= max_retries:
+                raise
+            attempt += 1
+            use_resume = exc.session_id is not None
+            if use_resume:
+                try:
+                    _precheck_resume_session(
+                        agent=agent,
+                        sandbox=sandbox,
+                        resume_session=exc.session_id,  # type: ignore[arg-type]
+                        host_repo_path=setup.cwd,
+                    )
+                except SessionNotFound:
+                    use_resume = False
+            if use_resume:
+                cur_setup = resolve_setup(
+                    prompt=_corrective_output_prompt(output, exc),
+                    prompt_file=None,
+                    prompt_args=prompt_args,
+                    cwd=cwd_path,
+                    env=env,
+                    provider_env={},
+                    sandbox_kind=sandbox.kind,
+                )
+                cur_resume, cur_fork = exc.session_id, False
+            else:
+                # Fresh fallback: re-run the original prompt unchanged.
+                cur_setup, cur_resume, cur_fork = setup, None, False
 
 
 def create_worktree(

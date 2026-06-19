@@ -9,6 +9,23 @@ ships.
 
 ### Added
 
+- **`Output(max_retries=...)`** — `Output.object`/`Output.string` gain an
+  optional `max_retries` (default `0`). When extraction or validation fails,
+  `run()` now retries automatically: it resumes the failing session with
+  corrective feedback (the failure message + the tag to re-emit) so the agent
+  fixes its output without repeating the work, or — for agents without session
+  capture — re-runs the original prompt, up to `max_retries` extra times before
+  raising `StructuredOutputError`. A negative value raises `InvalidOptions`.
+  Mirrors upstream's `Output.object({ maxRetries })` (v0.11.0).
+- **`Sandbox.resume()` / `Sandbox.fork()`** — continue (or branch from) a
+  long-lived sandbox's most recent captured session without threading session
+  ids by hand; both reuse the same container and worktree. `Sandbox.run()` also
+  gains a `fork_session=` argument. `resume()` keeps the session id; `fork()`
+  starts a fresh id seeded from the parent transcript (for fanning several
+  follow-ups off one base). Raise `InvalidOptions` when no prior run captured a
+  session. Mirrors upstream's `RunResult.resume()`/`.fork()` for live
+  sandboxes (v0.11.0).
+
 - **`Logging(verbose=True)`** — surfaces each literal, unparsed agent stdout
   line as a new `StreamEvent(type="raw")`, written to the log alongside the
   human-readable events and forwarded through `on_agent_stream_event`. Lets
