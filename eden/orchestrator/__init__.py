@@ -14,7 +14,7 @@ from eden.errors import InvalidOptions, StructuredOutputError
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.orchestrator._loop import _run_loop
-from eden.orchestrator._setup import resolve_setup
+from eden.orchestrator._setup import SetupResult, resolve_setup
 from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy
@@ -199,10 +199,7 @@ def run(
             )
     abort = signal if signal is not None else AbortController().signal
 
-    def _invoke(setup_: object, resume_: str | None, fork_: bool) -> RunResult:
-        from eden.orchestrator._setup import SetupResult
-
-        assert isinstance(setup_, SetupResult)
+    def _invoke(setup_: SetupResult, resume_: str | None, fork_: bool) -> RunResult:
         return _run_loop(
             agent=agent,
             sandbox=sandbox,

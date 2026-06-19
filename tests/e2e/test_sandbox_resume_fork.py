@@ -61,12 +61,19 @@ def test_resume_reuses_last_session(e2e_git_repo: object) -> None:
         assert "RESUMED:abc-123" in r2.stdout
 
 
-def test_fork_reuses_last_session(e2e_git_repo: object) -> None:
+def test_fork_fans_out_from_same_base(e2e_git_repo: object) -> None:
     with create_sandbox(sandbox=no_sandbox()) as sb:
         agent = _SessionAgent()
         sb.run(agent=agent, prompt="first", idle_timeout=30.0)
-        r2 = sb.fork("branch", agent=agent, idle_timeout=30.0)
-        assert "RESUMED:abc-123" in r2.stdout
+        assert sb._last_session_id == "abc-123"
+
+        # Two forks must both branch from the original base session, not chain
+        # off each other — fork() does not advance the continuation pointer.
+        a = sb.fork("variant A", agent=agent, idle_timeout=30.0)
+        b = sb.fork("variant B", agent=agent, idle_timeout=30.0)
+        assert "RESUMED:abc-123" in a.stdout
+        assert "RESUMED:abc-123" in b.stdout
+        assert sb._last_session_id == "abc-123"  # base pointer unchanged by forks
 
 
 def test_resume_without_prior_session_raises(e2e_git_repo: object) -> None:

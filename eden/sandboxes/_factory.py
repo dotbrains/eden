@@ -190,8 +190,11 @@ class Sandbox:
             existing_handle=self.handle,
         )
         # Remember the latest captured session so resume()/fork() can chain
-        # without the caller threading ids by hand.
-        if result.session_id is not None:
+        # without the caller threading ids by hand. A fork deliberately does
+        # NOT advance the pointer: it branches off the base session, so
+        # repeated fork() calls fan out from that same base rather than
+        # chaining off each other's children.
+        if result.session_id is not None and not fork_session:
             self._last_session_id = result.session_id
         return result
 
@@ -229,7 +232,7 @@ class Sandbox:
                 ),
                 hint=(
                     "claude_code captures sessions by default; "
-                    "cli_agent needs captures_sessions=True"
+                    "cli_agent needs capture_sessions=True"
                 ),
             )
         kwargs: dict[str, object] = dict(overrides)
