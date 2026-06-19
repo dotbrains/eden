@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -45,6 +45,9 @@ class Sandbox:
     sandbox_provider: SandboxProvider
     cwd: Path | None = None
     owns_worktree: bool = True
+    _last_session_id: str | None = field(default=None, repr=False, compare=False)
+    """Session id of the most recent ``run()`` that captured one; powers the
+    no-argument :meth:`resume` / :meth:`fork` convenience methods."""
 
     def __enter__(self) -> Sandbox:
         return self
@@ -97,6 +100,7 @@ class Sandbox:
         signal: AbortSignal | None = None,
         output: OutputDefinition | None = None,
         resume_session: str | None = None,
+        fork_session: bool = False,
     ) -> RunResult:
         """Run an agent against this existing sandbox + worktree.
 
@@ -104,6 +108,10 @@ class Sandbox:
         handle the sandbox already holds — no new branch is carved, no new
         container is spawned. Use this to run multiple agents (e.g. an
         implementer followed by a reviewer) against the same branch.
+
+        ``resume_session`` / ``fork_session`` continue (or branch from) a prior
+        session *inside this same container* — see the no-argument
+        :meth:`resume` / :meth:`fork` convenience wrappers.
         """
         # Lazy imports keep eden.sandboxes importable from agents/orchestrator
         # without cycles.
@@ -130,6 +138,15 @@ class Sandbox:
                     f"got max_iterations={max_iterations}"
                 ),
             )
+        if fork_session and resume_session is None:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message="fork_session=True requires resume_session=<id>",
+                hint=(
+                    "fork continues a captured session under a new id; "
+                    "pass resume_session=<id> alongside fork_session=True"
+                ),
+            )
         if output is not None:
             if max_iterations != 1:
                 raise InvalidOptions(
@@ -149,7 +166,7 @@ class Sandbox:
                     ),
                 )
         abort = signal if signal is not None else AbortController().signal
-        return _run_loop(
+        result = _run_loop(
             agent=agent,
             sandbox=self.sandbox_provider,
             setup=setup,
@@ -168,9 +185,61 @@ class Sandbox:
             prompt_args=prompt_args,
             output=output,
             resume_session=resume_session,
+            fork_session=fork_session,
             existing_worktree=self.worktree,
             existing_handle=self.handle,
         )
+        # Remember the latest captured session so resume()/fork() can chain
+        # without the caller threading ids by hand. A fork deliberately does
+        # NOT advance the pointer: it branches off the base session, so
+        # repeated fork() calls fan out from that same base rather than
+        # chaining off each other's children.
+        if result.session_id is not None and not fork_session:
+            self._last_session_id = result.session_id
+        return result
+
+    def resume(self, prompt: str, **overrides: object) -> RunResult:
+        """Continue this sandbox's most recent session with a follow-up prompt.
+
+        Convenience over ``run(prompt=..., resume_session=<last id>)`` — reuses
+        this container and worktree, so the agent picks up its prior
+        conversation in place. ``overrides`` are forwarded to :meth:`run`.
+        Raises ``InvalidOptions`` if no prior ``run()`` captured a session.
+        Mirrors sandcastle's ``sandbox.run().resume()`` within a live sandbox.
+        """
+        return self._continue(prompt, fork=False, overrides=overrides)
+
+    def fork(self, prompt: str, **overrides: object) -> RunResult:
+        """Branch this sandbox's most recent session into a new one.
+
+        Like :meth:`resume` but starts a fresh session id seeded from the
+        parent's transcript, leaving the parent untouched — useful for fanning
+        several follow-ups off one base conversation. ``overrides`` are
+        forwarded to :meth:`run`. Raises ``InvalidOptions`` if no prior
+        ``run()`` captured a session.
+        """
+        return self._continue(prompt, fork=True, overrides=overrides)
+
+    def _continue(self, prompt: str, *, fork: bool, overrides: Mapping[str, object]) -> RunResult:
+        from eden.errors import InvalidOptions
+
+        if self._last_session_id is None:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    f"no captured session to {'fork' if fork else 'resume'}; "
+                    "call run() first on an agent that captures sessions"
+                ),
+                hint=(
+                    "claude_code captures sessions by default; "
+                    "cli_agent needs capture_sessions=True"
+                ),
+            )
+        kwargs: dict[str, object] = dict(overrides)
+        kwargs["prompt"] = prompt
+        kwargs["resume_session"] = self._last_session_id
+        kwargs["fork_session"] = fork
+        return self.run(**kwargs)  # type: ignore[arg-type]
 
 
 def create_sandbox(

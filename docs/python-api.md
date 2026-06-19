@@ -223,19 +223,36 @@ with eden.create_worktree(branch="eden/feature/x") as wt:
 
 `timeouts` caps the one-time carve's git plumbing via `Timeouts.git_setup` (reused by `Sandbox.close()` for the teardown `git worktree remove`). Per-run deadlines like `iteration_step` are passed separately to each [`Sandbox.run(timeouts=...)`](#sandboxrun).
 
-The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus a `.run(...)` method (same shape as the top-level `run()` minus `agent`/`sandbox` already supplied). It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
+The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus `.run(...)` / `.resume(...)` / `.fork(...)` methods. It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
 
 ### `Sandbox.run(...)`
 
-Run an agent against an already-created sandbox. Same arguments as `run()` minus `sandbox=` (already bound) and `branch_strategy=` (would be ignored — the sandbox already owns a branch). All other options carry over: `output=`, `resume_session=`, `logging=`, `on_event=`, `signal=`, `hooks=`, `timeouts=`, etc.
+Run an agent against an already-created sandbox. Same arguments as `run()` minus `sandbox=` (already bound) and `branch_strategy=` (would be ignored — the sandbox already owns a branch). All other options carry over: `output=`, `resume_session=`, `fork_session=`, `logging=`, `on_event=`, `signal=`, `hooks=`, `timeouts=`, etc.
 
-Useful for sequential-reviewer / planner-executor patterns where multiple agents share one branch, and for resuming a captured Claude Code session in a fresh container without re-creating the worktree.
+Useful for sequential-reviewer / planner-executor patterns where multiple agents share one branch, and for resuming a captured Claude Code session **inside the same container** without re-creating the worktree.
 
 ```python
 with eden.create_sandbox(sandbox=docker_provider(...), branch="eden/feature/x") as s:
     impl = s.run(agent=eden.claude_code("..."), prompt_file="implement.md", max_iterations=20)
     if impl.commits:
         s.run(agent=eden.claude_code("..."), prompt_file="review.md", max_iterations=1)
+```
+
+### `Sandbox.resume(...)` / `Sandbox.fork(...)`
+
+```python
+def resume(self, prompt: str, **overrides) -> RunResult: ...
+def fork(self, prompt: str, **overrides) -> RunResult: ...
+```
+
+Continue (or branch from) the sandbox's **most recent captured session** without threading session ids by hand — `Sandbox` remembers the last `run()`/`resume()`/`fork()` result's `session_id`. `resume()` keeps the same session id; `fork()` starts a fresh id seeded from the parent transcript (leaving the parent untouched, for fanning several follow-ups off one base). Both reuse this container and worktree. `overrides` forward to `run()` (e.g. `agent=`, `output=`, `timeouts=`). Raise `InvalidOptions` if no prior run captured a session. Mirror sandcastle's `RunResult.resume()` / `.fork()` for long-lived sandboxes.
+
+```python
+with eden.create_sandbox(sandbox=docker_provider(...)) as s:
+    s.run(agent=eden.claude_code("opus"), prompt="Draft a migration plan.")
+    s.resume("Now apply step 1.")          # same session, in the same container
+    a = s.fork("Variant A: use Alembic.")  # two independent follow-ups…
+    b = s.fork("Variant B: raw SQL.")      # …both branched from the same base
 ```
 
 ### `create_worktree(...)`
@@ -491,6 +508,16 @@ except StructuredOutputError as e:
         resume_session=e.session_id,
         prompt=f"Your previous <result> was malformed: {e.raw_matched!r}. Re-emit it.",
     )
+```
+
+**`max_retries` automates that loop.** Pass `Output.object(tag=..., schema=..., max_retries=N)` (or `Output.string(tag=..., max_retries=N)`) and `run()` retries on its own when extraction or validation fails: it resumes the failing session with corrective feedback (the failure message + the tag to re-emit), or — for agents without session capture — re-runs the original prompt, up to `N` extra times before raising `StructuredOutputError`. Default `0` (no retry). A negative value raises `InvalidOptions`. Mirrors sandcastle's `Output.object({ maxRetries })`.
+
+```python
+result = run(
+    agent=claude_code(),
+    sandbox=..., prompt="emit <result>{...}</result>",
+    output=Output.object(tag="result", schema=my_schema, max_retries=2),
+)
 ```
 
 ### `OutputDefinition`
