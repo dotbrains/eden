@@ -55,7 +55,7 @@ def test_output_missing_tag_raises_structured_output_error(e2e_git_repo: Path) -
     assert ex.value.tag == "answer"
     assert ex.value.branch  # populated
     assert ex.value.raw_matched is None
-    # Port of upstream 581dc80 — error carries the iteration's session
+    # The error carries the iteration's session
     # id and captured JSONL path. simulated_agent doesn't emit either,
     # so both come through as None; the orchestrator's plumbing is
     # exercised regardless.

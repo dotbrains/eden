@@ -1,7 +1,7 @@
 """``copy_to_worktree`` — copy host-relative files into the worktree pre-boot.
 
-Ports upstream's ``copyToWorktree`` option: each entry is a host-relative
-file or directory path; the file is copied from ``source_root`` (the host
+Each entry is a host-relative file or directory path; the file is
+copied from ``source_root`` (the host
 repo) into the freshly-carved worktree, preserving the relative path. Runs
 **before** ``host.on_worktree_ready`` hooks fire so those hooks can use the
 copied files.
@@ -15,7 +15,7 @@ Validation is strict (loud failure beats silent confusion):
   disk yet".
 
 Existing destinations are **overwritten** (files via ``shutil.copy2``, dirs
-via ``copytree(dirs_exist_ok=True)``). This matches upstream's seeding
+via ``copytree(dirs_exist_ok=True)``). This matches the seeding
 semantics: callers use ``copy_to_worktree`` to inject configs / secrets
 that should replace whatever the carved worktree happens to contain.
 """

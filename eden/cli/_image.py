@@ -1,8 +1,7 @@
 """Shared image-lifecycle commands for the ``eden docker`` / ``eden podman``
 Typer sub-apps.
 
-Mirrors upstream's ``upstream docker build-image`` / ``remove-image``
-(and the same for podman). Both subcommands operate on the Dockerfile that
+Both subcommands operate on the Dockerfile that
 ``eden init`` scaffolds at ``.eden/Dockerfile``; ``--image-name`` overrides
 the default ``eden:<repo-dir-name>`` tag.
 """

@@ -2,7 +2,7 @@
 
 Used when eden runs unattended (CI, scheduled jobs) and the operator
 wants the orchestrator's narration captured to a file rather than
-streamed live. Equivalent to upstream's ``FileDisplay`` layer.
+streamed live.
 """
 
 from __future__ import annotations

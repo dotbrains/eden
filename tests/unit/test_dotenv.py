@@ -20,7 +20,7 @@ def test_load_dotenv_file_parses_simple_pairs(tmp_path: Path) -> None:
 
 def test_load_dotenv_file_unescapes_double_quoted_sequences(tmp_path: Path) -> None:
     # python-dotenv handles \n, \r, \t, \\ inside double-quoted values — the
-    # gateway-token case from upstream PR #568.
+    # gateway-token case.
     f = tmp_path / ".env"
     f.write_text('TOKEN="line1\\nline2"\nTAB="a\\tb"\nSLASH="x\\\\y"\n')
     values = load_dotenv_file(f)

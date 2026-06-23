@@ -20,7 +20,6 @@ class IterationContext:
     fork_session: bool = False
     """When ``True``, agents that support session forking write a NEW
     session id while continuing from ``resume_session``'s captured state.
-    Implies ``resume_session is not None``. Mirrors upstream's
-    ``--fork-session`` (claude) / ``codex exec fork`` (codex) wiring
-    (v0.6.6, 58f335f).
+    Implies ``resume_session is not None``. Wired via
+    ``--fork-session`` (claude) / ``codex exec fork`` (codex).
     """

@@ -2,8 +2,7 @@
 
 Eden already depends on rich (pyproject), so we lean on
 ``rich.console.Console`` for colored output and ``rich.status.Status``
-for spinners — equivalent in spirit to upstream's ``ClackDisplay``
-without the ``@clack/prompts`` dependency.
+for spinners.
 """
 
 from __future__ import annotations

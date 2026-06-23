@@ -39,5 +39,4 @@ Adopt option 2.
 ## See also
 
 - ADR 0005 — UID alignment + tilde expansion this depends on.
-- Upstream 9bf43df (the "auto-create parent dirs for file mounts under /home/agent" commit).
 - `eden/providers/_impl/container.py` — `_create()` is the implementation site.

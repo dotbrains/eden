@@ -60,14 +60,12 @@ def pi(
 
     ``thinking`` forwards ``--thinking <level>`` to the pi CLI. Accepted
     levels: ``"off"``, ``"minimal"``, ``"low"``, ``"medium"``, ``"high"``,
-    ``"xhigh"``. Mirrors upstream's ``pi("model", { thinking: "high" })``
-    option (v0.6.6, 1201b4d).
+    ``"xhigh"``.
 
     ``capture_sessions`` toggles session capture / resume support. When
     ``True`` (default), each iteration's JSONL is copied into
     ``.eden/sessions/<branch>/iter-<i>-<id>.jsonl`` and can be resumed
-    via ``run(..., resume_session=<id>)``. Mirrors upstream's
-    ``PiOptions.captureSessions`` (v0.6.6, 932aa70).
+    via ``run(..., resume_session=<id>)``.
 
     ``flox_env``, when set to a directory containing a Flox env
     (``.flox/env/manifest.toml``), runs pi inside it via

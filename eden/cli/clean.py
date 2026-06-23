@@ -96,9 +96,9 @@ def clean_command(
         console.print(f"[yellow]no .eden/ directory in {repo}[/yellow]")
         raise typer.Exit(code=0)
     # Resolve symlinks so the paths we hand to shutil.rmtree match git's
-    # realpath-keyed worktree records (port of upstream PR #491 /
-    # commit b6cc84f). Users who symlink .eden/ to a separate disk would
-    # otherwise see stale-worktree cleanup mis-target. Keep the original
+    # realpath-keyed worktree records. Users who symlink .eden/ to a
+    # separate disk would otherwise see stale-worktree cleanup mis-target.
+    # Keep the original
     # path around so user-facing output stays repo-relative.
     eden_dir = eden_dir_display.resolve()
 

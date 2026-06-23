@@ -9,12 +9,11 @@ Eden's error taxonomy spans three sub-packages:
 * ``eden.worktree.errors`` — git worktree problems.
 
 Every concrete error already attaches a structured ``code`` and a
-human-readable ``message``; many already carry a ``hint``. Upstream's
-``ErrorHandler.formatErrorMessage`` (``src/ErrorHandler.ts``) shows the
-value of *one* place that consults all of them and returns a single
+human-readable ``message``; many already carry a ``hint``. There is
+value in *one* place that consults all of them and returns a single
 display string with a friendlier prefix.
 
-This module ports that. CLI surfaces (``eden run``, REPL drivers,
+This module provides that. CLI surfaces (``eden run``, REPL drivers,
 custom orchestrators) can route any ``EdenError`` through
 :func:`format_error_message` to get something the user can act on:
 
@@ -184,7 +183,7 @@ def _worktree_hint(error: EdenError) -> str | None:
 
 
 def _kind_prefix(error: EdenError) -> str:
-    """Return a short, upstream-style noun phrase for the error class.
+    """Return a short noun phrase for the error class.
 
     The prefix is rendered in front of the message so users can scan a
     log and identify what failed without reading the code string.

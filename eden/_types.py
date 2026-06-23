@@ -51,7 +51,7 @@ class Timeouts:
     and teardown (``git worktree add``/``remove``, branch/worktree listing,
     status, and the ``origin`` fast-forward when reusing a clean worktree). A
     wedged local git — NFS stall, filesystem repair, runaway hook — would
-    otherwise hang Eden indefinitely. Mirrors upstream's ``gitSetupMs``.
+    otherwise hang Eden indefinitely.
     """
     commit_collection: float = 60.0
     """Deadline for the post-run ``git rev-list base..HEAD`` that censuses the
@@ -59,7 +59,6 @@ class Timeouts:
     Bounded separately from ``git_setup`` because it runs after the agent and
     can walk a long history; a wedged git here must not hang teardown. The
     census is best-effort — a timeout yields no commits, never an error.
-    Mirrors upstream's ``commitCollectionMs``.
     """
 
 
@@ -114,8 +113,7 @@ class RunResult:
         Equivalent to ``eden.run(agent=..., sandbox=..., cwd=...,
         prompt=prompt, resume_session=self.session_id, **overrides)`` with
         the agent / sandbox / cwd inherited from the call that produced
-        this result. Mirrors upstream's ``RunResult.resume(prompt)``
-        (v0.6.6, 58f335f).
+        this result.
 
         ``overrides`` accepts any kwarg :func:`eden.run` accepts; explicit
         overrides win over the captured context.
@@ -136,8 +134,7 @@ class RunResult:
         fan-out also requires distinct branches per child via
         ``branch_strategy=BranchStrategy.named(...)`` in ``overrides``;
         head and merge_to_head strategies are not safe for concurrent
-        forks because every child writes to the same worktree. Mirrors
-        upstream's ``RunResult.fork(prompt)`` (v0.6.6, 58f335f).
+        forks because every child writes to the same worktree.
 
         Implemented via ``--fork-session`` (claude_code) /
         ``codex exec fork <id>`` (codex). Agents without session support

@@ -1,7 +1,6 @@
 """Display abstraction — swappable sinks for orchestrator → user output.
 
-Ports upstream's tagged-ADT Display from ``src/Display.ts``. Sinks
-shipped:
+A tagged-ADT Display abstraction. Sinks shipped:
 
 * :class:`SilentDisplay` — records entries for tests, prints nothing.
 * :class:`FileDisplay` — append-only file log; for unattended runs.

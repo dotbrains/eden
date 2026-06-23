@@ -7,8 +7,6 @@ handler clobbers the user's handlers and leaks one handler per sandbox;
 this module installs at most one handler per signal and fans out to a
 set of teardown callbacks.
 
-Mirrors upstream's ``shutdownRegistry.ts``.
-
 Lifecycle:
 
 * ``SIGINT`` (Ctrl+C) — runs teardowns, then re-raises

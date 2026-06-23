@@ -114,7 +114,7 @@ EOF
 
 # jira-cli (ankitpokhrel/jira-cli) is the most-maintained third-party Jira CLI.
 # Eden installs the linux-amd64 release tarball at image-build time. Users on
-# arm64 should adjust the asset suffix — upstream takes the same shortcut.
+# arm64 should adjust the asset suffix.
 _JIRA_DOCKERFILE = """\
 # Install jira-cli (ankitpokhrel/jira-cli) for backlog management.
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \\

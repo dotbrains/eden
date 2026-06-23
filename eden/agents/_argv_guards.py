@@ -15,7 +15,7 @@ from __future__ import annotations
 from eden.errors import InvalidOptions
 
 # Conservative limit. Linux's ARG_MAX is typically 131_072 bytes (128 KiB);
-# upstream uses 120_000 to leave headroom for envp + other argv elements.
+# 120_000 leaves headroom for envp + other argv elements.
 _MAX_PROMPT_ARGV_BYTES = 120_000
 
 

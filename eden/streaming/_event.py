@@ -24,7 +24,7 @@ class StreamEvent:
     agent emitted it, surfaced only when ``Logging(verbose=True)`` so external
     observability systems can see the bytes a parser would otherwise discard
     (e.g. the JSON envelope behind a ``claude --output-format stream-json``
-    line). Mirrors upstream's ``{ type: "raw" }`` verbose event (v0.10.0).
+    line).
     """
 
     type: Literal["text", "idle_warning", "tool_call", "usage", "session_id", "raw"]

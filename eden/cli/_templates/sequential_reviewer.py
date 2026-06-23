@@ -3,7 +3,7 @@
 A two-phase loop per task: an implementer agent commits changes on a named
 branch, then a reviewer agent inspects the diff and approves or corrects.
 Both agents share one ``Sandbox`` so the second run sees the implementer's
-working tree directly. Adapted from upstream's sequential-reviewer template.
+working tree directly.
 """
 
 from __future__ import annotations

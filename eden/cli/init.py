@@ -135,8 +135,7 @@ def _resolve_option(
     to a TTY (and not ``--yes``) we prompt with ``default``; under ``--yes``
     we take ``default`` silently. When stdin is not a TTY and the flag is
     absent, we fail fast naming the flag rather than hanging on (or aborting
-    out of) the prompt library. Mirrors upstream v0.7.0's fully
-    non-interactive ``init``.
+    out of) the prompt library.
     """
     if value is not None:
         return value

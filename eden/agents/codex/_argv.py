@@ -32,7 +32,6 @@ def build_argv(
     ``fork_session``, when ``True``, swaps ``codex exec resume <id>`` for
     ``codex exec fork <id>``, so the continuation writes to a NEW session
     file — concurrent fan-out safe. Requires ``resume_session``.
-    Mirrors upstream's RunResult.fork() (v0.6.6).
 
     ``dangerously_bypass_approvals_and_sandbox`` defaults to ``True`` so the
     codex CLI does not block on per-tool approval prompts inside an isolated
@@ -44,8 +43,7 @@ def build_argv(
     (``-a on-request -s danger-full-access -c approvals_reviewer="auto_review"``)
     — auto-review only fires on interactive approvals, and the safety boundary
     becomes the reviewer agent rather than codex's filesystem sandbox (eden's
-    sandbox provider still owns the outer boundary). Mirrors upstream's
-    ``codex(model, { approvalsReviewer })`` (v0.8.0). ``"user"`` (and ``None``)
+    sandbox provider still owns the outer boundary). ``"user"`` (and ``None``)
     keep the default bypass behaviour.
     """
     argv: list[str] = ["codex", "exec"]

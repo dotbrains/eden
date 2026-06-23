@@ -1,6 +1,6 @@
 """Load ``.eden/.env`` so projects can declare sandbox env without wiring dotenv themselves.
 
-Mirrors upstream's ``.upstream/.env`` convention: any key=value pairs
+Any key=value pairs
 declared in the project's ``.eden/.env`` are merged into the env passed to
 the sandbox at ``run()`` / ``create_sandbox()`` time. Values from the file are
 overridden by explicit ``env=`` keyword arguments to keep call-site overrides

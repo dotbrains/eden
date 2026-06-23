@@ -14,7 +14,7 @@ A ``Display`` accepts seven kinds of events:
   callback; lines pushed during the block are collected and emitted on
   exit (success or failure).
 
-Two minor differences from upstream's ``Display``:
+Two notable design points:
 
 * Python lacks Effect.Effect, so ``spinner`` / ``task_log`` are
   context managers rather than higher-order effect wrappers.

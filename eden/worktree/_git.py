@@ -14,7 +14,7 @@ from eden.worktree.errors import GitCommandFailed, GitCommandTimeout, WorktreeCo
 
 # All host-side git invocations bound by this deadline. A wedged local
 # git (NFS stall, filesystem repair, runaway hook) would otherwise hang
-# Eden indefinitely. 60 s matches upstream's default.
+# Eden indefinitely.
 _DEFAULT_GIT_TIMEOUT: float = 60.0
 
 # Prevent ``git worktree add -b`` from writing upstream tracking config into
@@ -51,12 +51,10 @@ def c_locale_env() -> dict[str, str]:
     """Inherit ``os.environ`` and pin git's locale to ``C``.
 
     Eden parses git output via ``--porcelain`` and exit codes today, so
-    the immediate motivation is defensive: a future caller that relies
-    on human-readable stderr (e.g. "fatal: invalid reference") would
-    silently break under non-English locales without this pin.
-    Mirrors upstream's ``LC_ALL=C`` fix (v0.6.1, 46eb483) — its
-    ``WorktreeManager`` did substring-match localised stderr and broke
-    outright in those locales.
+    the immediate motivation is defensive: a future caller that
+    substring-matches human-readable stderr (e.g. "fatal: invalid
+    reference") would silently break under non-English locales without
+    this pin.
 
     ``LANGUAGE`` is cleared because git prefers it over ``LC_ALL`` for
     message selection.
@@ -343,8 +341,8 @@ def refresh_from_origin(
 ) -> None:
     """Fast-forward a reused, clean worktree to ``origin/<branch>`` when safe.
 
-    Mirrors upstream's ``fastForwardFromOrigin`` (v0.7.0). Every failure
-    mode is non-fatal by design: the worst case is the same stale-but-usable
+    Every failure mode is non-fatal by design: the worst case is the same
+    stale-but-usable
     worktree the caller would have had before this refresh existed. Skipped
     (with an explanatory log) when:
 

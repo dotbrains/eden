@@ -8,13 +8,13 @@
 
 Eden today is a Rust workspace (~14k LoC across 5 crates) that orchestrates AI coding agents in sandboxed git worktrees. The user-facing API (`RunOptions`, `InteractiveOptions`, `BindMountProvider`, `BranchStrategy`, etc.) has accreted Rust-shaped abstractions (`PipelineOptions<Body>::split()`, `SessionSetup`, `WithCloseResult`, `SandboxHandleKind::{Direct, Finalizing}`) that exist primarily to satisfy the borrow checker and trait-object dispatch.
 
-The reference for "as simple as possible" is upstream (`@upstream/upstream`), a TypeScript package whose programmatic API is a single `await run({ agent, sandbox, promptFile })` call plus `upstream init` for scaffolding.
+The benchmark for "as simple as possible" is a programmatic API that boils down to a single `run({ agent, sandbox, promptFile })` call plus an `init` command for scaffolding.
 
 The directory `/Users/nicholas/Documents/GitHub/github.com/dotbrains/eden` exists but is **not yet a git repo**, and Eden has **no users**. The rewrite is therefore unconstrained by API stability or migration concerns.
 
 ## Goals
 
-- A public API as terse as upstream's, but written for Python 3.
+- A public API as terse as that single-call benchmark, but written for Python 3.
 - Full feature parity with current Rust Eden: docker / podman / vercel / daytona / isolated / no-sandbox providers; claude-code / codex / opencode / pi agents; iteration loop with completion signal; idle timeout + warnings; `{{KEY}}` prompt args; `` !`cmd` `` shell blocks; lifecycle hooks; three branch strategies; resume sessions; streaming agent events; file logging; token usage aggregation; interactive (TTY) mode.
 - YAGNI applied to **internal abstractions** (drop Rust-isms) but **not** to user-facing features.
 - Sync-first public API. No `asyncio` in v1.
@@ -32,11 +32,11 @@ The directory `/Users/nicholas/Documents/GitHub/github.com/dotbrains/eden` exist
 
 | # | Decision | Rationale |
 |---|---|---|
-| 1 | **Language: Python 3.11+** | Terser than Rust; the AI-engineer audience lives here; native sync subprocess avoids the language-tax that forces upstream to be async. |
+| 1 | **Language: Python 3.11+** | Terser than Rust; the AI-engineer audience lives here; native sync subprocess avoids the language-tax that forces JS/TS orchestrators to be async. |
 | 2 | **Drop Rust crates entirely** | Greenfield rewrite. No users to break. |
 | 3 | **Approach 2: Python-idiomatic re-architecture** | Keep behaviors, redesign the *shape* using dataclasses, `Protocol`, context managers, generators. Approach 1 (1:1 port) carries Rust-isms that cost without paying. Approach 3 (lean on `claude-code-sdk`) limits parity with non-Claude agents. |
-| 4 | **Sub-namespaced package** (`eden.sandboxes.docker`, `eden.providers.*`) | Matches upstream's import shape. Single PyPI package; namespace is curated re-exports, not multi-package monorepo. |
-| 5 | **Sync-first API** (`run(...)` blocks) | Upstream is async only because JS forces it. Python can offer real sync. The default audience is script-style users; embedders can `asyncio.to_thread(run, ...)` until/unless `arun` is added. |
+| 4 | **Sub-namespaced package** (`eden.sandboxes.docker`, `eden.providers.*`) | A clean, discoverable import shape. Single PyPI package; namespace is curated re-exports, not multi-package monorepo. |
+| 5 | **Sync-first API** (`run(...)` blocks) | JS/TS orchestrators are async only because the language forces it. Python can offer real sync. The default audience is script-style users; embedders can `asyncio.to_thread(run, ...)` until/unless `arun` is added. |
 
 ## Section 1 — Public API surface
 

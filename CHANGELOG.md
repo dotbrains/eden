@@ -16,15 +16,13 @@ ships.
   fixes its output without repeating the work, or — for agents without session
   capture — re-runs the original prompt, up to `max_retries` extra times before
   raising `StructuredOutputError`. A negative value raises `InvalidOptions`.
-  Mirrors upstream's `Output.object({ maxRetries })` (v0.11.0).
 - **`Sandbox.resume()` / `Sandbox.fork()`** — continue (or branch from) a
   long-lived sandbox's most recent captured session without threading session
   ids by hand; both reuse the same container and worktree. `Sandbox.run()` also
   gains a `fork_session=` argument. `resume()` keeps the session id; `fork()`
   starts a fresh id seeded from the parent transcript (for fanning several
   follow-ups off one base). Raise `InvalidOptions` when no prior run captured a
-  session. Mirrors upstream's `RunResult.resume()`/`.fork()` for live
-  sandboxes (v0.11.0).
+  session.
 
 - **`Logging(verbose=True)`** — surfaces each literal, unparsed agent stdout
   line as a new `StreamEvent(type="raw")`, written to the log alongside the
@@ -32,8 +30,7 @@ ships.
   external observability see the bytes a parser discards (e.g. the JSON
   envelope behind a `claude --output-format stream-json` line). Off by
   default; available on `Logging.file(..., verbose=True)` and
-  `Logging.stdout(verbose=True)`. Mirrors upstream's `logging: { verbose }`
-  + `{ type: "raw" }` event (v0.10.0).
+  `Logging.stdout(verbose=True)`.
 - **Claude subagent/workflow transcript capture** — eden now curates Claude's
   *separate-file* subagent transcripts (sibling session JSONLs carrying
   `isSidechain: true`) into `.eden/sessions/<branch>/iter-<n>-sub-<id>.jsonl`
@@ -42,8 +39,7 @@ ships.
   transcripts) and is best-effort (a failed sub-capture never aborts the run).
   Matters most for isolated/cloud providers, where only the main session was
   otherwise pulled back to the host. `SessionStorage.host_capture` gains an
-  optional `since` argument to support the scoping. Mirrors upstream's
-  subagent/workflow transcript capture (v0.9.0).
+  optional `since` argument to support the scoping.
 - **`RunResult.commits`** — now populated. After a run, the orchestrator
   censuses the commits the agent made on the branch with
   `git rev-list base..HEAD` (newest first) and reports them as `list[Commit]`;
@@ -55,7 +51,7 @@ ships.
   best-effort, so a slow or failing census yields no commits rather than
   raising. Eden's `result.commits`-aware templates (`plan-implement-review`,
   `parallel-planner-with-review`, `github-agent-workflows`) now behave
-  correctly. Mirrors upstream's commit collection + `commitCollectionMs`.
+  correctly.
 
 - **`codex(approvals_reviewer=...)`** — AI-mediated approval evaluation for the
   codex agent. `"auto_review"` swaps the default
@@ -65,8 +61,7 @@ ships.
   so a reviewer agent mediates per-action approvals instead of skipping them
   outright — eden's sandbox provider still owns the outer filesystem boundary.
   `"user"` (and unset) keep the existing bypass behaviour; an unrecognised
-  value raises `InvalidOptions`. Mirrors upstream's
-  `codex(model, { approvalsReviewer })` (v0.8.0). See `docs/agents.md`.
+  value raises `InvalidOptions`. See `docs/agents.md`.
 - **`create_sandbox(worktree=...)`** — reuse a caller-managed worktree from
   `create_worktree()` instead of carving a fresh one, with split ownership:
   `Sandbox.close()` then tears down the container only, and the caller's
@@ -77,15 +72,14 @@ ships.
   `owns_worktree` flag (`True` for self-carved worktrees, preserving existing
   behaviour). `worktree=` is mutually exclusive with
   `branch`/`branch_strategy`/`base_branch`; `eden.aio.create_sandbox` mirrors
-  the new parameter. Mirrors upstream's `wt.createSandbox(...)` split
-  ownership. See `docs/python-api.md`.
+  the new parameter. See `docs/python-api.md`.
 - **`Logging.stdout()`** — a stdout log sink alongside the existing file sink.
   Writes the same formatted, redacted stream-event lines to the host process's
   stdout instead of a file under `.eden/logs/` — useful in CI, where the job
   log is the natural destination. `RunResult.log_file_path` is `None` for
   stdout-logged runs. Constructing `Logging(type="file")` without a `path` (or
-  `type="stdout"` with one) now raises `InvalidOptions`. Mirrors upstream's
-  `logging: { type: "stdout" }`. See `docs/configuration.md`.
+  `type="stdout"` with one) now raises `InvalidOptions`. See
+  `docs/configuration.md`.
 
 - **`claude_code(permission_mode=...)`** — graduated tool-approval control for
   the Claude Code agent, appended as `--permission-mode <mode>`. Accepts
@@ -95,9 +89,8 @@ ships.
   editing inside a sandbox or `"plan"` for a read-only planning iteration. The
   two options are mutually exclusive; passing both (or an unrecognised mode)
   raises `InvalidOptions`. `dangerously_skip_permissions` is unchanged and stays
-  the equivalent of `permission_mode="bypassPermissions"`. Mirrors upstream's
-  `claudeCode(model, { permissionMode })`. See `docs/agents.md` and
-  `docs/python-api.md`.
+  the equivalent of `permission_mode="bypassPermissions"`. See `docs/agents.md`
+  and `docs/python-api.md`.
 
 ### Fixed
 
@@ -123,9 +116,8 @@ ships.
   filesystems (NFS, networked volumes) or very large repos where worktree
   creation legitimately takes longer. Honored by `run()`, `interactive()`, and
   `create_sandbox(timeouts=...)`; the standalone `create_worktree()` helper
-  carves at the 60 s default (pass `git_timeout=` to override). Mirrors
-  upstream's `gitSetupMs`. See `docs/python-api.md` and
-  `docs/configuration.md`.
+  carves at the 60 s default (pass `git_timeout=` to override). See
+  `docs/python-api.md` and `docs/configuration.md`.
 - **Per-agent Flox runtime** — every agent factory now accepts an optional
   `flox_env=<dir>` pointing at a directory that ships its own Flox env
   (`.flox/env/manifest.toml`). When set, Eden runs the agent CLI inside it via
@@ -176,8 +168,7 @@ ships.
   left untouched, a failed fetch (no `origin`, offline, branch missing
   upstream) reuses as-is, and a diverged branch (where `--ff-only`
   refuses) preserves unpushed work. A dirty worktree is reused untouched
-  with no fetch. _(Upstream parity upstream v0.7.0,
-  `fastForwardFromOrigin`.)_
+  with no fetch.
 - **Init non-TTY test no longer brittle under colour** — the
   `eden init` non-interactive assertion stripped ANSI escapes, rich box
   borders, and wrapping whitespace before matching the flag name, since
@@ -192,7 +183,7 @@ ships.
   `--backlog`) is missing, init now fails fast naming the absent flag
   instead of hanging on (or aborting cryptically out of) the prompt
   library. Pass every flag, or `--yes` to accept defaults. Interactive
-  TTY behaviour is unchanged. _(Upstream parity upstream v0.7.0.)_
+  TTY behaviour is unchanged.
 
 ### Added
 
@@ -205,7 +196,7 @@ ships.
   in parallel) doesn't corrupt the parent. Safe concurrent fork also
   needs distinct `branch_strategy=BranchStrategy.named(...)` per child.
   `eden.run()` and `Sandbox.run()` also accept `fork_session=True`
-  directly. _(Upstream parity upstream v0.6.6, 58f335f.)_
+  directly.
 - **`completion_timeout` bounds the trailing-line drain** — once the
   iteration's completion signal is matched, eden swaps the idle timer
   for a shorter total budget (default `60.0` seconds) while draining
@@ -213,8 +204,7 @@ ships.
   open after the signal no longer hangs the run until `idle_timeout`
   (default 10 min) trips; on `completion_timeout` expiry the iteration
   succeeds with a warning, commits intact. `total_timeout=None`
-  preserves the pre-port behaviour. _(Upstream parity upstream
-  v0.6.6, ddc26ba.)_
+  preserves the pre-port behaviour.
 - **`pi()` session capture + resume** — `pi(capture_sessions=True)` is
   the new default; pi sessions captured under
   `~/.pi/agent/sessions/--<enc-cwd>--/<ts>_<id>.jsonl` are copied to
@@ -222,17 +212,16 @@ ships.
   `cwd` rewritten. Resume rewrites it back to the sandbox cwd and lands
   the file under `--<encoded-sandbox-cwd>--/` so pi's project-first
   resolver doesn't trigger the "fork session?" prompt. New
-  `PiSessionStorage` exported from `eden`. _(Upstream parity upstream
-  v0.6.6, 932aa70.)_
+  `PiSessionStorage` exported from `eden`.
 - **`pi(thinking=...)` option** — forwards `--thinking <level>` to the
   pi CLI. Accepted: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`,
-  `"xhigh"`. _(Upstream parity upstream v0.6.6, 1201b4d.)_
+  `"xhigh"`.
 - **`PromptError.exit_code` structured field** — when a `` !`command` ``
   shell-block expansion fails, the subprocess exit code is now an
   attribute on the raised `PromptError` (not just in the message), so
   callers can branch programmatically (e.g. retry only on transient
   codes). `None` for non-exec failures (missing files, unknown
-  placeholders). _(Upstream parity upstream v0.6.6, b9b9712.)_
+  placeholders).
 - **Bounded rolling tail for accumulated stdout** — the orchestrator's
   per-run `stdout_chunks` is now a `BoundedTail` (default 64 KiB)
   instead of an unbounded `list[str]`. Multi-hour agent runs no longer
@@ -240,15 +229,14 @@ ships.
   (`parse_stdout_error`, `Output.object` / `Output.string` extraction,
   the final `RunResult.stdout`) all care about the tail, not the head,
   so bounding is sound. Public class `BoundedTail` is available under
-  `eden.orchestrator._bounded_tail` for downstream reuse. _(Upstream
-  parity upstream's `boundedTail.ts`.)_
+  `eden.orchestrator._bounded_tail` for downstream reuse.
 - **`LC_ALL=C` pinned on host-side git invocations** — `_run_git`,
   `branch_exists`, and `resolve_target_branch` now run git under a
   fixed C locale via the new `c_locale_env()` helper. Eden parses
   porcelain output today so the immediate fix is defensive, but a
   caller that later substring-matches git stderr (e.g. "fatal:
   invalid reference") would silently break under non-English locales
-  without this pin. _(Upstream parity upstream 0.6.1, 46eb483.)_
+  without this pin.
 - **Process-wide shutdown registry** — new `eden.register_shutdown(cb)`
   installs at most one `SIGINT` / `SIGTERM` / `atexit` handler per signal
   and fans out to a set of synchronous teardown callbacks. Returns an
@@ -258,8 +246,7 @@ ships.
   isolated worktrees when the parent died abruptly. Callers managing
   their own resources can register custom teardowns. `SIGINT` re-raises
   `KeyboardInterrupt` after running teardowns so `try/finally` still
-  runs; `SIGTERM` exits with code `143`. _(Upstream parity upstream's
-  `shutdownRegistry.ts`.)_
+  runs; `SIGTERM` exits with code `143`.
 - **Interactive `{{KEY}}` placeholder collection** — `eden.interactive()`
   now prompts the user via stdin for any `{{KEY}}` placeholder not
   supplied in `prompt_args` instead of raising `PromptError`. Built-in
@@ -267,8 +254,7 @@ ships.
   behaviour autodetects: collect when stdin is a TTY, skip otherwise
   (CI runs still surface the existing error). Pass `collect_args=True` /
   `False` to force. Helpers `find_missing_keys` and `collect_missing_args`
-  are exported from `eden.prompt` for reuse. _(Upstream parity
-  upstream's `findMissingPromptArgKeys` + interactive arg loop.)_
+  are exported from `eden.prompt` for reuse.
 - **Copy-pastable finalize-failure recovery** — when an isolated
   provider's `finalize(target)` raises or returns `applied=False`, the
   orchestrator now emits a structured recovery message via the stream
@@ -278,7 +264,7 @@ ships.
   `isolated` provider also marks its temp worktree as preserved on
   finalize failure (`handle.preserve()`) so the rsync target actually
   exists. Replaces the previous single-line `[eden] finalize failed:
-  {exc}` log. _(Upstream parity upstream's `buildRecoveryMessage`.)_
+  {exc}` log.
 - **"List is pre-filtered" hint in `simple-loop` and `sequential-reviewer`
   templates** — both prompts now state, after the
   `!`{list_tasks_command}` ` block, that the list has already been filtered to
@@ -286,8 +272,7 @@ ships.
   iteration. Without this, agents would sometimes re-query the tracker with a
   broader filter and pull in tasks outside the configured label set when their
   own list came back empty. The `parallel-planner*` templates already had this
-  hint; this brings the other two templates to parity. _(Upstream parity
-  upstream 0.6.4.)_
+  hint; this brings the other two templates to parity.
 - **`Output.object(schema=...)` accepts validator classes directly** —
   pydantic v2 `BaseModel` subclasses (detected via `model_validate`),
   pydantic v1 `BaseModel` subclasses (detected via `parse_obj` +
@@ -295,8 +280,7 @@ ships.
   pass `schema=MyModel.model_validate` to dodge BaseModel's
   positional-arg incompatibility; now `schema=MyModel` Just Works.
   No new dependencies — detection is via `getattr` duck-typing. New
-  helper `eden.output._validator.resolve_validator`. _(Upstream parity
-  0.6.1.)_
+  helper `eden.output._validator.resolve_validator`.
 - **`cursor()` agent factory** — wraps Cursor's CLI binary (named `agent`).
   Builds `agent --print --output-format stream-json --model <model>
   [--force] [extra_args ...] <prompt>`. Includes a 120 KB pre-flight
@@ -306,7 +290,7 @@ ships.
   is cursor's equivalent of Claude's `dangerously_skip_permissions`.
   Parser handles cursor's `tool_call` events and delegates
   Claude-compatible `assistant`/`result` shapes to Claude's parser.
-  `captures_sessions=False` (resume not supported). _(Upstream parity 0.6.0.)_
+  `captures_sessions=False` (resume not supported).
 - **`copilot()` agent factory** — wraps GitHub's `copilot` CLI binary.
   Builds `copilot -p <prompt> --output-format json --model <model>
   [--allow-all-tools] [--effort <level>] [extra_args ...]`. Same 120 KB
@@ -316,7 +300,7 @@ ships.
   (`assistant.message_delta` → `text`, `tool.execution_start` →
   `tool_call` (normalising lowercase `"bash"` → `"Bash"`), `result` →
   `session_id`, `error`/`agent_error` → `text`).
-  `captures_sessions=False`. _(Upstream parity 0.6.0.)_
+  `captures_sessions=False`.
 - **`assert_prompt_fits_argv` helper** — shared pre-flight check at
   `eden/agents/_argv_guards.py` for agents that pass the prompt
   positionally. Conservative 120 KB byte cap (UTF-8) leaves headroom
@@ -327,7 +311,7 @@ ships.
   `prompt.md`, `.env.example`, and `Dockerfile`. Intended for users whose
   issue tracker isn't one of the four shipped (Shortcut, Asana, in-house
   REST APIs); the agent is expected to wire the markers up on first run
-  after reading the scaffolded README. _(Upstream parity 0.6.3.)_
+  after reading the scaffolded README.
 - **`resume_session=` precheck + `SessionNotFound` typed error** — `run()`
   now verifies the session JSONL exists on the host before spawning the
   agent (was: agent failed inside the sandbox with a buried "session not
@@ -336,7 +320,7 @@ ships.
   orchestrator skips the precheck silently when the agent's storage
   doesn't ship one (back-compat for custom impls). `ClaudeSessionStorage`
   derives the project-slug from `sandbox_cwd`; `CodexSessionStorage` walks
-  its date-nested tree. _(Upstream parity 0.6.1.)_
+  its date-nested tree.
 - **`docker()` / `podman()` resource options** — three new keyword arguments
   on both provider factories (and on `make_container_provider`):
   - `devices: tuple[str, ...] | None = None` — expose host devices via
@@ -347,8 +331,8 @@ ships.
   - `groups: tuple[str | int, ...] | None = None` — add supplementary
     groups to the in-container user via `--group-add`; most commonly
     `("docker",)` for Docker-in-Docker setups bind-mounting the host
-    socket. _(Upstream parity 0.6.0.)_
-- **opencode `parse_stream` parser + `--format json` + `--dangerously-skip-permissions` + `agent=` mode** — `opencode()` now ships a dedicated `_OpenCodeAgent` class (mirroring `_CodexAgent`) instead of the thin `cli_agent` wrapper. Builds the invocation `opencode run --format json --model <model> [--variant <v>] [--agent <name>] [--dangerously-skip-permissions] [extra_args ...] <prompt>` and parses opencode's JSONL events (`step_start` → `session_id`, `text` → `text`, `tool_use` (`state.status=="completed"`) → `tool_call`, `error` → `text`). Without `--format json` opencode would emit free-form text and Eden would silently drop session ids and tool calls. The new `agent=` kwarg maps to `--agent build` / `--agent plan` for opencode's named modes. _(Upstream parity 0.6.0.)_
+    socket.
+- **opencode `parse_stream` parser + `--format json` + `--dangerously-skip-permissions` + `agent=` mode** — `opencode()` now ships a dedicated `_OpenCodeAgent` class (mirroring `_CodexAgent`) instead of the thin `cli_agent` wrapper. Builds the invocation `opencode run --format json --model <model> [--variant <v>] [--agent <name>] [--dangerously-skip-permissions] [extra_args ...] <prompt>` and parses opencode's JSONL events (`step_start` → `session_id`, `text` → `text`, `tool_use` (`state.status=="completed"`) → `tool_call`, `error` → `text`). Without `--format json` opencode would emit free-form text and Eden would silently drop session ids and tool calls. The new `agent=` kwarg maps to `--agent build` / `--agent plan` for opencode's named modes.
 - **Host-side git subprocess timeouts** — every host-side `git` invocation (`eden/worktree/_git.py:_run_git`, `branch_exists`, `eden/orchestrator/_setup.py:resolve_target_branch`) now runs with a 60 s deadline. Wedged local git (NFS stall, filesystem repair, runaway hook) raises the new typed `GitCommandTimeout` instead of hanging Eden indefinitely. `_run_git()` accepts a `timeout=` override.
 - **Codex per-iteration token usage** — the codex `parse_stream` parser now
   decodes `{"type":"turn.completed","usage":{...}}` events into
@@ -356,24 +340,22 @@ ships.
   orchestrator's per-iteration "Context window: NNNk" display works for
   codex runs (matches claude_code). Codex's `cached_input_tokens` maps to
   Eden's `cache_read_input_tokens`; `input_tokens` is reported net of cache
-  hits so the split mirrors Claude's accounting. _(Upstream parity 0.6.2.)_
+  hits so the split mirrors Claude's accounting.
 
 ### Fixed
 
 - **Beads `bd close` template** now passes `--reason="..."` instead of a
   positional argument; current Beads releases reject the positional form,
   silently leaving tasks open even though the agent thought it closed them.
-  _(Upstream parity 0.6.0.)_
 - **GitHub Issues backlog `list_tasks_command`** now passes `--limit 100`
   (previously defaulted to 30) so the parallel-planner sees the full
-  dependency graph for backlogs over 30 issues. _(Upstream parity 0.6.0.)_
+  dependency graph for backlogs over 30 issues.
 - **Beads Dockerfile detects host arch** (`amd64` / `arm64` from `uname -m`)
   before downloading the `bd-linux-<arch>` binary; previously hard-coded to
   `amd64` and would 404 on arm64 hosts.
 - **GH_TOKEN `.env.example` comment** now links the personal-access-token
   creation page and lists the required scopes (Issues R/W, Metadata R), so
-  silent 403s from under-scoped tokens are easier to diagnose. _(Upstream
-  parity 0.6.0.)_
+  silent 403s from under-scoped tokens are easier to diagnose.
 
 ### Added
 
@@ -392,8 +374,7 @@ ships.
   date-nested directory tree (`<YYYY>/<MM>/<DD>/rollout-<...>-<id>.jsonl`)
   to locate per-iteration JSONLs. Resume a captured codex session via the
   top-level `run(..., resume_session=<id>)` (requires `max_iterations=1`);
-  the invocation becomes `codex exec resume <id> --json ...`. _(Upstream
-  parity 0.5.0.)_
+  the invocation becomes `codex exec resume <id> --json ...`.
 - **codex command shape now matches the upstream contract** — invocation is
   `codex exec [resume <id>] --json [--dangerously-bypass-approvals-and-sandbox]
   -m <model> [-c model_reasoning_effort="<level>"] [extra_args ...]` with the
@@ -418,7 +399,7 @@ ships.
   `close()` does not remove it) instead of raising `BranchExists`. Only
   meaningful for `BranchStrategy.named(...)`; `merge_to_head` always carves a
   fresh branch and `head` reuses the host repo. Branches that exist but have
-  no on-disk worktree still raise `BranchExists`. _(Upstream parity 0.4.1.)_
+  no on-disk worktree still raise `BranchExists`.
 - **Codex + pi `parse_stream` parsers** — both agents now decode their
   respective JSONL stream formats into structured `StreamEvent`s instead of
   one-line-per-token text noise. Codex maps `thread.started` →
@@ -427,7 +408,7 @@ ships.
   `error` → `text`. Pi maps `message_update` (text_delta) → `text`,
   `tool_execution_start` → `tool_call` for known tools (Bash, WebSearch,
   WebFetch, Agent), `agent_end` → final-message `text`, and
-  `agent_error`/`error` → `text`. _(Upstream parity.)_
+  `agent_error`/`error` → `text`.
 - **`StreamEvent(type="session_id")`** — new variant for agents whose stream
   announces the session id before any usage data is available (e.g. codex's
   `thread.started`). The orchestrator reads `session_id` from this event the
@@ -438,35 +419,30 @@ ships.
   permission prompts inside a sandboxed container. Default `False`. Safe inside
   isolated sandboxes (docker/podman/vercel/daytona/isolated); think twice
   before enabling for `no_sandbox()`. Also propagates to the interactive
-  command path. _(Upstream parity 0.4.6.)_
+  command path.
 - **`codex(effort=...)`** — optional reasoning-effort level (`"low"`, `"medium"`,
   `"high"`, `"xhigh"`). When set, threads
-  `-c model_reasoning_effort="<level>"` into the codex invocation. _(Upstream
-  parity.)_
+  `-c model_reasoning_effort="<level>"` into the codex invocation.
 - **`base_branch` parameter** on `run()`, `create_sandbox()`, `create_worktree()`,
   `interactive()`, and their `eden.aio.*` async wrappers. Overrides the fork
   point of the default `merge_to_head` strategy without forcing the caller to
   construct a `BranchStrategy` by hand. Mutually exclusive with
-  `branch_strategy=` (the strategy already owns `base`). _(Upstream 0.5.6)._
+  `branch_strategy=` (the strategy already owns `base`).
 - **`eden docker build-image` / `eden docker remove-image`** (and `eden podman
   build-image` / `eden podman remove-image`) — Typer sub-apps that wrap the
   `docker`/`podman` CLI against the Dockerfile scaffolded by `eden init`.
   `--image-name` overrides the default `eden:<repo-dir-name>` tag.
-  _(Upstream 0.4.6)._
 - **`Hook(sudo=True)`** — sandbox hooks (`SandboxHooks.on_sandbox_ready` etc.)
   can now elevate their command via `sudo -E -- sh -c …`, useful for in-container
   `apt-get install` setup steps when the sandbox runs as a non-root user. Host
-  hooks reject `sudo=True` (upstream parity — host hooks never elevate).
-  _(Upstream 0.4.3)._
+  hooks reject `sudo=True` — host hooks never elevate.
 - **`parallel-planner-with-review` template** — combines `parallel-planner`'s
   one-planner / N-implementer fan-out with per-branch review running in the
   same `Sandbox` as the implementer (via `create_sandbox` + two `sandbox.run`
   calls). Selectable via `eden init --template parallel-planner-with-review`.
-  _(Upstream 0.4.1)._
 - **Vercel + Daytona `copy_file_in` directory support** — when the host path
   is a directory, the helper tars+gzips it, base64-encodes, ships via a single
-  `exec`, and untars at the target. Files still take the fast path. _(Upstream
-  vercel `copyIn` parity.)_
+  `exec`, and untars at the target. Files still take the fast path.
 - **`AgentError`** — typed error raised when an agent subprocess exits
   non-zero without matching the completion signal. Carries `agent_name`,
   `exit_code`, `stderr`, and `parsed_error` (extracted from stdout for Codex
@@ -491,14 +467,12 @@ ships.
   substitution, no `` !`cmd` `` shell expansion, no `{{SOURCE_BRANCH}}` /
   `{{TARGET_BRANCH}}` injection. File-sourced prompts (`prompt_file=...`)
   still go through the full render pipeline. Move templated prompts to a
-  file or build the string in Python before passing it inline. _(Mirrors
-  upstream's `4032e64`.)_
+  file or build the string in Python before passing it inline.
 - **Prompt arg values are now inert during `` !`cmd` `` expansion.**
   `render_prompt` substitutes built-ins, expands shell blocks from the raw
   template, and substitutes user args last. An arg value containing
   `` !`...` `` text is treated as literal data instead of triggering
-  subprocess execution. _(Mirrors upstream's `6bc4d74`; closes a
-  command-injection vector.)_
+  subprocess execution. _(Closes a command-injection vector.)_
 - **Agent failures fail fast.** A non-zero exit without a completion signal
   now raises `AgentError` immediately, instead of letting the loop wait for
   `idle_timeout` to fire. Surfaces previously-silent agent crashes.

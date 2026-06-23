@@ -58,8 +58,7 @@ def codex(
             to review, and the per-action safety boundary becomes the reviewer
             agent rather than codex's filesystem sandbox (eden's sandbox
             provider still owns the outer boundary). ``"user"`` keeps the
-            default behaviour. Mirrors upstream's
-            ``codex(model, { approvalsReviewer })``.
+            default behaviour.
         extra_args: Escape hatch for unsurfaced codex CLI flags. Appended
             after the standard flags.
         flox_env: Optional path to a directory containing a Flox env

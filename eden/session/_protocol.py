@@ -6,7 +6,7 @@ orchestrator's ``_run_loop`` knew the JSONL transcript lived at
 directory into a container. Other agents (codex, opencode, pi) have
 their own transcript formats and locations.
 
-Upstream's ADR-0012 moved this knowledge per-agent: every agent can
+ADR-0012 moved this knowledge per-agent: every agent can
 expose a ``session_storage`` object that the orchestrator delegates to
 for three things —
 

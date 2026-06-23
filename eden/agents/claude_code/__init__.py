@@ -59,8 +59,7 @@ def claude_code(
             (skip all prompts). Use this instead of the all-or-nothing
             ``dangerously_skip_permissions`` when you want a middle ground —
             e.g. ``"acceptEdits"`` for safe autonomous editing inside a sandbox
-            or ``"plan"`` for a read-only planning iteration. Mirrors
-            upstream's ``claudeCode(model, { permissionMode })``. Mutually
+            or ``"plan"`` for a read-only planning iteration. Mutually
             exclusive with ``dangerously_skip_permissions=True``.
         extra_args: Escape hatch for unsurfaced Claude CLI flags. Inserted
             before the ``--`` prompt separator.

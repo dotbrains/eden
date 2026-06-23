@@ -181,9 +181,8 @@ class _VercelHandle:
         return ExecResult(stdout=stdout, stderr=stderr, exit_code=exit_code)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
-        # Directories are tarred → base64 → exec to untar, mirroring upstream's
-        # ``copyIn`` semantics. Single files take the cheap path: read → b64 →
-        # decode into the target.
+        # Directories are tarred → base64 → exec to untar. Single files take
+        # the cheap path: read → b64 → decode into the target.
         if host.is_dir():
             result = _upload_dir_via_tar(self.exec, host=host, sandbox=sandbox)
             if result.exit_code != 0:

@@ -6,9 +6,6 @@ When :func:`eden.interactive` is called with a prompt that references
 key — instead of failing with :class:`eden.errors.PromptError`. Built-in
 keys (``SOURCE_BRANCH`` / ``TARGET_BRANCH``) are skipped because the
 orchestrator fills them automatically.
-
-Mirrors upstream's ``findMissingPromptArgKeys`` + ``clack.text`` loop
-in ``interactive.ts``.
 """
 
 from __future__ import annotations

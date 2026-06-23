@@ -1,8 +1,7 @@
 """SilentDisplay: records every entry, prints nothing.
 
 The primary use is tests — assert against ``display.entries`` to verify
-the orchestrator emitted what you expected. Equivalent to upstream's
-``SilentDisplay`` layer in ``src/Display.ts``.
+the orchestrator emitted what you expected.
 """
 
 from __future__ import annotations

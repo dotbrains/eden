@@ -35,4 +35,4 @@ The extractor takes the **last** matching block. Agents often "think out loud" w
 
 - [`docs/python-api.md` — Structured output](../python-api.md#structured-output)
 - `eden/output/` — implementation
-- Upstream 0.5.9 introduced the same shape with Standard Schema; this ADR adapts it to Python's looser type ecosystem.
+- This ADR adopts a Standard-Schema-style shape adapted to Python's looser type ecosystem.

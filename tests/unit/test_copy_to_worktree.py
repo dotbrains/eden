@@ -1,7 +1,7 @@
 """Verify ``copy_to_worktree=`` semantics across run() / create_sandbox() /
 interactive(), plus the underlying helper.
 
-Ported from upstream: a list of host-relative file/directory paths copied
+A list of host-relative file/directory paths copied
 into the freshly-carved worktree before host ``on_worktree_ready`` hooks fire.
 Validation is strict (absolute paths, ``..`` traversal, head strategy all
 rejected); collisions overwrite.

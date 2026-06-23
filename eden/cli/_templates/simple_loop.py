@@ -4,7 +4,7 @@ The simple-loop template is a runnable Python entry point that calls
 ``eden.run()`` with a backlog-aware prompt. The prompt template embeds a
 ``!`<list-tasks-command>`` shell expression so the list of open tasks is
 expanded inside the sandbox at iteration time, giving the agent fresh context
-on every loop turn. The rendered files mirror upstream's simple-loop layout.
+on every loop turn.
 """
 
 from __future__ import annotations

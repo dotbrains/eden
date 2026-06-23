@@ -1,6 +1,6 @@
 """Tagged-union dataclasses for the Display ADT.
 
-Ports upstream's ``DisplayEntry`` (``src/Display.ts``) — every kind
+The ``DisplayEntry`` union — every kind
 of thing a `Display` sink can emit is one of these immutable structs.
 Tests use :class:`eden.display.SilentDisplay` to record entries and
 assert against them; production sinks (file / terminal) render them.
