@@ -10,8 +10,6 @@ A three-phase loop:
   on its own named branch.
 - Phase 3 (merge): a single merger agent merges the branches that produced
   commits back into the target branch.
-
-Adapted from sandcastle's parallel-planner template.
 """
 
 from __future__ import annotations

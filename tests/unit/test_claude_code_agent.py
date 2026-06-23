@@ -53,7 +53,7 @@ def test_default_metadata() -> None:
 
 
 def test_model_defaults_to_opus_4_7() -> None:
-    """Sandcastle parity (PR #620): no model arg picks the latest stable Opus."""
+    """No model arg picks the latest stable Opus."""
     a = claude_code()
     assert a.model == "claude-opus-4-7"
 

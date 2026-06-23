@@ -13,8 +13,6 @@ tree directly):
   ``sandbox.run(...)`` on the same branch.
 - Phase 3 (merge): a single merger agent merges the approved branches
   back into the target branch.
-
-Adapted from sandcastle's parallel-planner-with-review template.
 """
 
 from __future__ import annotations

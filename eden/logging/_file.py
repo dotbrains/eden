@@ -101,8 +101,7 @@ class FileLogSink:
         path.parent.mkdir(parents=True, exist_ok=True)
         fp = path.open("a", encoding="utf-8")
         # Per-run delimiter so multiple runs sharing one log file are
-        # visually separable. UTC ISO-8601 with seconds precision; mirrors
-        # sandcastle's "--- Run started: <ts> ---" convention.
+        # visually separable. UTC ISO-8601 with seconds precision.
         ts = datetime.now(UTC).isoformat(timespec="seconds")
         fp.write(f"--- Run started: {ts} ---\n")
         fp.flush()

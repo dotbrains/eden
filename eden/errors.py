@@ -75,8 +75,7 @@ class PromptError(ConfigError):
     non-zero exit from a ``!`command`` shell-block expansion, so a caller
     can branch on it programmatically (e.g. retry only on transient
     codes) without parsing the message string. ``None`` for non-exec
-    failures like missing files or unknown placeholders. Mirrors
-    sandcastle's typed prompt-expansion diagnostics (v0.6.6, b9b9712).
+    failures like missing files or unknown placeholders.
     """
 
     def __init__(

@@ -205,7 +205,6 @@ class Sandbox:
         this container and worktree, so the agent picks up its prior
         conversation in place. ``overrides`` are forwarded to :meth:`run`.
         Raises ``InvalidOptions`` if no prior ``run()`` captured a session.
-        Mirrors sandcastle's ``sandbox.run().resume()`` within a live sandbox.
         """
         return self._continue(prompt, fork=False, overrides=overrides)
 
@@ -270,7 +269,6 @@ def create_sandbox(
     then run AFK; or run agents under different images on one branch).
     Mutually exclusive with ``branch``/``branch_strategy``/``base_branch``,
     whose job (picking the branch) was done when the worktree was carved.
-    Mirrors sandcastle's ``wt.createSandbox(...)``.
 
     ``copy_to_worktree`` is a list of host-relative file/directory paths to
     copy from the host repo into the freshly-carved worktree before the

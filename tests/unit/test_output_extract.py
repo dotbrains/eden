@@ -112,7 +112,7 @@ def test_object_missing_tag_carries_branch_and_preserved() -> None:
 
 
 def test_missing_tag_carries_session_id_and_file_path() -> None:
-    """Port of sandcastle 581dc80: failed extraction surfaces session id."""
+    """Failed extraction surfaces session id."""
     from pathlib import Path
 
     out = Output.object(tag="r", schema=lambda raw: raw)

@@ -35,4 +35,3 @@ This was confirmed feasible for Codex: its sessions are filesystem JSONL rollout
 - [`docs/python-api.md` — `SessionStorage` Protocol](../python-api.md#session-storage).
 - `eden/session/_protocol.py` — Protocol definition.
 - `eden/session/_claude.py` — the one in-tree implementation.
-- Sandcastle ADR-0016 (the upstream design this mirrors) — https://github.com/mattpocock/sandcastle/blob/main/docs/adr/0016-resume-requires-filesystem-backed-sessions.md

@@ -34,15 +34,14 @@ def build_argv(
     ``fork_session``, when ``True``, also appends ``--fork-session`` so
     Claude writes the continuation under a NEW session id, leaving the
     parent JSONL intact for concurrent fan-out. Requires
-    ``resume_session``. Mirrors sandcastle's RunResult.fork() (v0.6.6).
+    ``resume_session``.
     ``dangerously_skip_permissions``, when ``True``, appends
     ``--dangerously-skip-permissions`` so Claude does not block on
     per-tool permission prompts inside a sandboxed container.
     ``permission_mode``, when set, appends ``--permission-mode <mode>`` for
     graduated tool-approval control (``"default"``, ``"acceptEdits"``,
     ``"plan"``, ``"bypassPermissions"``) instead of the all-or-nothing
-    ``dangerously_skip_permissions``. Mirrors sandcastle's
-    ``claudeCode(model, { permissionMode })``. The caller (the ``claude_code``
+    ``dangerously_skip_permissions``. The caller (the ``claude_code``
     factory) enforces that ``permission_mode`` and
     ``dangerously_skip_permissions`` are not both set.
     """

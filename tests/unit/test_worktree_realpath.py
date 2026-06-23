@@ -1,6 +1,6 @@
 """Tests that worktree paths get realpath'd before git ops.
 
-Port of sandcastle PR #491 / commit b6cc84f. Users who symlink their
+Users who symlink their
 ``.eden/`` directory to another disk would otherwise see git's worktree
 records mismatch their symlinked paths.
 """

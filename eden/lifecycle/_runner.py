@@ -39,7 +39,7 @@ def run_host_hooks(
             raise HookFailed(
                 message=(
                     f"host hook {hook.cmd!r} sets sudo=True; sudo is only "
-                    "supported on sandbox hooks (sandcastle parity)"
+                    "supported on sandbox hooks"
                 ),
             )
         deadline = hook.timeout if hook.timeout is not None else timeouts.hook_step

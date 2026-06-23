@@ -31,7 +31,7 @@ def test_unknown_raises() -> None:
 
 
 def test_custom_entry_is_broken_until_configured() -> None:
-    """Sandcastle parity: 'custom' scaffolds <TODO> stubs that the agent
+    """'custom' scaffolds <TODO> stubs that the agent
     wires up on first run. Verify the markers are present so the agent
     has something to find."""
     m = get_backlog_manager("custom")
@@ -43,14 +43,14 @@ def test_custom_entry_is_broken_until_configured() -> None:
 
 
 def test_beads_close_uses_reason_flag() -> None:
-    """Regression guard for sandcastle 0.6.0 fix."""
+    """Regression guard."""
     m = get_backlog_manager("beads")
     assert "--reason" in m.close_task_command
     assert '"Completed by Eden"' in m.close_task_command
 
 
 def test_gh_issue_list_has_limit_100() -> None:
-    """Regression guard for sandcastle 0.6.0 fix."""
+    """Regression guard."""
     m = get_backlog_manager("github")
     assert "--limit 100" in m.list_tasks_command
 

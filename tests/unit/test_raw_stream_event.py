@@ -1,4 +1,4 @@
-"""Unit tests for the verbose ``raw`` StreamEvent (sandcastle v0.10.0 parity)."""
+"""Unit tests for the verbose ``raw`` StreamEvent."""
 
 from __future__ import annotations
 

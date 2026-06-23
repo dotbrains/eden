@@ -12,8 +12,6 @@ first; a captured file in any other encoded dir hits pi's interactive
 "fork session?" prompt, which hangs in print/json mode. So when
 transferring a session into the sandbox for resume we land it under the
 sandbox-cwd-encoded dir, not the host-cwd-encoded dir.
-
-Mirrors sandcastle's pi-resume support (v0.6.6, 932aa70).
 """
 
 from __future__ import annotations
@@ -36,8 +34,7 @@ def encode_pi_session_dir(cwd: Path) -> str:
     """Return pi's ``--<enc>--`` directory name for a given cwd.
 
     Strips the leading separator, replaces ``/``, ``\\``, and ``:`` with
-    ``-``, then wraps in ``--``. Mirrors sandcastle's
-    ``encodePiSessionDir``.
+    ``-``, then wraps in ``--``.
     """
     s = str(cwd)
     s = s.lstrip("/\\")

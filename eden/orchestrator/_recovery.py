@@ -3,8 +3,7 @@
 When ``_run_loop`` is about to raise ``AgentError`` it emits the formatted
 recovery message as a ``StreamEvent`` first, so the user sees actionable
 guidance in the run log even if their caller catches the exception silently.
-The format is copy-pastable shell commands, mirroring sandcastle's
-``buildRecoveryMessage`` style.
+The format is copy-pastable shell commands.
 """
 
 from __future__ import annotations

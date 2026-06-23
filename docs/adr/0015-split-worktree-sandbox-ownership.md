@@ -16,16 +16,16 @@ one container. Flows that outlive a single container have no home:
 - **Crash isolation** — if a container wedges, close it and boot a fresh one
   over the same in-progress worktree instead of losing the branch state.
 
-Sandcastle models this with `createWorktree()` returning a worktree object whose
-`createSandbox()` splits ownership: `sandbox.close()` kills the container only,
+One way to model this is split ownership: a worktree object whose sandbox
+factory yields a sandbox where `sandbox.close()` kills the container only and
 `wt.close()` cleans the worktree. Eden already had the standalone
 `eden.create_worktree()` (returning `WorktreeHandle`), but no way to feed the
 handle back into the sandbox factory.
 
 Two options were considered:
 
-1. **Methods on `WorktreeHandle`** (`wt.run()`, `wt.create_sandbox()`), matching
-   sandcastle's object-oriented surface. Reads nicely but inverts eden's layering
+1. **Methods on `WorktreeHandle`** (`wt.run()`, `wt.create_sandbox()`), an
+   object-oriented surface. Reads nicely but inverts eden's layering
    — `eden.worktree` would import the orchestrator and sandbox factory, creating
    the cycle the package split exists to prevent.
 2. **A `worktree=` parameter on `create_sandbox()`**, keeping the existing
@@ -69,5 +69,4 @@ reusable.
 ## See also
 
 - ADR 0006 (caller-managed sandbox lifecycle) — this extends it one level.
-- Sandcastle's `createWorktree()` / split-ownership `wt.createSandbox()`.
 - `eden/sandboxes/_factory.py`, `eden/worktree/_create.py`.

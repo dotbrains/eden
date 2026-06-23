@@ -1,7 +1,7 @@
 """Test that the public custom-provider surface is importable from the
 top-level `eden` package without reaching into `eden.providers._*`.
 
-The shape and naming mirror sandcastle's documented seam — third-party
+Third-party
 provider authors should be able to depend on `from eden import ...`
 only.
 """

@@ -19,10 +19,9 @@ care about the last lines the agent emitted, not the first:
 * The completion signal match runs line-by-line as it streams, so
   bounding the buffer can't lose a hit that has already fired.
 
-Mirrors sandcastle's ``boundedTail.ts``. The V8-specific failure mode
-(``RangeError: Invalid string length`` past ~512 MB) doesn't apply to
-CPython, but the underlying "unbounded accumulation on long runs" hazard
-does.
+The V8-specific failure mode (``RangeError: Invalid string length``
+past ~512 MB) doesn't apply to CPython, but the underlying "unbounded
+accumulation on long runs" hazard does.
 """
 
 from __future__ import annotations

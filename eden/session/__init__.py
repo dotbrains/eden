@@ -115,8 +115,7 @@ def capture_sidechain_sessions(
     run. Inline sidechain entries (subagents recorded *within* the main
     transcript) need no handling here; they're already in the main capture.
     This covers the separate-file case, notably isolated/cloud providers where
-    only the main session is otherwise pulled back to the host. Mirrors
-    sandcastle's subagent/workflow transcript capture (v0.9.0).
+    only the main session is otherwise pulled back to the host.
     """
     home_path = home if home is not None else Path.home()
     slug = claude_projects_slug(sandbox_cwd)

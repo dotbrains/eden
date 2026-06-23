@@ -1,4 +1,4 @@
-"""Tests for worktree collision detection (port of sandcastle PR #467)."""
+"""Tests for worktree collision detection."""
 
 from __future__ import annotations
 

@@ -1,9 +1,8 @@
 """Shared helper for ``copy_file_in`` directory uploads on exec-only providers.
 
 REST-based providers (Vercel, Daytona) can only move data through ``exec``.
-Mirroring sandcastle's ``copyIn`` semantics, when the host path is a
-directory we tar+gzip it locally, base64-encode, ship as a single ``exec``
-call, then untar inside the sandbox.
+When the host path is a directory we tar+gzip it locally, base64-encode,
+ship as a single ``exec`` call, then untar inside the sandbox.
 """
 
 from __future__ import annotations
@@ -34,8 +33,7 @@ def upload_dir_via_tar(exec_fn: _Exec, *, host: Path, sandbox: Path) -> ExecResu
     """Tar+gzip ``host``, base64-encode, untar at ``sandbox`` inside the box.
 
     Returns the final ``exec`` ``ExecResult`` so the caller can decide how
-    to surface failures. Equivalent to sandcastle's ``copyIn`` directory
-    branch — single round-trip, no streaming.
+    to surface failures. Single round-trip, no streaming.
     """
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:

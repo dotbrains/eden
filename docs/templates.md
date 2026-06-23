@@ -103,7 +103,7 @@ Read source: `eden/cli/_templates/blank.py`.
 
 ## `simple-loop`
 
-A runnable worker that picks open tasks from a backlog manager and processes them one per iteration. Adapted from sandcastle's `simple-loop` template.
+A runnable worker that picks open tasks from a backlog manager and processes them one per iteration.
 
 ```bash
 # GitHub Issues backed (default)
@@ -258,9 +258,9 @@ GitHub Actions scaffold for label-driven agent work:
 eden init --template github-agent-workflows --backlog github --yes
 ```
 
-### What It Ports
+### What It Provides
 
-This template adapts Sandcastle's operational workflow patterns into Eden:
+This template wires up operational workflow patterns in Eden:
 
 - `agent:implement` on an issue starts an implementation workflow.
 - `agent:review` on a pull request starts an automated reviewer.

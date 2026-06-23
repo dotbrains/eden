@@ -1,6 +1,6 @@
 """Verify the bounded-drain behaviour of ``_AgentRunner.drain_remaining``.
 
-The completion-timeout port (sandcastle v0.6.6, ddc26ba) bounds the
+The completion timeout bounds the
 total wall-time spent draining trailing lines after a completion-signal
 match, so a child process that holds the stdout pipe open can't hang
 the iteration until ``idle_timeout`` (10 min) trips.

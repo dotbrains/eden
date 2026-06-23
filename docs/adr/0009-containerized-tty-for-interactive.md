@@ -42,6 +42,5 @@ The `subprocess.run` in `_interactive.py` for `no_sandbox` becomes a single-line
 ## See also
 
 - ADR 0007 — the no_sandbox-only baseline this builds on.
-- Sandcastle 0.4.6 introduced `interactiveExec` on its docker / podman providers with the same shape.
 - `eden/providers/_protocols.py` — `BindMountSandboxHandle` marker.
 - `eden/providers/_impl/container.py`, `eden/sandboxes/no_sandbox/__init__.py` — implementation sites.

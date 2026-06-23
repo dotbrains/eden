@@ -245,7 +245,7 @@ def resume(self, prompt: str, **overrides) -> RunResult: ...
 def fork(self, prompt: str, **overrides) -> RunResult: ...
 ```
 
-Continue (or branch from) the sandbox's **most recent captured session** without threading session ids by hand — `Sandbox` remembers the last `run()`/`resume()`/`fork()` result's `session_id`. `resume()` keeps the same session id; `fork()` starts a fresh id seeded from the parent transcript (leaving the parent untouched, for fanning several follow-ups off one base). Both reuse this container and worktree. `overrides` forward to `run()` (e.g. `agent=`, `output=`, `timeouts=`). Raise `InvalidOptions` if no prior run captured a session. Mirror sandcastle's `RunResult.resume()` / `.fork()` for long-lived sandboxes.
+Continue (or branch from) the sandbox's **most recent captured session** without threading session ids by hand — `Sandbox` remembers the last `run()`/`resume()`/`fork()` result's `session_id`. `resume()` keeps the same session id; `fork()` starts a fresh id seeded from the parent transcript (leaving the parent untouched, for fanning several follow-ups off one base). Both reuse this container and worktree. `overrides` forward to `run()` (e.g. `agent=`, `output=`, `timeouts=`). Raise `InvalidOptions` if no prior run captured a session.
 
 ```python
 with eden.create_sandbox(sandbox=docker_provider(...)) as s:
@@ -329,7 +329,7 @@ Use `Logging.file("run.log")` to capture every event the orchestrator emits. Use
 
 `on_agent_stream_event` (optional) is invoked for every agent-derived event (`text`, `tool_call`, `usage`, `session_id`, and — when `verbose` — `raw`) in addition to sink output. Intended for forwarding the agent's stream to external observability. Idle warnings and orchestrator-internal text are NOT forwarded — use the top-level `on_event` argument to `run()` for those. Errors raised by the callback are swallowed so a broken forwarder cannot kill the run.
 
-`verbose` (optional, default `False`) additionally surfaces each literal, unparsed agent stdout line as a `StreamEvent(type="raw")` — written to the log alongside the human-readable events and forwarded through `on_agent_stream_event`. Lets external observability see the bytes a parser discards (e.g. the JSON envelope behind a `claude --output-format stream-json` line). Mirrors sandcastle's `logging: { verbose: true }`.
+`verbose` (optional, default `False`) additionally surfaces each literal, unparsed agent stdout line as a `StreamEvent(type="raw")` — written to the log alongside the human-readable events and forwarded through `on_agent_stream_event`. Lets external observability see the bytes a parser discards (e.g. the JSON envelope behind a `claude --output-format stream-json` line).
 
 ### `Mount`
 
@@ -510,7 +510,7 @@ except StructuredOutputError as e:
     )
 ```
 
-**`max_retries` automates that loop.** Pass `Output.object(tag=..., schema=..., max_retries=N)` (or `Output.string(tag=..., max_retries=N)`) and `run()` retries on its own when extraction or validation fails: it resumes the failing session with corrective feedback (the failure message + the tag to re-emit), or — for agents without session capture — re-runs the original prompt, up to `N` extra times before raising `StructuredOutputError`. Default `0` (no retry). A negative value raises `InvalidOptions`. Mirrors sandcastle's `Output.object({ maxRetries })`.
+**`max_retries` automates that loop.** Pass `Output.object(tag=..., schema=..., max_retries=N)` (or `Output.string(tag=..., max_retries=N)`) and `run()` retries on its own when extraction or validation fails: it resumes the failing session with corrective feedback (the failure message + the tag to re-emit), or — for agents without session capture — re-runs the original prompt, up to `N` extra times before raising `StructuredOutputError`. Default `0` (no retry). A negative value raises `InvalidOptions`.
 
 ```python
 result = run(
@@ -631,7 +631,7 @@ def claude_code(
 
 Wraps the Claude Code CLI; sets `captures_sessions=True` so the orchestrator preserves session JSONLs under `.eden/sessions/`. Pass `extra_args` for any CLI flag eden does not yet surface.
 
-`permission_mode` gives graduated tool-approval control via `--permission-mode <mode>` (`"default"`, `"acceptEdits"`, `"plan"`, `"bypassPermissions"`) — a middle ground between prompting on every tool and the all-or-nothing `dangerously_skip_permissions`. The two are mutually exclusive; passing `permission_mode` alongside `dangerously_skip_permissions=True`, or an unrecognised mode, raises `InvalidOptions(code="config.invalid_options")`. Mirrors sandcastle's `claudeCode(model, { permissionMode })`. See [agents.md](agents.md#claude_code) for the per-mode semantics.
+`permission_mode` gives graduated tool-approval control via `--permission-mode <mode>` (`"default"`, `"acceptEdits"`, `"plan"`, `"bypassPermissions"`) — a middle ground between prompting on every tool and the all-or-nothing `dangerously_skip_permissions`. The two are mutually exclusive; passing `permission_mode` alongside `dangerously_skip_permissions=True`, or an unrecognised mode, raises `InvalidOptions(code="config.invalid_options")`. See [agents.md](agents.md#claude_code) for the per-mode semantics.
 
 When `capture_sessions=True`, the agent ships a [`session_storage`](#session-storage) attribute of type `ClaudeSessionStorage` that the orchestrator delegates transcript capture to. Out-of-tree agents (codex, pi, opencode wrappers, etc.) can mirror this pattern to plug in their own transcript layout — see the `SessionStorage` Protocol below.
 
@@ -1022,7 +1022,7 @@ Same idea, but the returned handle must expose `finalize(target) -> FinalizeResu
 
 ## Display
 
-A swappable sink abstraction for orchestrator → user output. Eden re-exports the Protocol and three concrete sinks; pass any of them to higher-level CLI / interactive helpers that accept a `display=` argument. Ports sandcastle's tagged `DisplayEntry` ADT (`src/Display.ts`).
+A swappable sink abstraction for orchestrator → user output. Eden re-exports the Protocol and three concrete sinks; pass any of them to higher-level CLI / interactive helpers that accept a `display=` argument. Built on a tagged `DisplayEntry` ADT.
 
 ### `Display`
 

@@ -36,6 +36,5 @@ Agents can override the argv shape per-mode. `claude_code._ClaudeCodeAgent.build
 
 ## See also
 
-- Sandcastle 0.4.6 (`interactive()` API), 0.4.6 (`noSandbox` provider).
 - [`docs/python-api.md` — `interactive`](../python-api.md#interactive).
 - `eden/orchestrator/_interactive.py`, `eden/agents/claude_code/_agent.py` (`build_interactive_command`).

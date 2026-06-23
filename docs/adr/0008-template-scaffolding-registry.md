@@ -33,4 +33,4 @@ The registry deliberately stays small. Each entry is data — five fields, no be
 - `eden/cli/_templates/_backlog.py` — registry definition.
 - `eden/cli/_templates/{simple_loop,sequential_reviewer,parallel_planner}.py` — consumers.
 - [`docs/templates.md`](../templates.md) — user-facing documentation of each template + the `--backlog` matrix.
-- Sandcastle 0.4.6 introduced its equivalent backlog-manager registry with two entries; eden's registry now ships four (`github`, `beads`, `linear`, `jira`) using the same shape.
+- Eden's backlog-manager registry ships four entries (`github`, `beads`, `linear`, `jira`) under a shared shape.

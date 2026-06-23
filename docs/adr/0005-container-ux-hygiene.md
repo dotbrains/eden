@@ -36,6 +36,5 @@ The blank Dockerfile template is updated to declare `ARG AGENT_UID=1000 AGENT_GI
 
 ## See also
 
-- Sandcastle ADR-0014 (UID alignment).
 - [`docs/sandbox-providers.md` — docker provider parameters](../sandbox-providers.md#docker).
 - `eden/providers/_impl/container.py` — `_check_image_uid`, `_mount_spec`, `_expand_sandbox_tilde`.

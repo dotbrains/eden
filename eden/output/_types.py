@@ -75,7 +75,6 @@ class Output:
         validation fails: ``run()`` resumes the failing session with corrective
         feedback (or, for agents without session capture, re-runs the prompt)
         up to ``max_retries`` extra times before raising ``StructuredOutputError``.
-        Mirrors sandcastle's ``Output.object({ maxRetries })``.
         """
         return _OutputObject(tag=tag, schema=schema, max_retries=max_retries)
 

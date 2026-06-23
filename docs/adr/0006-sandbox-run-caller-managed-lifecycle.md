@@ -10,7 +10,7 @@ The original `eden.run()` owned the full lifecycle for one agent invocation: car
 - **Plan → execute → merge** — a planner agent emits a plan; the merger agent merges branches the planner doesn't know about yet. They want different prompts but the same starting state and the same container.
 - **Implement → test → fix loop** — three agents each handling one phase, sharing a worktree.
 
-Sandcastle 0.4.4 solved this with `createSandbox()` returning a `Sandbox` whose `.run()` method reuses the worktree and container. Eden needed the equivalent.
+Eden needed a `create_sandbox()` that returns a `Sandbox` whose `.run()` method reuses the worktree and container across calls.
 
 Three options were considered:
 
@@ -51,6 +51,5 @@ Adopt option 3. `_run_loop` accepts optional `existing_worktree` and `existing_h
 
 ## See also
 
-- Sandcastle 0.4.4 (`createSandbox`), 0.4.6 (interactive equivalent), 0.4.x (sequential-reviewer template).
 - [`docs/python-api.md` — `Sandbox.run`](../python-api.md#sandboxrun).
 - `eden/sandboxes/_factory.py`, `eden/orchestrator/_loop.py` (`caller_managed` branches).

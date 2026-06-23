@@ -6,10 +6,10 @@ orchestrator emits a copy-pastable hint that points the user at the
 isolated worktree and the host target, with an ``rsync`` command to
 complete the merge manually.
 
-Mirrors sandcastle's ``buildRecoveryMessage`` — eden's equivalent of the
-``failedStep`` distinction (commits / diff / untracked) is the snapshot /
-diff / apply model, so the per-step branching collapses into a single
-shape with the failure description carried inline.
+Eden's equivalent of the ``failedStep`` distinction (commits / diff /
+untracked) is the snapshot / diff / apply model, so the per-step
+branching collapses into a single shape with the failure description
+carried inline.
 
 The local isolated provider preserves its temp worktree on failure (via
 ``handle.preserve()``) so the rsync command actually points at a path

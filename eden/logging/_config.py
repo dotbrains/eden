@@ -22,8 +22,7 @@ class Logging:
     unparsed agent stdout line — written to the log alongside the human-readable
     events and forwarded through ``on_agent_stream_event``. Lets external
     observability systems see the bytes a parser discards (e.g. the JSON behind
-    a ``claude`` stream-json line). Off by default. Mirrors sandcastle's
-    ``logging: { verbose: true }`` (v0.10.0)."""
+    a ``claude`` stream-json line). Off by default."""
 
     def __post_init__(self) -> None:
         if self.type not in ("file", "stdout"):
@@ -85,8 +84,7 @@ class Logging:
         to the host process's stdout instead of a log file — useful in CI,
         where the job log is the natural destination and a file under
         ``.eden/logs/`` would go unread. ``RunResult.log_file_path`` is
-        ``None`` for stdout-logged runs. Mirrors sandcastle's
-        ``logging: { type: "stdout" }``.
+        ``None`` for stdout-logged runs.
 
         ``on_agent_stream_event`` and ``verbose`` behave as for :meth:`file`.
         """

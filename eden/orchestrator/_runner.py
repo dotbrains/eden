@@ -146,11 +146,10 @@ class _AgentRunner:
           considered complete; process may still be running.
         * **timeout** — total wall time ``total_timeout`` elapses → drain
           aborted because the agent emitted the completion signal but a
-          child process kept the stdout pipe open. Mirrors sandcastle's
-          ``completionTimeoutSeconds`` (v0.6.6, ddc26ba).
+          child process kept the stdout pipe open.
 
         ``total_timeout=None`` disables the bounded budget — only EOF or
-        idle exit the loop (the pre-v0.6.6 behaviour).
+        idle exit the loop.
         """
         deadline = time.monotonic() + total_timeout if total_timeout is not None else None
         lines: list[str] = []

@@ -229,7 +229,7 @@ def run(
     if max_retries <= 0:
         return _invoke(setup, resume_session, fork_session)
 
-    # Structured-output retry loop (sandcastle's Output maxRetries). On an
+    # Structured-output retry loop (Output maxRetries). On an
     # extraction/validation failure, resume the failing session with corrective
     # feedback so the agent re-emits a valid block without repeating the work;
     # for agents without session capture (no session_id), fall back to a fresh

@@ -9,8 +9,8 @@ from eden.providers._types import FinalizeResult
 def context_window_k(usage: Usage) -> int:
     """Return the context-window size in thousands of tokens, rounded up.
 
-    Sums input + cache-creation + cache-read tokens (matching the formula used
-    by sandcastle's run summary) and rounds up to the nearest 1000.
+    Sums input + cache-creation + cache-read tokens and rounds up to the
+    nearest 1000.
     """
     total = usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
     return -(-total // 1000)
@@ -27,9 +27,9 @@ def format_finalize_line(result: FinalizeResult) -> str:
     ``"[eden] no changes to sync"`` when nothing changed,
     ``"[eden] syncing N file(s) to host (M bytes)"`` when changes applied,
     ``"[eden] sync incomplete: N file(s) attempted (M bytes)"`` when one or
-    more file copies failed during apply. Mirrors sandcastle's commit-aware
-    sync wording while keeping Eden's file-level granularity (Eden's isolated
-    provider works at the file level, not the commit level).
+    more file copies failed during apply. Keeps Eden's file-level
+    granularity (Eden's isolated provider works at the file level, not
+    the commit level).
     """
     n = len(result.files_changed)
     if n == 0:
