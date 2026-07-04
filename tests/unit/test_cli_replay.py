@@ -23,7 +23,7 @@ def _seed(repo: Path, *, branch: str, iteration: int, session_id: str) -> Path:
     path = repo / ".eden" / "sessions" / branch / f"iter-{iteration}-{session_id}.jsonl"
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        json.dumps({"type": "system", "subtype": "init", "model": "claude-opus-4-7"}),
+        json.dumps({"type": "system", "subtype": "init", "model": "claude-opus-4-8"}),
         json.dumps({"type": "user", "message": {"content": "fix the failing test"}}),
         json.dumps(
             {

@@ -10,7 +10,7 @@ from eden.agents.claude_code._agent import _ClaudeCodeAgent
 from eden.agents.claude_code._argv import ClaudePermissionMode
 from eden.errors import InvalidOptions
 
-_DEFAULT_MODEL = "claude-opus-4-7"
+_DEFAULT_MODEL = "claude-opus-4-8"
 
 _VALID_PERMISSION_MODES: tuple[str, ...] = (
     "default",
@@ -36,7 +36,7 @@ def claude_code(
 
     Args:
         model: Claude model id (threaded into ``--model``). Defaults to
-            ``"claude-opus-4-7"`` — bump in lockstep with the
+            ``"claude-opus-4-8"`` — bump in lockstep with the
             latest-stable Opus release; pin explicitly for reproducible
             runs.
         name: Agent identifier (default ``"claude-code"``).

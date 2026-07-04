@@ -10,7 +10,7 @@ pytestmark = pytest.mark.unit
 
 
 def test_minimal_argv() -> None:
-    argv = build_argv(model="claude-opus-4-7", effort=None, extra_args=())
+    argv = build_argv(model="claude-opus-4-8", effort=None, extra_args=())
     assert argv == [
         "claude",
         "--print",
@@ -18,7 +18,7 @@ def test_minimal_argv() -> None:
         "stream-json",
         "--verbose",
         "--model",
-        "claude-opus-4-7",
+        "claude-opus-4-8",
         "-p",
         "-",
     ]

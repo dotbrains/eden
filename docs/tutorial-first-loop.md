@@ -102,7 +102,7 @@ from eden.sandboxes import no_sandbox as sandbox_provider
 
 if __name__ == "__main__":
     result = run(
-        agent=claude_code("claude-opus-4-7"),
+        agent=claude_code("claude-opus-4-8"),
         sandbox=sandbox_provider.provider(),
         prompt_file=".eden/prompt.md",
         max_iterations=3,

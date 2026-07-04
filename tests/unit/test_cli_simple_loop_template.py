@@ -35,7 +35,7 @@ def test_render_simple_loop_files_all_present() -> None:
     files = render_simple_loop(
         sandbox="docker",
         agent="claude-code",
-        model="claude-opus-4-7",
+        model="claude-opus-4-8",
         image_name="eden:test",
         backlog=bg,
     )
