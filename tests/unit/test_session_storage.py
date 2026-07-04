@@ -85,13 +85,13 @@ def test_claude_session_storage_host_capture_locates_jsonl(tmp_path: Path) -> No
 
 
 def test_claude_code_factory_attaches_session_storage_by_default() -> None:
-    agent = claude_code(model="claude-opus-4-7")
+    agent = claude_code(model="claude-opus-4-8")
     assert agent.session_storage is not None
     assert isinstance(agent.session_storage, _ClaudeSessionStorageImpl)
 
 
 def test_claude_code_factory_no_session_storage_when_disabled() -> None:
-    agent = claude_code(model="claude-opus-4-7", capture_sessions=False)
+    agent = claude_code(model="claude-opus-4-8", capture_sessions=False)
     assert agent.session_storage is None
 
 

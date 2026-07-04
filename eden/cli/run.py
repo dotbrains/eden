@@ -110,7 +110,7 @@ def run_command(
         )
 
     default_models: dict[str, str] = {
-        "claude-code": "claude-opus-4-7",
+        "claude-code": "claude-opus-4-8",
         "codex": "gpt-5",
         "opencode": "claude-opus-4",
         "pi": "pi-3.5",

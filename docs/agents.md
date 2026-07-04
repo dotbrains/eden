@@ -91,7 +91,7 @@ None — `build_command` returns an argv that invokes the current Python interpr
 ```python
 from eden import claude_code
 
-agent = claude_code("claude-opus-4-7", effort="high")
+agent = claude_code("claude-opus-4-8", effort="high")
 ```
 
 ### Signature
@@ -393,7 +393,7 @@ Every CLI-backed factory (`claude_code`, `codex`, `opencode`, `pi`, `cursor`, `c
 import eden
 
 agent = eden.claude_code(
-    model="claude-opus-4-7",
+    model="claude-opus-4-8",
     flox_env="envs/claude",  # a dir containing .flox/env/manifest.toml
 )
 ```

@@ -75,7 +75,7 @@ def test_init_main_py_threads_claude_code_default(
     runner.invoke(app, ["init", "--yes"])
     main_py = (repo_dir / ".eden" / "main.py").read_text(encoding="utf-8")
     assert "from eden import run, claude_code" in main_py
-    assert 'claude_code("claude-opus-4-7")' in main_py
+    assert 'claude_code("claude-opus-4-8")' in main_py
 
 
 def test_init_main_py_threads_codex_when_selected(

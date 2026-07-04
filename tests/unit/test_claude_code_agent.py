@@ -46,16 +46,16 @@ def _ctx(prompt: str = "do work") -> IterationContext:
 
 
 def test_default_metadata() -> None:
-    a = claude_code(model="claude-opus-4-7")
+    a = claude_code(model="claude-opus-4-8")
     assert a.name == "claude-code"
-    assert a.model == "claude-opus-4-7"
+    assert a.model == "claude-opus-4-8"
     assert isinstance(a, Agent)
 
 
-def test_model_defaults_to_opus_4_7() -> None:
+def test_model_defaults_to_opus_4_8() -> None:
     """No model arg picks the latest stable Opus."""
     a = claude_code()
-    assert a.model == "claude-opus-4-7"
+    assert a.model == "claude-opus-4-8"
 
 
 def test_explicit_model_overrides_default() -> None:

@@ -64,14 +64,14 @@ def test_main_py_threads_create_sandbox_and_named_branch() -> None:
     files = render_sequential_reviewer(
         sandbox="docker",
         agent="claude-code",
-        model="claude-opus-4-7",
+        model="claude-opus-4-8",
         image_name="eden:t",
         backlog=get_backlog_manager("github"),
     )
     main = files["main.py"]
     assert "from eden import claude_code, create_sandbox" in main
     assert "BranchStrategy.named(branch)" in main
-    assert 'claude_code("claude-opus-4-7")' in main
+    assert 'claude_code("claude-opus-4-8")' in main
     # Two sandbox.run() calls (implementer + reviewer)
     assert main.count("sandbox.run(") == 2
 

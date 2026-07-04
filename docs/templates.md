@@ -40,7 +40,7 @@ A placeholder describing the prompt template's substitution rules. Replace the b
 
 #### `.eden/main.py`
 
-A runnable entry point that imports the chosen agent factory and sandbox provider, then calls `eden.run(...)` with `prompt_file=".eden/prompt.md"` and `max_iterations=5`. The rendered file picks the agent factory and sandbox module based on the flags passed to `eden init`. For `--sandbox docker --agent claude-code --model claude-opus-4-7 --image-name eden:demo`, you get:
+A runnable entry point that imports the chosen agent factory and sandbox provider, then calls `eden.run(...)` with `prompt_file=".eden/prompt.md"` and `max_iterations=5`. The rendered file picks the agent factory and sandbox module based on the flags passed to `eden init`. For `--sandbox docker --agent claude-code --model claude-opus-4-8 --image-name eden:demo`, you get:
 
 ```python
 """Entry point for this Eden project.
@@ -54,7 +54,7 @@ from eden.sandboxes import docker as sandbox_provider
 
 if __name__ == "__main__":
     result = run(
-        agent=claude_code("claude-opus-4-7"),
+        agent=claude_code("claude-opus-4-8"),
         sandbox=sandbox_provider.provider(image="eden:demo"),
         prompt_file=".eden/prompt.md",
         max_iterations=5,
@@ -243,7 +243,7 @@ Splitting "decide what to do" from "do it" gives the planner a chance to think a
 ### Customizing
 
 - Tighten `MAX_TASKS` in `main.py`.
-- Use a larger model for the planner (`claude-opus-4-7`) and a faster one for the implementer/reviewer (`claude-sonnet-4-6`) — edit `_AGENT_CALL` and the call sites.
+- Use a larger model for the planner (`claude-opus-4-8`) and a faster one for the implementer/reviewer (`claude-sonnet-4-6`) — edit `_AGENT_CALL` and the call sites.
 - The reviewer is intentionally idempotent: if the diff is clean it approves. Tune `CODING_STANDARDS.md` to project taste.
 
 Read source: `eden/cli/_templates/plan_implement_review.py`.

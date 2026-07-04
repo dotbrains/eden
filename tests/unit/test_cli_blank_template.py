@@ -13,7 +13,7 @@ def _render(**overrides: str) -> dict[str, str]:
     defaults = {
         "sandbox": "docker",
         "agent": "claude-code",
-        "model": "claude-opus-4-7",
+        "model": "claude-opus-4-8",
         "image_name": "eden:my-repo",
     }
     defaults.update(overrides)
@@ -37,9 +37,9 @@ def test_dockerfile_uses_python_3_13_slim() -> None:
 
 
 def test_main_py_includes_claude_code_import_for_claude_code_agent() -> None:
-    out = _render(agent="claude-code", model="claude-opus-4-7")
+    out = _render(agent="claude-code", model="claude-opus-4-8")
     assert "from eden import run, claude_code" in out["main.py"]
-    assert 'claude_code("claude-opus-4-7")' in out["main.py"]
+    assert 'claude_code("claude-opus-4-8")' in out["main.py"]
 
 
 def test_main_py_includes_codex_import_for_codex_agent() -> None:

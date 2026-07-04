@@ -32,7 +32,7 @@ When `--model` is omitted, the default depends on `--agent`:
 
 | Agent | Default model |
 |---|---|
-| `claude-code` | `claude-opus-4-7` |
+| `claude-code` | `claude-opus-4-8` |
 | `codex` | `gpt-5` |
 | `opencode` | `claude-opus-4` |
 | `pi` | `pi-3.5` |

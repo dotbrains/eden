@@ -31,7 +31,7 @@ def test_render_files_all_present() -> None:
     files = render_plan_implement_review(
         sandbox="docker",
         agent="claude-code",
-        model="claude-opus-4-7",
+        model="claude-opus-4-8",
         image_name="eden:test",
         backlog=get_backlog_manager("github"),
     )
