@@ -18,6 +18,7 @@ from eden.display._types import (
     StatusEntry,
     SummaryEntry,
     TaskLogEntry,
+    TextChunkEntry,
     TextEntry,
     ToolCallEntry,
 )
@@ -35,6 +36,9 @@ class SilentDisplay:
 
     def text(self, message: str) -> None:
         self.entries.append(TextEntry(message=message))
+
+    def text_chunk(self, chunk: str) -> None:
+        self.entries.append(TextChunkEntry(message=chunk))
 
     def tool_call(self, name: str, formatted_args: str) -> None:
         self.entries.append(ToolCallEntry(name=name, formatted_args=formatted_args))

@@ -23,6 +23,7 @@ def _now() -> str:
 class FileDisplay:
     def __init__(self, path: Path) -> None:
         self._path = path
+        self._mid_line = False
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._delimiter()
 
@@ -33,12 +34,23 @@ class FileDisplay:
     def _delimiter(self) -> None:
         with self._path.open("a", encoding="utf-8") as f:
             f.write(f"\n--- Run started: {_now()} ---\n")
+        self._mid_line = False
 
     def _append(self, line: str) -> None:
         with self._path.open("a", encoding="utf-8") as f:
+            if self._mid_line:
+                f.write("\n")
             f.write(line)
             if not line.endswith("\n"):
                 f.write("\n")
+        self._mid_line = False
+
+    def _append_raw(self, chunk: str) -> None:
+        if not chunk:
+            return
+        with self._path.open("a", encoding="utf-8") as f:
+            f.write(chunk)
+        self._mid_line = not chunk.endswith("\n")
 
     def intro(self, title: str) -> None:
         # FileDisplay deliberately skips the intro banner — file logs
@@ -52,6 +64,9 @@ class FileDisplay:
 
     def text(self, message: str) -> None:
         self._append(message)
+
+    def text_chunk(self, chunk: str) -> None:
+        self._append_raw(chunk)
 
     def tool_call(self, name: str, formatted_args: str) -> None:
         self._append(f"{name}({formatted_args})")

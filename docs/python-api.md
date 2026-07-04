@@ -1031,6 +1031,7 @@ class Display(Protocol):
     def intro(self, title: str) -> None: ...
     def status(self, message: str, severity: Severity = "info") -> None: ...
     def text(self, message: str) -> None: ...
+    def text_chunk(self, chunk: str) -> None: ...
     def tool_call(self, name: str, formatted_args: str) -> None: ...
     def summary(self, title: str, rows: Mapping[str, str]) -> None: ...
     @contextmanager
@@ -1039,11 +1040,11 @@ class Display(Protocol):
     def task_log(self, title: str) -> Iterator[Callable[[str], None]]: ...
 ```
 
-`Severity` is one of `"info" | "success" | "warn" | "error"`. The two context managers wrap long-running blocks: `spinner` for an indeterminate progress indicator; `task_log` for collecting per-step messages and emitting them on exit (the yielded callable pushes messages into the log).
+`Severity` is one of `"info" | "success" | "warn" | "error"`. `text()` emits a line-oriented message; `text_chunk()` emits raw streaming text with no implied newline, so adjacent chunks render as contiguous prose. The two context managers wrap long-running blocks: `spinner` for an indeterminate progress indicator; `task_log` for collecting per-step messages and emitting them on exit (the yielded callable pushes messages into the log).
 
 ### `DisplayEntry`
 
-Tagged-union of `IntroEntry | StatusEntry | SpinnerEntry | SummaryEntry | TaskLogEntry | TextEntry | ToolCallEntry`. Each has a `.tag` literal and the relevant payload fields. Used by `SilentDisplay` to record everything for test assertions.
+Tagged-union of `IntroEntry | StatusEntry | SpinnerEntry | SummaryEntry | TaskLogEntry | TextEntry | TextChunkEntry | ToolCallEntry`. Each has a `.tag` literal and the relevant payload fields. Used by `SilentDisplay` to record everything for test assertions.
 
 ### `SilentDisplay`
 
@@ -1061,7 +1062,7 @@ Records every entry on `.entries`, prints nothing. The test sink.
 display = FileDisplay(Path(".eden/logs/run.log"))
 ```
 
-Append-only file sink with timestamped delimiter on construction. Spinners and task logs record their duration. Suitable for unattended / CI runs.
+Append-only file sink with timestamped delimiter on construction. Spinners and task logs record their duration. `text_chunk()` writes chunks verbatim, and later line-oriented entries start on a fresh line if a chunk ended mid-line. Suitable for unattended / CI runs.
 
 ### `RichDisplay`
 

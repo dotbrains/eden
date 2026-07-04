@@ -55,6 +55,12 @@ class TextEntry:
 
 
 @dataclass(frozen=True)
+class TextChunkEntry:
+    message: str
+    tag: Literal["textChunk"] = "textChunk"
+
+
+@dataclass(frozen=True)
 class ToolCallEntry:
     name: str
     formatted_args: str
@@ -68,6 +74,7 @@ DisplayEntry = (
     | SummaryEntry
     | TaskLogEntry
     | TextEntry
+    | TextChunkEntry
     | ToolCallEntry
 )
 
@@ -80,6 +87,7 @@ __all__ = [
     "StatusEntry",
     "SummaryEntry",
     "TaskLogEntry",
+    "TextChunkEntry",
     "TextEntry",
     "ToolCallEntry",
 ]
