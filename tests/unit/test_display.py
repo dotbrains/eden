@@ -14,6 +14,7 @@ from eden.display._types import (
     StatusEntry,
     SummaryEntry,
     TaskLogEntry,
+    TextChunkEntry,
     TextEntry,
     ToolCallEntry,
 )
@@ -46,11 +47,13 @@ def test_silent_records_intro_and_status() -> None:
 def test_silent_records_text_tool_call_summary() -> None:
     s = SilentDisplay()
     s.text("hello")
+    s.text_chunk(" streamed")
     s.tool_call("Bash", "ls -la")
     s.summary("Run done", {"branch": "main", "duration": "5s"})
     assert isinstance(s.entries[0], TextEntry)
-    assert isinstance(s.entries[1], ToolCallEntry)
-    summary = s.entries[2]
+    assert isinstance(s.entries[1], TextChunkEntry)
+    assert isinstance(s.entries[2], ToolCallEntry)
+    summary = s.entries[3]
     assert isinstance(summary, SummaryEntry)
     assert summary.title == "Run done"
     assert summary.rows == {"branch": "main", "duration": "5s"}
@@ -93,6 +96,32 @@ def test_file_display_appends_text(tmp_path: Path) -> None:
     assert "hello" in content
     assert "world" in content
     assert "Run started" in content  # delimiter
+
+
+def test_file_display_appends_text_chunks_without_newlines(tmp_path: Path) -> None:
+    log = tmp_path / "run.log"
+    sink = FileDisplay(log)
+    sink.text_chunk("Now I have")
+    sink.text_chunk(" a clear picture.")
+    content = log.read_text()
+    assert "Now I have a clear picture." in content
+    assert "Now I have\n a clear picture." not in content
+
+
+def test_file_display_line_entries_start_after_partial_chunk(tmp_path: Path) -> None:
+    log = tmp_path / "run.log"
+    sink = FileDisplay(log)
+    sink.text_chunk("partial agent output")
+    sink.tool_call("Read", "file.py")
+    assert "partial agent output\nRead(file.py)\n" in log.read_text()
+
+
+def test_file_display_preserves_chunk_newline_before_line_entries(tmp_path: Path) -> None:
+    log = tmp_path / "run.log"
+    sink = FileDisplay(log)
+    sink.text_chunk("agent output\n")
+    sink.status("done")
+    assert "agent output\ndone\n" in log.read_text()
 
 
 def test_file_display_records_summary(tmp_path: Path) -> None:
@@ -203,6 +232,15 @@ def test_rich_display_text_writes_to_stream() -> None:
     sink = RichDisplay(console=console)
     sink.text("hello world")
     assert "hello world" in buf.getvalue()
+
+
+def test_rich_display_text_chunk_writes_without_newline() -> None:
+    console, buf = _capturing_console()
+    sink = RichDisplay(console=console)
+    sink.text_chunk("hello")
+    sink.text_chunk(" world")
+    assert "hello world" in buf.getvalue()
+    assert "hello\n world" not in buf.getvalue()
 
 
 def test_rich_display_status_includes_message() -> None:

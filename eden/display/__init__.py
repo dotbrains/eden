@@ -26,6 +26,7 @@ from eden.display._types import (
     StatusEntry,
     SummaryEntry,
     TaskLogEntry,
+    TextChunkEntry,
     TextEntry,
     ToolCallEntry,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "StatusEntry",
     "SummaryEntry",
     "TaskLogEntry",
+    "TextChunkEntry",
     "TextEntry",
     "ToolCallEntry",
 ]

@@ -48,6 +48,9 @@ class RichDisplay:
     def text(self, message: str) -> None:
         self._console.print(message)
 
+    def text_chunk(self, chunk: str) -> None:
+        self._console.print(chunk, end="")
+
     def tool_call(self, name: str, formatted_args: str) -> None:
         self._console.print(f"[dim]{name}({formatted_args})[/dim]")
 

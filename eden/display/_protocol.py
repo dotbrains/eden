@@ -5,6 +5,7 @@ A ``Display`` accepts seven kinds of events:
 * ``intro(title)`` — banner at the top of a run.
 * ``status(message, severity)`` — single-line status, severity tagged.
 * ``text(message)`` — plain message line.
+* ``text_chunk(chunk)`` — raw streaming text with no implied line break.
 * ``tool_call(name, formatted_args)`` — agent tool invocation, distinct
   from regular text so terminal sinks can dim or indent.
 * ``summary(title, rows)`` — boxed key/value summary at end of run.
@@ -37,6 +38,8 @@ class Display(Protocol):
     def status(self, message: str, severity: Severity = "info") -> None: ...
 
     def text(self, message: str) -> None: ...
+
+    def text_chunk(self, chunk: str) -> None: ...
 
     def tool_call(self, name: str, formatted_args: str) -> None: ...
 
