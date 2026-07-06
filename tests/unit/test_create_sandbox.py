@@ -25,6 +25,7 @@ pytestmark = pytest.mark.unit
 class _StubHandle:
     worktree_path: Path
     closed: list[bool] = field(default_factory=lambda: [False])
+    exec_calls: list[dict[str, object]] = field(default_factory=list)
 
     def exec(
         self,
@@ -36,7 +37,19 @@ class _StubHandle:
         timeout: float | None = None,
         stdin: str | None = None,
     ) -> ExecResult:
-        return ExecResult(stdout="", stderr="", exit_code=0)
+        self.exec_calls.append(
+            {
+                "cmd": cmd,
+                "on_line": on_line,
+                "cwd": cwd,
+                "env": env,
+                "timeout": timeout,
+                "stdin": stdin,
+            }
+        )
+        if on_line is not None:
+            on_line("line")
+        return ExecResult(stdout="ok", stderr="", exit_code=0)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
         return None
@@ -199,6 +212,74 @@ def test_cwd_stored_on_sandbox(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPat
     s = create_sandbox(sandbox=p, cwd=Path("/some/cwd"))
     try:
         assert s.cwd == Path("/some/cwd")
+    finally:
+        s.close()
+
+
+def test_sandbox_exec_delegates_to_handle_with_default_cwd(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    s = create_sandbox(sandbox=p)
+    try:
+        handle = s.handle
+        assert isinstance(handle, _StubHandle)
+        result = s.exec("pwd")
+        assert result == ExecResult(stdout="ok", stderr="", exit_code=0)
+        assert handle.exec_calls == [
+            {
+                "cmd": "pwd",
+                "on_line": None,
+                "cwd": s.worktree.worktree_path,
+                "env": None,
+                "timeout": None,
+                "stdin": None,
+            }
+        ]
+    finally:
+        s.close()
+
+
+def test_sandbox_exec_forwards_options(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    seen_lines: list[str] = []
+    on_line = seen_lines.append
+    s = create_sandbox(sandbox=p, cwd=Path("/repo/subdir"))
+    try:
+        handle = s.handle
+        assert isinstance(handle, _StubHandle)
+        s.exec(
+            "cat",
+            on_line=on_line,
+            env={"A": "B"},
+            timeout=2.5,
+            stdin="input",
+        )
+        assert seen_lines == ["line"]
+        call = handle.exec_calls[0]
+        assert call["cmd"] == "cat"
+        assert call["on_line"] is on_line
+        assert call["cwd"] == Path("/repo/subdir")
+        assert call["env"] == {"A": "B"}
+        assert call["timeout"] == 2.5
+        assert call["stdin"] == "input"
+    finally:
+        s.close()
+
+
+def test_sandbox_exec_explicit_cwd_overrides_sandbox_cwd(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    s = create_sandbox(sandbox=p, cwd=Path("/repo/subdir"))
+    try:
+        handle = s.handle
+        assert isinstance(handle, _StubHandle)
+        s.exec("pwd", cwd=Path("/tmp"))
+        assert handle.exec_calls[0]["cwd"] == Path("/tmp")
     finally:
         s.close()
 
