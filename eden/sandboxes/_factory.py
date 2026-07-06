@@ -16,7 +16,7 @@ from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.providers._protocols import SandboxHandle, SandboxProvider
-from eden.providers._types import BranchStrategy, CreateOptions, Mount
+from eden.providers._types import BranchStrategy, CreateOptions, ExecResult, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.streaming import StreamEvent
 from eden.worktree._create import WorktreeHandle, create_worktree
@@ -78,6 +78,31 @@ class Sandbox:
             raise
         if self.owns_worktree:
             self.worktree.close()
+
+    def exec(
+        self,
+        cmd: str,
+        *,
+        on_line: Callable[[str], None] | None = None,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+        timeout: float | timedelta | None = None,
+        stdin: str | None = None,
+    ) -> ExecResult:
+        """Run ``cmd`` inside this reusable sandbox.
+
+        ``cwd`` defaults to the sandbox's configured cwd, or the worktree path
+        when no cwd was configured. Non-zero exit codes are returned in the
+        provider's ``ExecResult``; call ``result.check()`` for strict behavior.
+        """
+        return self.handle.exec(
+            cmd,
+            on_line=on_line,
+            cwd=cwd if cwd is not None else self.cwd or self.worktree.worktree_path,
+            env=env,
+            timeout=_maybe_seconds(timeout),
+            stdin=stdin,
+        )
 
     def run(
         self,

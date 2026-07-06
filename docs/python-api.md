@@ -11,7 +11,7 @@ Eden's surface is a single module. Import what you need from `eden`; nothing pri
 ```python
 from eden import (
     run, create_worktree,
-    RunResult, Iteration, Commit, Usage, Timeouts, Mount, FinalizeResult,
+    RunResult, Iteration, Commit, Usage, Timeouts, Mount, ExecResult, FinalizeResult,
     BranchStrategy, StreamEvent, Logging,
     AbortController, AbortSignal, Aborted,
     Agent, IterationContext,
@@ -223,7 +223,19 @@ with eden.create_worktree(branch="eden/feature/x") as wt:
 
 `timeouts` caps the one-time carve's git plumbing via `Timeouts.git_setup` (reused by `Sandbox.close()` for the teardown `git worktree remove`). Per-run deadlines like `iteration_step` are passed separately to each [`Sandbox.run(timeouts=...)`](#sandboxrun).
 
-The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus `.run(...)` / `.resume(...)` / `.fork(...)` methods. It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
+The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus `.exec(...)` / `.run(...)` / `.resume(...)` / `.fork(...)` methods. It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
+
+### `Sandbox.exec(...)`
+
+Runs an arbitrary command in an existing sandbox and returns the provider's [`ExecResult`](#execresult). This is useful for setup, inspection, or lightweight commands between agent runs without creating a new container/worktree.
+
+```python
+result = s.exec("python -m pytest tests/unit/test_example.py", timeout=120)
+if not result.ok:
+    result.check()
+```
+
+Keyword options mirror `SandboxHandle.exec(...)`: `on_line`, `cwd`, `env`, `timeout`, and `stdin`. `cwd` defaults to the sandbox's configured `cwd`, or the worktree path when no sandbox cwd was configured. Non-zero exit codes are returned, not raised; call `result.check()` for strict behavior.
 
 ### `Sandbox.run(...)`
 
