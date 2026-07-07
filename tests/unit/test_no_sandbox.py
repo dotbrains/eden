@@ -13,6 +13,17 @@ from eden.sandboxes.no_sandbox import provider
 pytestmark = pytest.mark.unit
 
 
+def _opts(tmp_path: Path) -> CreateOptions:
+    return CreateOptions(
+        branch="main",
+        worktree_path=tmp_path,
+        host_repo_path=tmp_path,
+        env={},
+        mounts=(),
+        name_hint=None,
+    )
+
+
 def test_provider_metadata() -> None:
     p = provider()
     assert p.name == "no_sandbox"
@@ -62,6 +73,45 @@ def test_handle_exec_explicit_cwd_overrides(tmp_path: Path) -> None:
             cwd=sub,
         )
         assert str(sub) in result.stdout
+    finally:
+        handle.close()
+
+
+def test_provider_bounds_streamed_exec_result(tmp_path: Path) -> None:
+    handle = provider(max_output_tail_chars=12).create(_opts(tmp_path))
+    try:
+        seen: list[str] = []
+        result = handle.exec(
+            f"\"{sys.executable}\" -c \"print('alpha'); print('beta'); print('gamma')\"",
+            on_line=seen.append,
+        )
+        assert seen == ["alpha", "beta", "gamma"]
+        assert len(result.stdout) <= 12
+        assert "gamma" in result.stdout
+        assert "alpha" not in result.stdout
+    finally:
+        handle.close()
+
+
+def test_provider_env_flows_to_exec(tmp_path: Path) -> None:
+    handle = provider(env={"EDEN_NO_SANDBOX_TEST": "provider"}).create(_opts(tmp_path))
+    try:
+        result = handle.exec(
+            f'"{sys.executable}" -c "import os; print(os.environ[\'EDEN_NO_SANDBOX_TEST\'])"'
+        )
+        assert result.stdout.strip() == "provider"
+    finally:
+        handle.close()
+
+
+def test_exec_env_overrides_provider_env(tmp_path: Path) -> None:
+    handle = provider(env={"EDEN_NO_SANDBOX_TEST": "provider"}).create(_opts(tmp_path))
+    try:
+        result = handle.exec(
+            f'"{sys.executable}" -c "import os; print(os.environ[\'EDEN_NO_SANDBOX_TEST\'])"',
+            env={"EDEN_NO_SANDBOX_TEST": "call"},
+        )
+        assert result.stdout.strip() == "call"
     finally:
         handle.close()
 

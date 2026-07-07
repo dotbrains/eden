@@ -60,6 +60,32 @@ def test_on_line_callback_invoked_per_line() -> None:
     assert "b" in seen
 
 
+def test_streamed_result_stdout_can_be_bounded() -> None:
+    seen: list[str] = []
+    result = stream_exec(
+        [sys.executable, "-c", "print('alpha'); print('beta'); print('gamma')"],
+        cmd_for_error="python -c print",
+        shell=False,
+        on_line=seen.append,
+        max_output_tail_chars=12,
+    )
+    assert seen == ["alpha", "beta", "gamma"]
+    assert len(result.stdout) <= 12
+    assert "gamma" in result.stdout
+    assert "alpha" not in result.stdout
+
+
+def test_output_tail_bound_only_applies_to_streamed_exec() -> None:
+    result = stream_exec(
+        [sys.executable, "-c", "print('alpha'); print('beta'); print('gamma')"],
+        cmd_for_error="python -c print",
+        shell=False,
+        max_output_tail_chars=12,
+    )
+    assert "alpha" in result.stdout
+    assert "gamma" in result.stdout
+
+
 def test_shell_mode_uses_shell() -> None:
     result = stream_exec(
         "echo shellmode",

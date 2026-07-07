@@ -16,11 +16,14 @@ from eden.providers._protocols import (
 )
 from eden.providers._types import CreateOptions, ExecResult
 from eden.sandboxes._exec import stream_exec
+from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
 
 @dataclass
 class _NoSandboxHandle:
     worktree_path: Path
+    max_output_tail_chars: int
+    base_env: Mapping[str, str]
 
     def exec(
         self,
@@ -37,10 +40,11 @@ class _NoSandboxHandle:
             cmd_for_error=cmd,
             shell=True,
             cwd=cwd or self.worktree_path,
-            env=env,
+            env={**dict(self.base_env), **dict(env or {})},
             on_line=on_line,
             timeout=timeout,
             stdin=stdin,
+            max_output_tail_chars=self.max_output_tail_chars,
         )
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
@@ -74,14 +78,30 @@ class _NoSandboxHandle:
         return None
 
 
-def _create_no_sandbox(opts: CreateOptions) -> BindMountSandboxHandle:
-    return _NoSandboxHandle(worktree_path=opts.worktree_path)
+def _make_create_no_sandbox(
+    *, max_output_tail_chars: int, provider_env: Mapping[str, str]
+) -> Callable[[CreateOptions], BindMountSandboxHandle]:
+    def _create_no_sandbox(opts: CreateOptions) -> BindMountSandboxHandle:
+        return _NoSandboxHandle(
+            worktree_path=opts.worktree_path,
+            max_output_tail_chars=max_output_tail_chars,
+            base_env={**dict(provider_env), **dict(opts.env)},
+        )
+
+    return _create_no_sandbox
 
 
-def provider() -> SandboxProvider:
+def provider(
+    *,
+    env: Mapping[str, str] | None = None,
+    max_output_tail_chars: int = DEFAULT_MAX_CHARS,
+) -> SandboxProvider:
     return make_bind_mount_provider(
         name="no_sandbox",
-        create=_create_no_sandbox,
+        create=_make_create_no_sandbox(
+            max_output_tail_chars=max_output_tail_chars,
+            provider_env=dict(env or {}),
+        ),
         supported_strategies=frozenset({"head", "merge_to_head", "named"}),
     )
 

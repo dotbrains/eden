@@ -355,6 +355,10 @@ class Mount:
     read_only: bool = False
 ```
 
+Container providers resolve `sandbox` paths before launching the runtime:
+absolute paths are used as-is, paths beginning with `~` expand under
+`/home/agent`, and relative paths resolve under `/workspace`.
+
 ### `BranchStrategy`
 
 Frozen dataclass with three named constructors describing how the worktree branch relates to `base`:

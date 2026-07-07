@@ -26,13 +26,21 @@ from eden.sandboxes.errors import (
     MountConfigError,
     ProviderUnavailable,
 )
+from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
 _NAME_RE = re.compile(r"[^a-z0-9-]+")
+_IMAGE_TAG_RE = re.compile(r"[^a-z0-9_.-]+")
 
 
 def _sanitize_container_seed(s: str) -> str:
     out = _NAME_RE.sub("-", s.lower()).strip("-")
     return out or "eden"
+
+
+def _default_image_name(repo_path: Path) -> str:
+    repo_name = repo_path.name.lower()
+    tag = _IMAGE_TAG_RE.sub("-", repo_name).strip("-")
+    return f"eden:{tag or 'local'}"
 
 
 @dataclass
@@ -41,6 +49,7 @@ class _ContainerHandle:
     container_id: str
     worktree_path: Path
     host_worktree_path: Path
+    max_output_tail_chars: int = DEFAULT_MAX_CHARS
 
     def exec(
         self,
@@ -69,6 +78,7 @@ class _ContainerHandle:
             on_line=on_line,
             timeout=timeout,
             stdin=stdin,
+            max_output_tail_chars=self.max_output_tail_chars,
         )
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
@@ -172,23 +182,38 @@ def _host_gid() -> int:
 SelinuxLabel = Literal["z", "Z"]
 
 
-def _expand_sandbox_tilde(sandbox: Path, *, sandbox_homedir: Path | None) -> Path:
-    """Expand a leading ``~`` in a sandbox-side path using ``sandbox_homedir``.
+SANDBOX_WORKDIR: Path = Path("/workspace")
+"""Default in-container worktree path used for relative sandbox mount targets."""
+
+
+def _expand_sandbox_tilde(
+    sandbox: Path,
+    *,
+    sandbox_homedir: Path | None,
+    sandbox_workdir: Path = SANDBOX_WORKDIR,
+) -> Path:
+    """Resolve a sandbox-side path.
+
+    A leading ``~`` expands under ``sandbox_homedir``. Relative paths resolve
+    under ``sandbox_workdir`` so ``Mount(sandbox=Path("data"))`` targets
+    ``/workspace/data``. Absolute paths pass through unchanged.
 
     Raises ``ValueError`` if ``sandbox`` starts with ``~`` but the provider has
-    no ``sandbox_homedir``. Paths without a leading ``~`` pass through unchanged.
+    no ``sandbox_homedir``.
     """
     parts = sandbox.parts
-    if not parts or parts[0] != "~":
-        return sandbox
-    if sandbox_homedir is None:
-        raise ValueError(
-            f"sandbox path {sandbox.as_posix()!r} starts with ~ but provider has "
-            "no sandbox_homedir; pass an absolute sandbox path or use a provider "
-            "that defines a homedir"
-        )
-    rest = parts[1:]
-    return sandbox_homedir.joinpath(*rest) if rest else sandbox_homedir
+    if parts and parts[0] == "~":
+        if sandbox_homedir is None:
+            raise ValueError(
+                f"sandbox path {sandbox.as_posix()!r} starts with ~ but provider has "
+                "no sandbox_homedir; pass an absolute sandbox path or use a provider "
+                "that defines a homedir"
+            )
+        rest = parts[1:]
+        return sandbox_homedir.joinpath(*rest) if rest else sandbox_homedir
+    if not sandbox.is_absolute():
+        return sandbox_workdir / sandbox
+    return sandbox
 
 
 def _mount_spec(
@@ -341,21 +366,26 @@ def _ensure_mount_parents(
 def make_container_provider(
     *,
     binary: Literal["docker", "podman"],
-    image: str,
+    image: str | None = None,
     mounts: tuple[Mount, ...] | None = None,
     env: Mapping[str, str] | None = None,
-    network: str | None = None,
+    network: str | tuple[str, ...] | None = None,
     container_uid: int | None = None,
     container_gid: int | None = None,
     selinux_label: SelinuxLabel | None = "z",
     devices: tuple[str, ...] | None = None,
     cpus: float | None = None,
     groups: tuple[str | int, ...] | None = None,
+    userns: Literal["keep-id"] | None = None,
+    max_output_tail_chars: int = DEFAULT_MAX_CHARS,
 ) -> SandboxProvider:
     """Build a bind-mount SandboxProvider backed by ``<binary> run``.
 
     Identical argv shape for docker and podman; the binary name is threaded
     through every subprocess call (run, exec, cp, kill).
+
+    ``image`` defaults to ``eden:<repo-dir>`` using the host repository path
+    passed at sandbox creation time.
 
     ``container_uid`` / ``container_gid`` set the in-container user. When
     ``None``, defaults to the host's UID/GID so files written into bind-mounted
@@ -367,6 +397,9 @@ def make_container_provider(
     container-private; ``None`` disables relabeling (use on hosts where SELinux
     is not enforced or relabel would conflict). The label is harmless on
     non-SELinux hosts (Docker / Podman ignore the suffix).
+
+    ``network`` accepts a single runtime network name or a tuple of names. A
+    tuple emits one ``--network`` flag per entry.
 
     ``devices`` is a tuple of ``--device`` specs (e.g. ``("/dev/kvm",)`` or
     ``("/dev/dri:/dev/dri:rwm",)``) that exposes host devices into the
@@ -380,11 +413,21 @@ def make_container_provider(
     ``groups`` is a tuple of supplementary group names or GIDs passed via
     ``--group-add``. Most commonly used to grant the in-container ``agent``
     user access to a bind-mounted Docker socket (``groups=("docker",)``).
+
+    ``userns`` is Podman-only. ``"keep-id"`` adds
+    ``--userns=keep-id:uid=<uid>,gid=<gid>`` so rootless Podman maps the host
+    user to the configured in-container user without chowning bind mounts.
+
+    ``max_output_tail_chars`` bounds the returned stdout/stderr tail for
+    streamed exec calls while preserving complete live ``on_line`` delivery.
     """
     provider_mounts: tuple[Mount, ...] = mounts or ()
     provider_env: dict[str, str] = dict(env) if env else {}
     provider_devices: tuple[str, ...] = devices or ()
     provider_groups: tuple[str | int, ...] = groups or ()
+    provider_networks: tuple[str, ...] = (
+        () if network is None else (network,) if isinstance(network, str) else network
+    )
     effective_uid: int = container_uid if container_uid is not None else _host_uid()
     effective_gid: int = container_gid if container_gid is not None else _host_gid()
 
@@ -392,15 +435,16 @@ def make_container_provider(
         if not shutil.which(binary):
             raise ProviderUnavailable(provider=binary, binary=binary)
 
+        resolved_image = image or _default_image_name(opts.host_repo_path)
         inspect = subprocess.run(
-            [binary, "image", "inspect", image],
+            [binary, "image", "inspect", resolved_image],
             capture_output=True,
             text=True,
         )
         if inspect.returncode != 0:
-            raise ImageNotFound(image=image, stderr=inspect.stderr)
+            raise ImageNotFound(image=resolved_image, stderr=inspect.stderr)
 
-        _check_image_uid(binary=binary, image=image, expected_uid=effective_uid)
+        _check_image_uid(binary=binary, image=resolved_image, expected_uid=effective_uid)
 
         # Mount precedence: implicit /workspace, then opts.mounts, then
         # provider_mounts (last write wins on sandbox-path collision).
@@ -443,20 +487,22 @@ def make_container_provider(
             )
         for k, v in merged_env.items():
             argv.extend(["-e", f"{k}={v}"])
-        if network:
-            argv.extend(["--network", network])
+        for network_name in provider_networks:
+            argv.extend(["--network", network_name])
         if cpus is not None:
             argv.extend(["--cpus", str(cpus)])
+        if binary == "podman" and userns == "keep-id":
+            argv.append(f"--userns=keep-id:uid={effective_uid},gid={effective_gid}")
         for device in provider_devices:
             argv.extend(["--device", device])
         for group in provider_groups:
             argv.extend(["--group-add", str(group)])
-        argv.extend([image, "infinity"])
+        argv.extend([resolved_image, "infinity"])
 
         run_proc = subprocess.run(argv, capture_output=True, text=True)
         if run_proc.returncode != 0:
             raise ContainerStartFailed(
-                image=image,
+                image=resolved_image,
                 exit_code=run_proc.returncode,
                 stderr=run_proc.stderr,
             )
@@ -490,6 +536,7 @@ def make_container_provider(
             container_id=container_id,
             worktree_path=Path("/workspace"),
             host_worktree_path=opts.worktree_path,
+            max_output_tail_chars=max_output_tail_chars,
         )
 
     return make_bind_mount_provider(name=binary, create=_create)

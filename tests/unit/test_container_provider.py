@@ -123,6 +123,33 @@ def test_image_not_found_error(
 
 
 @pytest.mark.parametrize("binary", ["docker", "podman"])
+def test_image_defaults_from_repo_directory(
+    binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+    repo = tmp_path / "My Repo!"
+    repo.mkdir()
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    p = make_container_provider(binary=binary)  # type: ignore[arg-type]
+    p.create(_opts(repo))
+
+    inspect_cmd = captured[0]
+    run_cmd = _find_run(captured)
+    assert inspect_cmd[:4] == [binary, "image", "inspect", "eden:my-repo"]
+    assert "eden:my-repo" in run_cmd
+
+
+@pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_container_start_failed(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -213,6 +240,28 @@ def test_network_flag_threaded(
     run_cmd = _find_run(captured)
     idx = run_cmd.index("--network")
     assert run_cmd[idx + 1] == "host"
+
+
+@pytest.mark.parametrize("binary", ["docker", "podman"])
+def test_multiple_network_flags_threaded(
+    binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    p = make_container_provider(binary=binary, image="alpine", network=("net1", "net2"))  # type: ignore[arg-type]
+    p.create(_opts(tmp_path))
+    run_cmd = _find_run(captured)
+    network_args = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "--network"]
+    assert network_args == ["net1", "net2"]
 
 
 @pytest.mark.parametrize("binary", ["docker", "podman"])
@@ -358,6 +407,118 @@ def test_user_flag_explicit_overrides_host(
     run_cmd = _find_run(captured)
     idx = run_cmd.index("--user")
     assert run_cmd[idx + 1] == "5000:5001"
+
+
+def test_podman_keep_id_userns_flag_threaded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    p = make_container_provider(
+        binary="podman",
+        image="alpine",
+        container_uid=1000,
+        container_gid=1001,
+        userns="keep-id",
+    )
+    p.create(_opts(tmp_path))
+    run_cmd = _find_run(captured)
+    assert "--userns=keep-id:uid=1000,gid=1001" in run_cmd
+
+
+def test_podman_userns_can_be_disabled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    p = make_container_provider(
+        binary="podman",
+        image="alpine",
+        container_uid=1000,
+        container_gid=1001,
+        userns=None,
+    )
+    p.create(_opts(tmp_path))
+    run_cmd = _find_run(captured)
+    assert not any(arg.startswith("--userns=") for arg in run_cmd)
+
+
+def test_docker_ignores_userns_option(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    p = make_container_provider(
+        binary="docker",
+        image="alpine",
+        container_uid=1000,
+        container_gid=1001,
+        userns="keep-id",
+    )
+    p.create(_opts(tmp_path))
+    run_cmd = _find_run(captured)
+    assert not any(arg.startswith("--userns=") for arg in run_cmd)
+
+
+@pytest.mark.parametrize("binary", ["docker", "podman"])
+def test_container_exec_uses_configured_output_tail(
+    binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured_run: list[list[str]] = []
+    captured_stream: list[dict[str, object]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured_run.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    def _stream_exec(argv: list[str], **kwargs: object) -> object:
+        captured_stream.append(kwargs)
+        from eden.providers._types import ExecResult
+
+        return ExecResult(stdout="", stderr="", exit_code=0)
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    monkeypatch.setattr("eden.providers._impl.container.stream_exec", _stream_exec)
+    p = make_container_provider(
+        binary=binary,  # type: ignore[arg-type]
+        image="alpine",
+        max_output_tail_chars=123,
+    )
+    handle = p.create(_opts(tmp_path))
+    handle.exec("echo hi", on_line=lambda _line: None)
+
+    assert captured_stream[0]["max_output_tail_chars"] == 123
 
 
 @pytest.mark.parametrize("binary", ["docker", "podman"])
@@ -560,6 +721,31 @@ def test_tilde_in_sandbox_path_expands_to_sandbox_homedir(
     assert any(s == f"{tmp_path / 'cache'}:/home/agent/.npm:z" for s in bind_specs), bind_specs
 
 
+@_skip_on_windows
+@pytest.mark.parametrize("binary", ["docker", "podman"])
+def test_relative_sandbox_path_resolves_under_workspace(
+    binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    extra = (Mount(host=tmp_path / "data", sandbox=Path("data")),)
+    p = make_container_provider(binary=binary, image="alpine", mounts=extra)  # type: ignore[arg-type]
+    p.create(_opts(tmp_path))
+    run_cmd = _find_run(captured)
+    bind_specs = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "-v"]
+    assert any(s == f"{tmp_path / 'data'}:/workspace/data:z" for s in bind_specs), bind_specs
+
+
 def test_expand_sandbox_tilde_root() -> None:
     from eden.providers._impl.container import _expand_sandbox_tilde
 
@@ -579,6 +765,13 @@ def test_expand_sandbox_tilde_passthrough_for_absolute() -> None:
 
     expanded = _expand_sandbox_tilde(Path("/etc/hosts"), sandbox_homedir=Path("/home/agent"))
     assert expanded == Path("/etc/hosts")
+
+
+def test_expand_sandbox_tilde_resolves_relative_under_workspace() -> None:
+    from eden.providers._impl.container import _expand_sandbox_tilde
+
+    expanded = _expand_sandbox_tilde(Path("cache/npm"), sandbox_homedir=Path("/home/agent"))
+    assert expanded == Path("/workspace/cache/npm")
 
 
 def test_expand_sandbox_tilde_raises_when_homedir_missing() -> None:
@@ -687,6 +880,31 @@ def test_windows_host_paths_use_mount_flag(
     run_cmd = _find_run(captured)
     mount_specs = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "--mount"]
     assert "type=bind,source=C:/Users/me/cache,target=/home/agent/.cache,readonly" in mount_specs
+
+
+@pytest.mark.parametrize("binary", ["docker", "podman"])
+def test_windows_host_paths_resolve_relative_sandbox_path(
+    binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    extra = (Mount(host=Path("C:/Users/me/cache"), sandbox=Path("cache"), read_only=True),)
+    p = make_container_provider(binary=binary, image="alpine", mounts=extra)  # type: ignore[arg-type]
+    p.create(_opts(tmp_path))
+
+    run_cmd = _find_run(captured)
+    mount_specs = [run_cmd[i + 1] for i, a in enumerate(run_cmd) if a == "--mount"]
+    assert "type=bind,source=C:/Users/me/cache,target=/workspace/cache,readonly" in mount_specs
 
 
 def test_file_mount_parents_dedupes(tmp_path: Path) -> None:

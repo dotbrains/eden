@@ -25,7 +25,6 @@ from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.logging._file import FileLogSink, default_log_path
 from eden.logging._stdout import StdoutLogSink
-from eden.orchestrator._bounded_tail import BoundedTail
 from eden.orchestrator._completion import match
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._finalize_recovery import format_finalize_recovery
@@ -50,6 +49,7 @@ from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.streaming import StreamEvent
+from eden.streaming._bounded_tail import BoundedTail
 from eden.tracing import set_attributes, span
 from eden.worktree._create import WorktreeHandle, create_worktree
 from eden.worktree._git import head_sha, new_commits

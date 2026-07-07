@@ -70,10 +70,14 @@ run(..., sandbox=no_sandbox())
 ### Signature
 
 ```python
-def provider() -> SandboxProvider: ...
+def provider(
+    *,
+    env: Mapping[str, str] | None = None,
+    max_output_tail_chars: int = 64 * 1024,
+) -> SandboxProvider: ...
 ```
 
-No arguments. Runs commands directly on the host via `subprocess` with `shell=True`, using the worktree path as the default `cwd`. `kind` is `"none"`.
+Runs commands directly on the host via `subprocess` with `shell=True`, using the worktree path as the default `cwd`. `kind` is `"none"`. `env` values are merged into sandbox exec environments, and per-call `env` overrides them. `max_output_tail_chars` bounds the stdout/stderr retained in `ExecResult` for streamed exec calls; live `on_line` callbacks still receive every line.
 
 ### What it does
 
@@ -103,22 +107,30 @@ run(..., sandbox=docker_provider(image="my-image:latest"))
 ```python
 def provider(
     *,
-    image: str,
+    image: str | None = None,
     mounts: tuple[Mount, ...] | None = None,
     env: Mapping[str, str] | None = None,
-    network: str | None = None,
+    network: str | tuple[str, ...] | None = None,
     container_uid: int | None = None,
     container_gid: int | None = None,
     selinux_label: Literal["z", "Z"] | None = "z",
+    devices: tuple[str, ...] | None = None,
+    cpus: float | None = None,
+    groups: tuple[str | int, ...] | None = None,
+    max_output_tail_chars: int = 64 * 1024,
 ) -> SandboxProvider: ...
 ```
 
-- `image` — container image (must already be built; the provider does not build).
-- `mounts` — extra bind mounts beyond the worktree itself. See [`Mount`](python-api.md#mount). `Mount.sandbox` paths starting with `~` are expanded to `/home/agent` (the default in-container homedir). For **file** mounts (host path is a regular file) whose target lives under `/home/agent`, eden runs a one-shot `mkdir -p` + `chown` after container start so the agent user can write into the parent directory; the prep failure surfaces as `ContainerStartFailed` before any user code runs. File mounts whose sandbox-side parent is outside `/home/agent` raise `MountConfigError`; mount the parent directory instead or rebuild the image with that parent pre-created.
+- `image` — container image (must already be built; the provider does not build). Defaults to `eden:<repo-dir>`, lowercased and sanitized from the host repository directory name.
+- `mounts` — extra bind mounts beyond the worktree itself. See [`Mount`](python-api.md#mount). `Mount.sandbox` paths starting with `~` are expanded to `/home/agent` (the default in-container homedir); relative paths are resolved under `/workspace`, so `Mount(sandbox=Path("data"))` mounts at `/workspace/data`. For **file** mounts (host path is a regular file) whose target lives under `/home/agent`, eden runs a one-shot `mkdir -p` + `chown` after container start so the agent user can write into the parent directory; the prep failure surfaces as `ContainerStartFailed` before any user code runs. File mounts whose sandbox-side parent is outside `/home/agent` raise `MountConfigError`; mount the parent directory instead or rebuild the image with that parent pre-created.
 - `env` — environment variables propagated into the container.
-- `network` — Docker `--network` flag value (e.g. `"host"`, `"none"`). `None` keeps Docker's default bridge.
+- `network` — Docker `--network` flag value (e.g. `"host"`, `"none"`) or tuple of values; tuples emit one `--network` flag per entry. `None` keeps Docker's default bridge.
 - `container_uid` / `container_gid` — UID/GID passed via `--user`. `None` (default) auto-derives from the host's UID/GID so files written through the bind-mounted worktree land owned by the host user. A pre-flight `docker image inspect` raises `ImageUidMismatch` when the image was built for a different numeric UID; rebuild with `--build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g)` to align them.
 - `selinux_label` — bind-mount relabel suffix appended to every `-v` spec. `"z"` (default) shares the label; `"Z"` makes it container-private; `None` disables. Required on SELinux hosts (Fedora, RHEL); harmless elsewhere because Docker / Podman ignore the suffix on non-SELinux systems.
+- `devices` — host device specs passed via `--device` (for example `("/dev/kvm",)`).
+- `cpus` — CPU limit passed via `--cpus`, including fractional values.
+- `groups` — supplementary groups passed via `--group-add`, useful for mounted sockets such as `/var/run/docker.sock`.
+- `max_output_tail_chars` — maximum stdout/stderr retained in `ExecResult` for streamed exec calls. Live `on_line` callbacks are not truncated.
 
 Windows-shaped host paths such as `C:\Users\me\.npm` are emitted with Docker/Podman `--mount type=bind,...` instead of `-v`, avoiding drive-letter colon ambiguity. POSIX host paths continue to use `-v` so SELinux relabeling remains available.
 
@@ -152,13 +164,18 @@ Identical to `docker`:
 ```python
 def provider(
     *,
-    image: str,
+    image: str | None = None,
     mounts: tuple[Mount, ...] | None = None,
     env: Mapping[str, str] | None = None,
-    network: str | None = None,
+    network: str | tuple[str, ...] | None = None,
     container_uid: int | None = None,
     container_gid: int | None = None,
     selinux_label: Literal["z", "Z"] | None = "z",
+    devices: tuple[str, ...] | None = None,
+    cpus: float | None = None,
+    groups: tuple[str | int, ...] | None = None,
+    userns: Literal["keep-id"] | None = "keep-id",
+    max_output_tail_chars: int = 64 * 1024,
 ) -> SandboxProvider: ...
 ```
 
@@ -166,7 +183,7 @@ def provider(
 
 Same lifecycle as `docker` but invokes the `podman` binary instead of `docker`. Rootless by default, suitable for environments without a privileged daemon.
 
-Mount formatting, Windows-path handling, SELinux relabeling, and single-file mount parent validation match the Docker provider.
+Mount formatting, Windows-path handling, SELinux relabeling, and single-file mount parent validation match the Docker provider. By default Eden also passes `--userns=keep-id:uid=<uid>,gid=<gid>` so rootless Podman maps the host user to the configured in-container user without runtime `chown`. Pass `userns=None` for rootful Podman or a custom namespace setup.
 
 ### When to use
 

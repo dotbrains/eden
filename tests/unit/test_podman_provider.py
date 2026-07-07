@@ -13,6 +13,13 @@ from eden.sandboxes.podman import provider as podman_provider
 pytestmark = pytest.mark.unit
 
 
+def _find_run(captured: list[list[str]]) -> list[str]:
+    for cmd in captured:
+        if len(cmd) >= 2 and cmd[1] == "run":
+            return cmd
+    raise AssertionError(f"no run cmd in captured: {captured!r}")
+
+
 def test_podman_provider_returns_bind_mount_kind() -> None:
     p = podman_provider(image="alpine:latest")
     assert p.kind == "bind_mount"
@@ -54,7 +61,39 @@ def test_podman_uses_podman_binary(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     p = podman_provider(image="alpine")
     p.create(opts)
 
-    # First call: podman image inspect ...
-    # Second call: podman run -d --rm ...
     assert captured[0][0] == "podman"
-    assert captured[1][0] == "podman"
+    run_cmd = _find_run(captured)
+    assert run_cmd[0] == "podman"
+    assert "--userns=keep-id:uid=" in " ".join(run_cmd)
+
+
+def test_podman_provider_can_disable_userns(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
+    captured: list[list[str]] = []
+
+    def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:
+        captured.append(list(cmd))
+        m = MagicMock()
+        m.returncode = 0
+        m.stdout = "container-id\n"
+        m.stderr = ""
+        return m
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+
+    from eden.providers._types import CreateOptions
+
+    opts = CreateOptions(
+        branch="HEAD",
+        worktree_path=tmp_path,
+        host_repo_path=tmp_path,
+        env={},
+        mounts=(),
+        name_hint=None,
+    )
+    p = podman_provider(image="alpine", userns=None)
+    p.create(opts)
+
+    assert not any(arg.startswith("--userns=") for arg in _find_run(captured))

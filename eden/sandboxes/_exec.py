@@ -13,6 +13,7 @@ from typing import IO, Any
 
 from eden.providers._types import ExecResult
 from eden.sandboxes.errors import ExecTimeout
+from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS, BoundedTail
 
 _SENTINEL: Any = object()
 
@@ -35,6 +36,7 @@ def stream_exec(
     on_line: Callable[[str], None] | None = None,
     timeout: float | None = None,
     stdin: str | None = None,
+    max_output_tail_chars: int | None = None,
 ) -> ExecResult:
     """Run a subprocess with line-buffered stdout+stderr drained via threads.
 
@@ -87,8 +89,14 @@ def stream_exec(
     t_out.start()
     t_err.start()
 
-    out_chunks: list[str] = []
-    err_chunks: list[str] = []
+    out_chunks: list[str] | BoundedTail
+    err_chunks: list[str] | BoundedTail
+    if max_output_tail_chars is not None and on_line is not None:
+        out_chunks = BoundedTail(max_output_tail_chars)
+        err_chunks = BoundedTail(max_output_tail_chars)
+    else:
+        out_chunks = []
+        err_chunks = []
     out_done = False
     err_done = False
     deadline = (time.monotonic() + timeout) if timeout is not None else None
@@ -101,11 +109,21 @@ def stream_exec(
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait()
+            partial_stdout = (
+                out_chunks.to_string()
+                if isinstance(out_chunks, BoundedTail)
+                else "".join(out_chunks)
+            )
+            partial_stderr = (
+                err_chunks.to_string()
+                if isinstance(err_chunks, BoundedTail)
+                else "".join(err_chunks)
+            )
             raise ExecTimeout(
                 cmd=cmd_for_error,
                 timeout=timeout or 0.0,
-                partial_stdout="".join(out_chunks),
-                partial_stderr="".join(err_chunks),
+                partial_stdout=partial_stdout,
+                partial_stderr=partial_stderr,
             )
 
         if not out_done:
@@ -116,7 +134,10 @@ def stream_exec(
             if item is _SENTINEL:
                 out_done = True
             elif item is not None:
-                out_chunks.append(item)
+                if isinstance(out_chunks, BoundedTail):
+                    out_chunks.push(item)
+                else:
+                    out_chunks.append(item)
                 if on_line is not None:
                     on_line(item.rstrip("\n"))
 
@@ -128,13 +149,21 @@ def stream_exec(
             if item is _SENTINEL:
                 err_done = True
             elif item is not None:
-                err_chunks.append(item)
+                if isinstance(err_chunks, BoundedTail):
+                    err_chunks.push(item)
+                else:
+                    err_chunks.append(item)
                 if on_line is not None:
                     on_line(item.rstrip("\n"))
 
     proc.wait()
+    stdout = out_chunks.to_string() if isinstance(out_chunks, BoundedTail) else "".join(out_chunks)
+    stderr = err_chunks.to_string() if isinstance(err_chunks, BoundedTail) else "".join(err_chunks)
     return ExecResult(
-        stdout="".join(out_chunks),
-        stderr="".join(err_chunks),
+        stdout=stdout,
+        stderr=stderr,
         exit_code=proc.returncode,
     )
+
+
+__all__ = ["DEFAULT_MAX_CHARS", "stream_exec"]
