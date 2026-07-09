@@ -38,3 +38,8 @@ repos:
         types: [python]
         pass_filenames: false
         args: [eden, tests]
+      - id: loc-budget
+        name: LOC budgets
+        entry: python3 scripts/check_loc_budget.py
+        language: system
+        pass_filenames: false
