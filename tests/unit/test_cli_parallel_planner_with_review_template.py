@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,20 @@ def test_render_files_all_present() -> None:
         ".env.example",
         ".gitignore",
     }
+
+
+def test_render_parallel_planner_with_review_exact_output() -> None:
+    files = render_parallel_planner_with_review(
+        sandbox="podman",
+        agent="codex",
+        model="gpt-5",
+        image_name="eden:pod",
+        backlog=get_backlog_manager("beads"),
+    )
+    rendered = "".join(f"{path}\0{contents}\0" for path, contents in sorted(files.items()))
+    assert sha256(rendered.encode()).hexdigest() == (
+        "57ae1a802a02dde46c8fcfb81d7f71a3c8ec823df0c880c8f3dff5854685ae22"
+    )
 
 
 def test_main_py_uses_create_sandbox_and_per_branch_review() -> None:

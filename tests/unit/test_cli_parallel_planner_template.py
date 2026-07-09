@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -44,6 +45,20 @@ def test_render_files_all_present() -> None:
         ".env.example",
         ".gitignore",
     }
+
+
+def test_render_parallel_planner_exact_output() -> None:
+    files = render_parallel_planner(
+        sandbox="docker",
+        agent="claude-code",
+        model="m",
+        image_name="eden:test",
+        backlog=get_backlog_manager("github"),
+    )
+    rendered = "".join(f"{path}\0{contents}\0" for path, contents in sorted(files.items()))
+    assert sha256(rendered.encode()).hexdigest() == (
+        "f5689e4f2db40f814aa315677f36d0fde727baaa1a6a67537ae3708b1f16c807"
+    )
 
 
 def test_main_py_uses_thread_pool_and_output_object() -> None:
