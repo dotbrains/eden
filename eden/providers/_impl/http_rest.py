@@ -6,73 +6,29 @@ import random
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from email.utils import parsedate_to_datetime
 from typing import Any
 
 import requests
 
-from eden.errors import (
-    RestAuthError,
-    RestError,
-    RestNotFoundError,
-    RestRateLimited,
+from eden.errors import RestError
+from eden.providers._impl.http_retry import (
+    full_jitter_backoff as _full_jitter_backoff,
+)
+from eden.providers._impl.http_retry import (
+    parse_retry_after as _parse_retry_after,
+)
+from eden.providers._impl.http_retry import (
+    raise_status,
+    retry_delay,
 )
 from eden.tracing import set_attributes, span
 
 _DEFAULT_TIMEOUT = 60.0
 _DEFAULT_MAX_RETRIES = 3
-# Exponential-backoff base + cap (seconds). Each retry sleeps for a random
-# duration in [0, min(cap, base * 2**attempt)] — full-jitter strategy from
-# https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
-_BACKOFF_BASE = 0.5
-_BACKOFF_CAP = 30.0
 # Hard ceiling on Retry-After honour. Servers occasionally return values like
 # 7200s (two hours); waiting that long would hang any orchestrated run with
 # nothing useful to show. Surface a typed RestRateLimited at this cap instead.
 _DEFAULT_MAX_RETRY_AFTER = 60.0
-
-
-def _parse_retry_after(header: str | None, *, now: datetime | None = None) -> float | None:
-    """Return Retry-After's seconds-from-now per RFC 9110.
-
-    Accepts either the seconds form (``120``) or the HTTP-date form
-    (``Wed, 21 Oct 2026 07:28:00 GMT``). Returns ``None`` for missing or
-    unparseable values; clamps negative deltas to 0.
-    """
-    if header is None:
-        return None
-    raw = header.strip()
-    if not raw:
-        return None
-    try:
-        return max(0.0, float(raw))
-    except ValueError:
-        pass
-    try:
-        dt = parsedate_to_datetime(raw)
-    except (TypeError, ValueError):
-        return None
-    if dt is None:
-        return None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=UTC)
-    ref = now if now is not None else datetime.now(UTC)
-    return max(0.0, (dt - ref).total_seconds())
-
-
-def _full_jitter_backoff(
-    attempt: int,
-    *,
-    base: float = _BACKOFF_BASE,
-    cap: float = _BACKOFF_CAP,
-    rand: Callable[[], float] | None = None,
-) -> float:
-    """Full-jitter exponential backoff: ``random() * min(cap, base * 2**attempt)``."""
-    rng = rand if rand is not None else random.random
-    raw_cap: float = base * float(2**attempt)
-    bounded = min(cap, raw_cap)
-    return float(rng()) * bounded
 
 
 @dataclass
@@ -222,49 +178,23 @@ class RestClient:
                         url=url,
                     ) from exc
 
-            # Retry envelope: 429 honours Retry-After; 5xx uses jittered backoff.
-            retryable = resp.status_code in (500, 502, 503, 504, 429)
-            if retryable and attempt < self.max_retries:
-                if resp.status_code == 429:
-                    delay = _parse_retry_after(resp.headers.get("Retry-After"))
-                    if delay is None:
-                        delay = self._backoff(attempt)
-                    elif delay > self.max_retry_after_seconds:
-                        # Server's ask exceeds our budget — raise now rather
-                        # than blocking the orchestrator for minutes/hours.
-                        raise RestRateLimited(
-                            message=(
-                                f"HTTP 429 from {url}: Retry-After={delay:.0f}s "
-                                f"exceeds max_retry_after_seconds="
-                                f"{self.max_retry_after_seconds:.0f}s"
-                            ),
-                            status=resp.status_code,
-                            body=resp.text,
-                            url=url,
-                        )
-                else:
-                    delay = self._backoff(attempt)
+            delay = retry_delay(
+                resp,
+                attempt=attempt,
+                max_retries=self.max_retries,
+                max_retry_after_seconds=self.max_retry_after_seconds,
+                backoff=self._backoff,
+                url=url,
+            )
+            if delay is not None:
                 self.sleep(delay)
                 continue
 
-            self._raise_status(resp, url)
+            raise_status(resp, url)
 
         # Unreachable in practice (loop either returns or raises),
         # but mypy needs a fallthrough.
         raise RestError(message="exhausted retries", cause=last_exc, url=url)
 
-    @staticmethod
-    def _raise_status(resp: requests.Response, url: str) -> None:
-        body = resp.text
-        status = resp.status_code
-        msg = f"HTTP {status} from {url}: {body[:200]}"
-        if status in (401, 403):
-            raise RestAuthError(message=msg, status=status, body=body, url=url)
-        if status == 404:
-            raise RestNotFoundError(message=msg, status=status, body=body, url=url)
-        if status == 429:
-            raise RestRateLimited(message=msg, status=status, body=body, url=url)
-        raise RestError(message=msg, status=status, body=body, url=url)
 
-
-__all__ = ["RestClient"]
+__all__ = ["RestClient", "_full_jitter_backoff", "_parse_retry_after"]
