@@ -12,11 +12,12 @@ from typing import TYPE_CHECKING
 from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.abort._signal import AbortController
-from eden.lifecycle import HookPhase, Hooks
-from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
+from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import ExecResult
+from eden.sandboxes._sandbox_lifecycle import close_sandbox
+from eden.sandboxes._sandbox_run import validate_sandbox_run_options
 from eden.streaming import StreamEvent
 from eden.worktree._create import CloseResult, WorktreeHandle
 
@@ -59,43 +60,14 @@ class Sandbox:
 
     def close(self) -> CloseResult:
         """Close the sandbox handle, and the worktree if this sandbox owns it."""
-        try:
-            run_sandbox_hooks(
-                phase=HookPhase.OnClose,
-                hooks=self.hooks.sandbox,
-                handle=self.handle,
-                env=self.create_env,
-                timeouts=self.timeouts,
-            )
-            run_host_hooks(
-                phase=HookPhase.OnClose,
-                hooks=self.hooks.host,
-                worktree_path=self.worktree.worktree_path,
-                env=self.create_env,
-                timeouts=self.timeouts,
-            )
-        except BaseException:
-            try:
-                self.handle.close()
-            finally:
-                if self.owns_worktree:
-                    try:
-                        self.worktree.close()
-                    except Exception as cleanup_exc:
-                        print(f"eden: worktree close also failed: {cleanup_exc}")
-            raise
-        try:
-            self.handle.close()
-        except BaseException:
-            if self.owns_worktree:
-                try:
-                    self.worktree.close()
-                except Exception as cleanup_exc:
-                    print(f"eden: worktree close also failed: {cleanup_exc}")
-            raise
-        if self.owns_worktree:
-            return self.worktree.close()
-        return CloseResult(action="released_only", reason="caller-owned-worktree")
+        return close_sandbox(
+            worktree=self.worktree,
+            handle=self.handle,
+            owns_worktree=self.owns_worktree,
+            hooks=self.hooks,
+            create_env=self.create_env,
+            timeouts=self.timeouts,
+        )
 
     def exec(
         self,
@@ -143,7 +115,6 @@ class Sandbox:
         fork_session: bool = False,
     ) -> RunResult:
         """Run an agent against this existing sandbox + worktree."""
-        from eden.errors import InvalidOptions
         from eden.orchestrator._loop import _run_loop
         from eden.orchestrator._setup import resolve_setup
 
@@ -158,41 +129,13 @@ class Sandbox:
             provider_env=provider_env,
             sandbox_kind=self.sandbox_provider.kind,
         )
-        if resume_session is not None and max_iterations != 1:
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(
-                    "resume_session= is only valid with max_iterations=1; "
-                    f"got max_iterations={max_iterations}"
-                ),
-            )
-        if fork_session and resume_session is None:
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message="fork_session=True requires resume_session=<id>",
-                hint=(
-                    "fork continues a captured session under a new id; "
-                    "pass resume_session=<id> alongside fork_session=True"
-                ),
-            )
-        if output is not None:
-            if max_iterations != 1:
-                raise InvalidOptions(
-                    code="config.invalid_options",
-                    message=(
-                        "output= is only valid with max_iterations=1; got "
-                        f"max_iterations={max_iterations}"
-                    ),
-                )
-            tag_marker = f"<{output.tag}>"
-            if tag_marker not in setup.prompt_text:
-                raise InvalidOptions(
-                    code="config.invalid_options",
-                    message=(
-                        f"output tag {tag_marker} not referenced in prompt; "
-                        "the agent must be told which tag to emit"
-                    ),
-                )
+        validate_sandbox_run_options(
+            resume_session=resume_session,
+            fork_session=fork_session,
+            max_iterations=max_iterations,
+            output_tag=output.tag if output is not None else None,
+            prompt_text=setup.prompt_text,
+        )
         abort = signal if signal is not None else AbortController().signal
         result = _run_loop(
             agent=agent,
