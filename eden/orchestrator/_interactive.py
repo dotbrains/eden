@@ -2,24 +2,21 @@
 
 from __future__ import annotations
 
-import inspect
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
 from eden._types import Timeouts
 from eden.abort import AbortSignal
-from eden.agents._context import IterationContext
-from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
 from eden.env import load_eden_env, merge_env
 from eden.errors import InvalidOptions
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
+from eden.orchestrator._interactive_exec import build_interactive_argv, run_interactive_exec
+from eden.orchestrator._interactive_prompt import render_interactive_prompt
 from eden.orchestrator._setup import resolve_branch_strategy, resolve_target_branch
-from eden.prompt import render_prompt
-from eden.prompt._collect import collect_missing_args
 from eden.prompt._source import resolve_source
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
@@ -85,8 +82,6 @@ def interactive(
     only when ``stdin`` is a TTY — CI runs hit the normal
     :class:`eden.errors.PromptError`. Pass ``True`` / ``False`` to force.
     """
-    import sys
-
     if signal is not None:
         signal.raise_if_aborted()
 
@@ -236,68 +231,30 @@ def interactive(
             timeouts=timeouts_or_default,
         )
 
-        if not prompt_text:
-            rendered = ""
-        elif prompt_is_literal:
-            # Inline prompts are passed to the agent verbatim — no
-            # substitution, no shell expansion, no built-in injection.
-            rendered = prompt_text
-        else:
-            effective_args: Mapping[str, str] = prompt_args or {}
-            should_collect = collect_args if collect_args is not None else sys.stdin.isatty()
-            if should_collect:
-                effective_args = collect_missing_args(prompt_text, effective_args)
-            rendered = render_prompt(
-                text=prompt_text,
-                args=effective_args,
-                source_branch=wt.branch,
-                target_branch=target_branch,
-                handle=handle,
-            )
-        ctx = IterationContext(
-            iteration=0,
-            prompt=rendered,
-            sandbox_handle=handle,
+        rendered = render_interactive_prompt(
+            prompt_text=prompt_text,
+            prompt_is_literal=prompt_is_literal,
+            prompt_args=prompt_args,
+            collect_args=collect_args,
+            source_branch=wt.branch,
+            target_branch=target_branch,
+            handle=handle,
+        )
+        argv = build_interactive_argv(
+            agent=agent,
+            rendered_prompt=rendered,
+            handle=handle,
             worktree_path=wt.worktree_path,
             branch=wt.branch,
             name=name,
         )
-        build_interactive = getattr(agent, "build_interactive_command", None)
-        argv = build_interactive(ctx) if callable(build_interactive) else agent.build_command(ctx)
-        # Per-agent Flox runtime (ADR-0014): wrap before the handle wraps argv
-        # in ``<binary> exec -it``, so for container providers ``flox`` runs
-        # inside the container (and so must be present in the image, alongside
-        # the declared env dir). For no_sandbox the wrap runs on the host.
-        argv = flox_wrap(argv, flox_env=getattr(agent, "flox_env", None))
-
-        # Dispatch via the handle's ``interactive_exec`` method when available
-        # — bind-mount providers (no_sandbox, docker, podman) implement it; the
-        # docker / podman impls wrap argv in ``<binary> exec -it`` so the user
-        # gets a real TTY inside the container. Isolated providers (Daytona,
-        # Vercel, the local isolated copy) don't expose a TTY: raise a clear
-        # InvalidOptions instead.
-        ix = getattr(handle, "interactive_exec", None)
-        if not callable(ix):
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(f"sandbox={sandbox.name!r} does not expose an interactive TTY"),
-                hint=(
-                    "use eden.run() for non-interactive runs against this "
-                    "provider, or pick no_sandbox / docker / podman for "
-                    "interactive sessions"
-                ),
-            )
-        # The exec runs inside the sandbox, so cwd is the in-container
-        # worktree path (``handle.worktree_path``), not the host path.
-        interactive_params: Mapping[str, inspect.Parameter]
-        try:
-            interactive_params = inspect.signature(ix).parameters
-        except (TypeError, ValueError):
-            interactive_params = {}
-        if "signal" in interactive_params:
-            exit_code = ix(argv, cwd=handle.worktree_path, env=merged_env, signal=signal)
-        else:
-            exit_code = ix(argv, cwd=handle.worktree_path, env=merged_env)
+        exit_code = run_interactive_exec(
+            handle=handle,
+            sandbox_name=sandbox.name,
+            argv=argv,
+            env=merged_env,
+            signal=signal,
+        )
         return InteractiveResult(
             branch=wt.branch,
             exit_code=exit_code,
