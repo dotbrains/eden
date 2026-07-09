@@ -7,14 +7,12 @@ import re
 import secrets
 import shutil
 import subprocess
-import time
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
 
-from eden.abort import AbortSignal
 from eden.providers._helpers import make_bind_mount_provider
+from eden.providers._impl.container_handle import ContainerHandle
 from eden.providers._impl.container_mounts import (
     SANDBOX_HOMEDIR,
     SelinuxLabel,
@@ -26,8 +24,7 @@ from eden.providers._protocols import (
     BindMountSandboxHandle,
     SandboxProvider,
 )
-from eden.providers._types import CreateOptions, ExecResult, Mount
-from eden.sandboxes._exec import stream_exec
+from eden.providers._types import CreateOptions, Mount
 from eden.sandboxes.errors import (
     ContainerStartFailed,
     ImageNotFound,
@@ -38,22 +35,6 @@ from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
 _NAME_RE = re.compile(r"[^a-z0-9-]+")
 _IMAGE_TAG_RE = re.compile(r"[^a-z0-9_.-]+")
-
-
-def _wait_interactive_process(proc: subprocess.Popen[bytes], signal: AbortSignal | None) -> int:
-    while True:
-        if signal is not None and signal.is_aborted():
-            proc.terminate()
-            try:
-                proc.wait(timeout=5.0)
-            except subprocess.TimeoutExpired:
-                proc.kill()
-                proc.wait()
-            signal.raise_if_aborted()
-        try:
-            return proc.wait(timeout=0.1)
-        except subprocess.TimeoutExpired:
-            time.sleep(0)
 
 
 def _sanitize_container_seed(s: str) -> str:
@@ -67,101 +48,7 @@ def _default_image_name(repo_path: Path) -> str:
     return f"eden:{tag or 'local'}"
 
 
-@dataclass
-class _ContainerHandle:
-    binary: str
-    container_id: str
-    worktree_path: Path
-    host_worktree_path: Path
-    max_output_tail_chars: int = DEFAULT_MAX_CHARS
-
-    def exec(
-        self,
-        cmd: str,
-        *,
-        on_line: Callable[[str], None] | None = None,
-        cwd: Path | None = None,
-        env: Mapping[str, str] | None = None,
-        timeout: float | None = None,
-        stdin: str | None = None,
-    ) -> ExecResult:
-        # ``-i`` keeps the container's stdin attached to ours; with
-        # ``stdin=None`` the pipe is never opened so the previous default
-        # behaviour is preserved (sh just sees EOF and exits its command).
-        argv: list[str] = [self.binary, "exec", "-i"]
-        if cwd is not None:
-            argv.extend(["-w", cwd.as_posix()])
-        if env:
-            for k, v in env.items():
-                argv.extend(["-e", f"{k}={v}"])
-        argv.extend([self.container_id, "/bin/sh", "-c", cmd])
-        return stream_exec(
-            argv,
-            cmd_for_error=cmd,
-            shell=False,
-            on_line=on_line,
-            timeout=timeout,
-            stdin=stdin,
-            max_output_tail_chars=self.max_output_tail_chars,
-        )
-
-    def copy_file_in(self, host: Path, sandbox: Path) -> None:
-        subprocess.run(
-            [self.binary, "cp", str(host), f"{self.container_id}:{sandbox.as_posix()}"],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-
-    def copy_file_out(self, sandbox: Path, host: Path) -> None:
-        subprocess.run(
-            [self.binary, "cp", f"{self.container_id}:{sandbox.as_posix()}", str(host)],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-
-    def interactive_exec(
-        self,
-        argv: list[str],
-        *,
-        cwd: Path | None = None,
-        env: Mapping[str, str] | None = None,
-        signal: AbortSignal | None = None,
-    ) -> int:
-        """Run ``argv`` inside the container with a TTY attached.
-
-        Builds ``<binary> exec -it [-w cwd] [-e K=V ...] <container_id> <argv>``.
-        Stdio is inherited from the parent so the user gets a real terminal
-        for the agent's TUI. Returns the exec-call's exit code.
-        """
-        if signal is not None:
-            signal.raise_if_aborted()
-        cmd: list[str] = [self.binary, "exec", "-it"]
-        if cwd is not None:
-            cmd.extend(["-w", cwd.as_posix()])
-        if env:
-            for k, v in env.items():
-                cmd.extend(["-e", f"{k}={v}"])
-        cmd.append(self.container_id)
-        cmd.extend(argv)
-        proc = subprocess.Popen(cmd)
-        return _wait_interactive_process(proc, signal)
-
-    def close(self) -> None:
-        proc = subprocess.run(
-            [self.binary, "kill", self.container_id],
-            capture_output=True,
-            text=True,
-        )
-        if proc.returncode == 0:
-            return None
-        if "no such container" in (proc.stderr or "").lower():
-            return None
-        # Other errors during cleanup: don't propagate; --rm will still
-        # GC if the container later exits, and re-raising would mask
-        # original errors thrown from the user code path.
-        return None
+_ContainerHandle = ContainerHandle
 
 
 def _check_image_uid(*, binary: str, image: str, expected_uid: int) -> None:
@@ -374,7 +261,7 @@ def make_container_provider(
                 )
                 raise
 
-        return _ContainerHandle(
+        return ContainerHandle(
             binary=binary,
             container_id=container_id,
             worktree_path=Path("/workspace"),

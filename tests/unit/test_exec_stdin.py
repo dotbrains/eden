@@ -201,15 +201,15 @@ def test_container_provider_passes_stdin_through_exec_pipe() -> None:
     """Confirm the container provider's exec invokes stream_exec with stdin."""
     from unittest.mock import patch
 
-    from eden.providers._impl.container import _ContainerHandle
+    from eden.providers._impl.container_handle import ContainerHandle
 
-    handle = _ContainerHandle(
+    handle = ContainerHandle(
         binary="docker",
         container_id="abc123",
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),
     )
-    with patch("eden.providers._impl.container.stream_exec") as m:
+    with patch("eden.providers._impl.container_handle.stream_exec") as m:
         m.return_value = ExecResult(stdout="", stderr="", exit_code=0)
         handle.exec("cat -", stdin="piped")
     assert m.call_count == 1

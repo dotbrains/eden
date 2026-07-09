@@ -187,7 +187,7 @@ def test_handle_exec_uses_docker_exec(
         captured["kwargs"] = kwargs
         return ExecResult(stdout="ok\n", stderr="", exit_code=0)
 
-    monkeypatch.setattr("eden.providers._impl.container.stream_exec", fake_stream_exec)
+    monkeypatch.setattr("eden.providers._impl.container_handle.stream_exec", fake_stream_exec)
     result = handle.exec("echo hi", cwd=Path("/workspace/sub"), env={"K": "V"})
     assert result.exit_code == 0
     argv = captured["argv"]

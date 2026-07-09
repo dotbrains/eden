@@ -512,7 +512,7 @@ def test_container_exec_uses_configured_output_tail(
         return ExecResult(stdout="", stderr="", exit_code=0)
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
-    monkeypatch.setattr("eden.providers._impl.container.stream_exec", _stream_exec)
+    monkeypatch.setattr("eden.providers._impl.container_handle.stream_exec", _stream_exec)
     p = make_container_provider(
         binary=binary,  # type: ignore[arg-type]
         image="alpine",
