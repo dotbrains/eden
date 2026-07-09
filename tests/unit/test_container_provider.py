@@ -750,35 +750,35 @@ def test_relative_sandbox_path_resolves_under_workspace(
 
 
 def test_expand_sandbox_tilde_root() -> None:
-    from eden.providers._impl.container import _expand_sandbox_tilde
+    from eden.providers._impl.container_mounts import _expand_sandbox_tilde
 
     expanded = _expand_sandbox_tilde(Path("~"), sandbox_homedir=Path("/home/agent"))
     assert expanded == Path("/home/agent")
 
 
 def test_expand_sandbox_tilde_with_subpath() -> None:
-    from eden.providers._impl.container import _expand_sandbox_tilde
+    from eden.providers._impl.container_mounts import _expand_sandbox_tilde
 
     expanded = _expand_sandbox_tilde(Path("~/.config/x"), sandbox_homedir=Path("/home/agent"))
     assert expanded == Path("/home/agent/.config/x")
 
 
 def test_expand_sandbox_tilde_passthrough_for_absolute() -> None:
-    from eden.providers._impl.container import _expand_sandbox_tilde
+    from eden.providers._impl.container_mounts import _expand_sandbox_tilde
 
     expanded = _expand_sandbox_tilde(Path("/etc/hosts"), sandbox_homedir=Path("/home/agent"))
     assert expanded == Path("/etc/hosts")
 
 
 def test_expand_sandbox_tilde_resolves_relative_under_workspace() -> None:
-    from eden.providers._impl.container import _expand_sandbox_tilde
+    from eden.providers._impl.container_mounts import _expand_sandbox_tilde
 
     expanded = _expand_sandbox_tilde(Path("cache/npm"), sandbox_homedir=Path("/home/agent"))
     assert expanded == Path("/workspace/cache/npm")
 
 
 def test_expand_sandbox_tilde_raises_when_homedir_missing() -> None:
-    from eden.providers._impl.container import _expand_sandbox_tilde
+    from eden.providers._impl.container_mounts import _expand_sandbox_tilde
 
     with pytest.raises(ValueError, match="sandbox_homedir"):
         _expand_sandbox_tilde(Path("~/x"), sandbox_homedir=None)
@@ -839,7 +839,7 @@ def test_interactive_exec_builds_exec_it_argv(
 
 def test_file_mount_parents_includes_files_under_homedir(tmp_path: Path) -> None:
     """File mounts under SANDBOX_HOMEDIR contribute their parent dirs."""
-    from eden.providers._impl.container import _file_mount_parents
+    from eden.providers._impl.container_mounts import _file_mount_parents
 
     f = tmp_path / "config"
     f.write_text("x")
@@ -852,7 +852,7 @@ def test_file_mount_parents_includes_files_under_homedir(tmp_path: Path) -> None
 
 def test_file_mount_parents_skips_directory_mounts(tmp_path: Path) -> None:
     """Directory mounts don't need parent prep — docker handles them."""
-    from eden.providers._impl.container import _file_mount_parents
+    from eden.providers._impl.container_mounts import _file_mount_parents
 
     d = tmp_path / "dir"
     d.mkdir()
@@ -863,7 +863,7 @@ def test_file_mount_parents_skips_directory_mounts(tmp_path: Path) -> None:
 
 def test_file_mount_parents_skips_paths_outside_homedir(tmp_path: Path) -> None:
     """File mounts outside the agent home fail with a clear config error."""
-    from eden.providers._impl.container import _file_mount_parents
+    from eden.providers._impl.container_mounts import _file_mount_parents
 
     f = tmp_path / "secret"
     f.write_text("x")
@@ -927,7 +927,7 @@ def test_windows_host_paths_resolve_relative_sandbox_path(
 
 def test_file_mount_parents_dedupes(tmp_path: Path) -> None:
     """Two file mounts in the same parent only create that parent once."""
-    from eden.providers._impl.container import _file_mount_parents
+    from eden.providers._impl.container_mounts import _file_mount_parents
 
     a = tmp_path / "a"
     b = tmp_path / "b"
@@ -943,7 +943,7 @@ def test_file_mount_parents_dedupes(tmp_path: Path) -> None:
 
 def test_file_mount_parents_skips_homedir_itself(tmp_path: Path) -> None:
     """A file mount directly into ``~`` doesn't need parent prep — it IS the homedir."""
-    from eden.providers._impl.container import _file_mount_parents
+    from eden.providers._impl.container_mounts import _file_mount_parents
 
     f = tmp_path / "a"
     f.write_text("a")

@@ -8,18 +8,14 @@ from contextlib import ExitStack
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
-
-if TYPE_CHECKING:
-    from eden.session._protocol import SessionStorage
 from eden.abort import AbortSignal, register_shutdown
 from eden.agents._context import IterationContext
 from eden.agents._errors import parse_stdout_error
 from eden.agents._flox import flox_wrap, validate_flox_env
 from eden.agents._protocol import Agent
-from eden.errors import AgentError, SessionCaptureFailed
+from eden.errors import AgentError
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
@@ -27,11 +23,12 @@ from eden.logging._file import FileLogSink, default_log_path
 from eden.logging._stdout import StdoutLogSink
 from eden.orchestrator._completion import match
 from eden.orchestrator._copy_files import apply_copy_to_worktree
-from eden.orchestrator._finalize_recovery import format_finalize_recovery
+from eden.orchestrator._finalize import finalize_sandbox
 from eden.orchestrator._idle import IdleWatchdog
 from eden.orchestrator._recovery import format_agent_error_recovery
 from eden.orchestrator._result import assemble
 from eden.orchestrator._runner import _AgentRunner
+from eden.orchestrator._session_capture import capture_iteration_session, resolve_session_storage
 from eden.orchestrator._setup import (
     SetupResult,
     resolve_branch_strategy,
@@ -39,9 +36,6 @@ from eden.orchestrator._setup import (
 )
 from eden.orchestrator._summary import (
     format_context_window_line,
-)
-from eden.orchestrator._summary import (
-    format_finalize_line as _format_finalize_line,
 )
 from eden.output import OutputDefinition, extract_structured_output
 from eden.prompt import render_prompt
@@ -63,26 +57,6 @@ _SIDECHAIN_MTIME_SLACK = 2.0
 
 def _utcnow() -> datetime:
     return datetime.now(UTC)
-
-
-def _resolve_session_storage(agent: Agent) -> SessionStorage | None:
-    """Return the agent's ``session_storage`` attribute, or fall back to the
-    legacy ``captures_sessions`` boolean (claude_code only).
-
-    ADR-0012-style: agents that ship a ``session_storage`` get fully custom
-    transcript capture (mounts + host_capture + sandbox_transfer). Agents
-    that only expose ``captures_sessions=True`` get the
-    :class:`ClaudeSessionStorage` default, matching the pre-ADR behaviour.
-    """
-    storage: SessionStorage | None = getattr(agent, "session_storage", None)
-    if storage is not None:
-        return storage
-    if getattr(agent, "captures_sessions", False):
-        # Lazy import to avoid module-load cycle with eden.session.
-        from eden.session._claude import ClaudeSessionStorage
-
-        return ClaudeSessionStorage()
-    return None
 
 
 def _run_loop(
@@ -168,7 +142,7 @@ def _run_loop(
     preserved: Path | None = None
     unregister_shutdown: Callable[[], None] | None = None
 
-    session_storage = _resolve_session_storage(agent)
+    session_storage = resolve_session_storage(agent)
     extra_mounts: tuple[Mount, ...] = (
         session_storage.extra_mounts() if session_storage is not None else ()
     )
@@ -571,34 +545,18 @@ def _run_loop(
                         on_event(recovery_ev)
                     raise err
 
-            if iter_session_id is not None and session_storage is not None:
-                try:
-                    # Delegate to the agent's session storage. Each agent
-                    # knows where its own transcript lives; the orchestrator
-                    # only knows the metadata (id, branch, iteration).
-                    # ``target_branch`` is preferred over ``wt.branch`` so
-                    # all iterations for one target land under the same
-                    # directory regardless of which intermediate branch the
-                    # worktree carved.
-                    iter_session_file = session_storage.host_capture(
-                        handle=handle,
-                        session_id=iter_session_id,
-                        host_repo_path=setup.cwd,
-                        branch=target_branch,
-                        iteration=i,
-                        since=iter_started_at,
-                    )
-                except SessionCaptureFailed as exc:
-                    if sink is not None:
-                        sink.write(
-                            StreamEvent(
-                                type="text",
-                                agent_name=agent.name,
-                                iteration=i,
-                                timestamp=_utcnow(),
-                                text=f"[eden] session capture failed: {exc}",
-                            )
-                        )
+            iter_session_file = capture_iteration_session(
+                session_storage=session_storage,
+                handle=handle,
+                session_id=iter_session_id,
+                host_repo_path=setup.cwd,
+                target_branch=target_branch,
+                iteration=i,
+                since=iter_started_at,
+                agent_name=agent.name,
+                timestamp=_utcnow(),
+                sink=sink,
+            )
 
             if iter_usage is not None:
                 ctx_ev = StreamEvent(
@@ -641,66 +599,15 @@ def _run_loop(
                 completion_hit = iter_completion
                 break
 
-        # Phase 4a: post-iteration finalize for isolated providers.
-        if handle is not None and hasattr(handle, "finalize"):
-            try:
-                fr = handle.finalize(target=wt.host_repo_path)
-                if sink is not None:
-                    sink.write(
-                        StreamEvent(
-                            type="text",
-                            agent_name=agent.name,
-                            iteration=len(iterations),
-                            timestamp=_utcnow(),
-                            text=_format_finalize_line(fr),
-                        )
-                    )
-            except Exception as exc:
-                _preserve = getattr(handle, "preserve", None)
-                if callable(_preserve):
-                    try:
-                        _preserve()
-                    except Exception:
-                        pass
-                if sink is not None:
-                    recovery = format_finalize_recovery(
-                        isolated_path=handle.worktree_path,
-                        target_path=wt.host_repo_path,
-                        error=exc,
-                        preserved=callable(_preserve),
-                    )
-                    sink.write(
-                        StreamEvent(
-                            type="text",
-                            agent_name=agent.name,
-                            iteration=len(iterations),
-                            timestamp=_utcnow(),
-                            text=recovery,
-                        )
-                    )
-            else:
-                if not fr.applied and sink is not None:
-                    _preserve = getattr(handle, "preserve", None)
-                    if callable(_preserve):
-                        try:
-                            _preserve()
-                        except Exception:
-                            pass
-                    recovery = format_finalize_recovery(
-                        isolated_path=handle.worktree_path,
-                        target_path=wt.host_repo_path,
-                        files_failed=fr.files_changed,
-                        preserved=callable(_preserve),
-                    )
-                    sink.write(
-                        StreamEvent(
-                            type="text",
-                            agent_name=agent.name,
-                            iteration=len(iterations),
-                            timestamp=_utcnow(),
-                            text=recovery,
-                        )
-                    )
+        if handle is not None:
+            finalize_sandbox(
+                handle=handle,
+                target_path=wt.host_repo_path,
+                agent_name=agent.name,
+                iteration=len(iterations),
+                timestamp=_utcnow,
+                sink=sink,
+            )
 
     finally:
         if unregister_shutdown is not None:

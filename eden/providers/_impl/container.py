@@ -15,6 +15,13 @@ from typing import Literal
 
 from eden.abort import AbortSignal
 from eden.providers._helpers import make_bind_mount_provider
+from eden.providers._impl.container_mounts import (
+    SANDBOX_HOMEDIR,
+    SelinuxLabel,
+    _ensure_mount_parents,
+    _file_mount_parents,
+    _mount_argv,
+)
 from eden.providers._protocols import (
     BindMountSandboxHandle,
     SandboxProvider,
@@ -25,7 +32,6 @@ from eden.sandboxes.errors import (
     ContainerStartFailed,
     ImageNotFound,
     ImageUidMismatch,
-    MountConfigError,
     ProviderUnavailable,
 )
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
@@ -198,190 +204,6 @@ def _host_gid() -> int:
     """Return the host's GID, or 1000 on platforms without ``getgid``."""
     getgid = getattr(os, "getgid", None)
     return getgid() if getgid is not None else 1000
-
-
-SelinuxLabel = Literal["z", "Z"]
-
-
-SANDBOX_WORKDIR: Path = Path("/workspace")
-"""Default in-container worktree path used for relative sandbox mount targets."""
-
-
-def _expand_sandbox_tilde(
-    sandbox: Path,
-    *,
-    sandbox_homedir: Path | None,
-    sandbox_workdir: Path = SANDBOX_WORKDIR,
-) -> Path:
-    """Resolve a sandbox-side path.
-
-    A leading ``~`` expands under ``sandbox_homedir``. Relative paths resolve
-    under ``sandbox_workdir`` so ``Mount(sandbox=Path("data"))`` targets
-    ``/workspace/data``. Absolute paths pass through unchanged.
-
-    Raises ``ValueError`` if ``sandbox`` starts with ``~`` but the provider has
-    no ``sandbox_homedir``.
-    """
-    parts = sandbox.parts
-    if parts and parts[0] == "~":
-        if sandbox_homedir is None:
-            raise ValueError(
-                f"sandbox path {sandbox.as_posix()!r} starts with ~ but provider has "
-                "no sandbox_homedir; pass an absolute sandbox path or use a provider "
-                "that defines a homedir"
-            )
-        rest = parts[1:]
-        return sandbox_homedir.joinpath(*rest) if rest else sandbox_homedir
-    if not sandbox.is_absolute():
-        return sandbox_workdir / sandbox
-    return sandbox
-
-
-def _mount_spec(
-    *,
-    host: Path,
-    sandbox: Path,
-    read_only: bool,
-    selinux: SelinuxLabel | None,
-    sandbox_homedir: Path | None = None,
-) -> str:
-    """Build a bind-mount spec string.
-
-    Combines ``read_only`` and SELinux relabel suffixes into the trailing
-    options block expected by ``docker run -v`` / ``podman run -v``:
-    ``host:sandbox[:opt1,opt2...]``. Expands a leading ``~`` in ``sandbox``
-    using ``sandbox_homedir`` (e.g. ``Path("/home/agent")``).
-    """
-    expanded = _expand_sandbox_tilde(sandbox, sandbox_homedir=sandbox_homedir)
-    spec = f"{host}:{expanded.as_posix()}"
-    opts: list[str] = []
-    if read_only:
-        opts.append("ro")
-    if selinux is not None:
-        opts.append(selinux)
-    if opts:
-        spec += ":" + ",".join(opts)
-    return spec
-
-
-def _is_windows_host_path(path: Path) -> bool:
-    raw = str(path)
-    return bool(re.match(r"^[A-Za-z]:[\\/]", raw)) or "\\" in raw
-
-
-def _mount_argv(
-    *,
-    host: Path,
-    sandbox: Path,
-    read_only: bool,
-    selinux: SelinuxLabel | None,
-    sandbox_homedir: Path | None = None,
-) -> list[str]:
-    """Return container-runtime argv for a bind mount.
-
-    Windows-shaped host paths use ``--mount`` to avoid ``-v C:\\...:/target``
-    colon ambiguity. POSIX paths keep ``-v`` so SELinux relabel suffixes remain
-    available on Linux hosts.
-    """
-    expanded = _expand_sandbox_tilde(sandbox, sandbox_homedir=sandbox_homedir)
-    if _is_windows_host_path(host):
-        source = str(host).replace("\\", "/")
-        target = expanded.as_posix()
-        spec = f"type=bind,source={source},target={target}"
-        if read_only:
-            spec += ",readonly"
-        return ["--mount", spec]
-    return [
-        "-v",
-        _mount_spec(
-            host=host,
-            sandbox=sandbox,
-            read_only=read_only,
-            selinux=selinux,
-            sandbox_homedir=sandbox_homedir,
-        ),
-    ]
-
-
-# Default in-container home directory used by tilde-expansion. Matches the
-# ``agent`` user created by eden's blank-template Dockerfile.
-SANDBOX_HOMEDIR: Path = Path("/home/agent")
-
-
-def _file_mount_parents(mounts: list[Mount], *, sandbox_homedir: Path) -> list[Path]:
-    """Return distinct parent directories that need creating before agents run.
-
-    A parent is included when:
-    - the host path is a regular file (not a directory),
-    - the expanded sandbox path lies under ``sandbox_homedir``.
-
-    Mounts targeting paths outside ``sandbox_homedir`` (e.g. ``/etc/...``) are
-    skipped — eden won't ``mkdir -p`` arbitrary system directories.
-    """
-    seen: list[Path] = []
-    for m in mounts:
-        if not m.host.is_file():
-            continue
-        expanded = _expand_sandbox_tilde(m.sandbox, sandbox_homedir=sandbox_homedir)
-        parent = expanded.parent
-        if parent == sandbox_homedir:
-            continue
-        # ``is_relative_to`` requires the same root; both are absolute POSIX paths.
-        try:
-            parent.relative_to(sandbox_homedir)
-        except ValueError as exc:
-            raise MountConfigError(
-                sandbox_path=expanded.as_posix(),
-                parent=parent.as_posix(),
-                sandbox_homedir=sandbox_homedir.as_posix(),
-            ) from exc
-        if parent in seen:
-            continue
-        seen.append(parent)
-    return seen
-
-
-def _ensure_mount_parents(
-    *,
-    binary: str,
-    container_id: str,
-    parents: list[Path],
-    uid: int,
-    gid: int,
-) -> None:
-    """Create each parent dir inside the container and chown to ``uid:gid``.
-
-    Runs ``<binary> exec --user 0:0 <container_id> sh -c 'mkdir -p "$1" &&
-    chown "$2:$3" "$1"'`` per parent. Failures raise ``ContainerStartFailed``
-    so the user finds out at start-up rather than as a confused EACCES later.
-    """
-    for parent in parents:
-        proc = subprocess.run(
-            [
-                binary,
-                "exec",
-                "--user",
-                "0:0",
-                container_id,
-                "sh",
-                "-c",
-                'mkdir -p "$1" && chown "$2:$3" "$1"',
-                "sh",  # $0 — required because $1/$2/$3 follow.
-                parent.as_posix(),
-                str(uid),
-                str(gid),
-            ],
-            capture_output=True,
-            text=True,
-        )
-        if proc.returncode != 0:
-            raise ContainerStartFailed(
-                image=container_id,
-                exit_code=proc.returncode,
-                stderr=(
-                    f"failed to prepare mount parent {parent.as_posix()!r}: {proc.stderr.strip()}"
-                ),
-            )
 
 
 def make_container_provider(

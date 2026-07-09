@@ -97,7 +97,7 @@ def test_claude_code_factory_no_session_storage_when_disabled() -> None:
 
 def test_resolve_session_storage_prefers_attribute() -> None:
     """The orchestrator's resolver should use ``agent.session_storage``."""
-    from eden.orchestrator._loop import _resolve_session_storage
+    from eden.orchestrator._session_capture import resolve_session_storage
 
     class _CustomStorage:
         def extra_mounts(self) -> tuple[Mount, ...]:
@@ -116,13 +116,13 @@ def test_resolve_session_storage_prefers_attribute() -> None:
         model = "m"
         session_storage = custom
 
-    storage = _resolve_session_storage(_Agent())  # type: ignore[arg-type]
+    storage = resolve_session_storage(_Agent())  # type: ignore[arg-type]
     assert storage is custom
 
 
 def test_resolve_session_storage_falls_back_to_legacy_bool() -> None:
     """Agents that only ship ``captures_sessions=True`` get the default."""
-    from eden.orchestrator._loop import _resolve_session_storage
+    from eden.orchestrator._session_capture import resolve_session_storage
 
     @dataclass
     class _LegacyAgent:
@@ -130,12 +130,12 @@ def test_resolve_session_storage_falls_back_to_legacy_bool() -> None:
         model: str = "m"
         captures_sessions: bool = True
 
-    storage = _resolve_session_storage(_LegacyAgent())  # type: ignore[arg-type]
+    storage = resolve_session_storage(_LegacyAgent())  # type: ignore[arg-type]
     assert isinstance(storage, _ClaudeSessionStorageImpl)
 
 
 def test_resolve_session_storage_returns_none_when_disabled() -> None:
-    from eden.orchestrator._loop import _resolve_session_storage
+    from eden.orchestrator._session_capture import resolve_session_storage
 
     @dataclass
     class _DisabledAgent:
@@ -143,12 +143,12 @@ def test_resolve_session_storage_returns_none_when_disabled() -> None:
         model: str = "m"
         captures_sessions: bool = False
 
-    assert _resolve_session_storage(_DisabledAgent()) is None  # type: ignore[arg-type]
+    assert resolve_session_storage(_DisabledAgent()) is None  # type: ignore[arg-type]
 
 
 def test_resolve_session_storage_explicit_none_attr_falls_back_to_bool() -> None:
     """If ``session_storage is None`` and ``captures_sessions=True``, use default."""
-    from eden.orchestrator._loop import _resolve_session_storage
+    from eden.orchestrator._session_capture import resolve_session_storage
 
     @dataclass
     class _Agent:
@@ -157,7 +157,7 @@ def test_resolve_session_storage_explicit_none_attr_falls_back_to_bool() -> None
         session_storage: None = None
         captures_sessions: bool = True
 
-    storage = _resolve_session_storage(_Agent())  # type: ignore[arg-type]
+    storage = resolve_session_storage(_Agent())  # type: ignore[arg-type]
     assert isinstance(storage, _ClaudeSessionStorageImpl)
 
 
