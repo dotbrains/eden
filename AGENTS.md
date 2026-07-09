@@ -38,7 +38,7 @@ Manual path (no Flox, and required on Windows):
 - Build the package: `python -m build`
 - Check the installed CLI version: `eden version`
 
-CI runs `pre-commit run --all-files --show-diff-on-failure` then `pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70` across Python 3.11, 3.12, and 3.13 on Ubuntu, macOS, and Windows. The Ubuntu/macOS legs (`test-flox`) run inside `flox activate` with `EDEN_PYTHON` set per leg; the Windows leg (`test-windows`) runs natively with `actions/setup-python` + pip. Integration tests run separately on Linux (inside Flox).
+CI minimizes overlap while preserving coverage: `quality` runs `pre-commit run --all-files --show-diff-on-failure` once on Ubuntu inside Flox; `test-linux` runs `pytest -v -m "unit or e2e"` across Python 3.11, 3.12, and 3.13 in Flox, with coverage enforced on the Python 3.11 leg via `--cov=eden --cov-fail-under=70`; `test-macos` runs the same unit/e2e set once on macOS with Python 3.13 in Flox; `test-windows` runs it once on Windows with Python 3.13 via `actions/setup-python` + pip. Integration tests run once on Linux inside Flox.
 
 For Warp environment setup, use: `cd eden && python -m pip install --upgrade pip && python -m pip install -e ".[dev]"`.
 

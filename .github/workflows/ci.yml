@@ -15,21 +15,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Linux/macOS run inside the committed Flox environment (.flox/), which is
-  # the source of truth for the toolchain. EDEN_PYTHON selects which of the
-  # manifest's three Pythons the venv is built from, preserving the
-  # 3.11/3.12/3.13 matrix.
-  test-flox:
-    name: test-flox (${{ matrix.os }} / py${{ matrix.python }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        python: ["3.11", "3.12", "3.13"]
+  # Static checks are Python-version independent: ruff is pinned in
+  # pyproject.toml and mypy is configured for Python 3.11. Run them once.
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
-      EDEN_PYTHON: python${{ matrix.python }}
+      EDEN_PYTHON: python3.11
     steps:
       - uses: actions/checkout@v5
 
@@ -39,30 +32,67 @@ jobs:
       - name: Run pre-commit hooks (ruff format + lint, mypy --strict)
         run: flox activate -- pre-commit run --all-files --show-diff-on-failure
 
-      - name: pytest (unit + e2e)
-        run: flox activate -- pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
-
-      - name: pytest (integration)
-        if: runner.os == 'Linux'
-        run: flox activate -- pytest -v -m integration
-
-  # Flox is Linux/macOS only, but eden ships Windows-specific path handling.
-  # This leg stays native to keep Windows coverage.
-  test-windows:
-    name: test-windows (py${{ matrix.python-version }})
-    runs-on: windows-latest
-    timeout-minutes: 15
+  # Linux is the only OS where we need the full supported-Python matrix.
+  # Coverage is collected on the oldest supported Python; the remaining
+  # Linux legs prove interpreter compatibility without repeating coverage.
+  test-linux:
+    name: test-linux (py${{ matrix.python }})
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python: ["3.11", "3.12", "3.13"]
+    env:
+      EDEN_PYTHON: python${{ matrix.python }}
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: pytest (unit + e2e, coverage)
+        if: matrix.python == '3.11'
+        run: flox activate -- pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
+
+      - name: pytest (unit + e2e)
+        if: matrix.python != '3.11'
+        run: flox activate -- pytest -v -m "unit or e2e"
+
+  # macOS catches platform-specific path/process behavior; one current
+  # Python leg avoids duplicating Linux's interpreter matrix.
+  test-macos:
+    name: test-macos (py3.13)
+    needs: quality
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      EDEN_PYTHON: python3.13
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: pytest (unit + e2e)
+        run: flox activate -- pytest -v -m "unit or e2e"
+
+  # Flox is Linux/macOS only, but eden ships Windows-specific path handling.
+  # This leg stays native and uses one current Python to avoid duplicating
+  # Linux's interpreter matrix.
+  test-windows:
+    name: test-windows (py3.13)
+    needs: quality
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Python 3.13
         uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.13"
           cache: pip
           cache-dependency-path: pyproject.toml
 
@@ -71,8 +101,23 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
-      - name: Run pre-commit hooks (ruff format + lint, mypy --strict)
-        run: pre-commit run --all-files --show-diff-on-failure
-
       - name: pytest (unit + e2e)
-        run: pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
+        run: pytest -v -m "unit or e2e"
+
+  # Real provider tests are Linux-only and heavily capability-gated. Run them
+  # once instead of once per Python version.
+  integration:
+    name: integration (py3.13)
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EDEN_PYTHON: python3.13
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: pytest (integration)
+        run: flox activate -- pytest -v -m integration

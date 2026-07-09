@@ -52,23 +52,31 @@ See [Python API](python-api.md) for the full public surface, [Sandbox providers]
 .venv/bin/pytest -m e2e            # in-process orchestrator runs with simulated_agent
 .venv/bin/pytest -m integration    # real Docker/Podman/cloud; Linux only in CI
 .venv/bin/pytest -m smoke          # end-to-end smoke tests
-.venv/bin/pytest -m "unit or e2e"  # what CI runs by default on every OS/Python
+.venv/bin/pytest -m "unit or e2e"  # default CI-style local test set
 ```
 
 ## Quality gates
 
-The CI workflow (`.github/workflows/ci.yml`) installs the package with the `[dev]` extra and runs all of these on each push and pull request, across the matrix `{ubuntu-latest, macos-latest, windows-latest}` x `{3.11, 3.12, 3.13}`:
+The CI workflow (`.github/workflows/ci.yml`) keeps overlap low while preserving
+the important coverage:
 
-```bash
-pre-commit run --all-files   # ruff format, ruff check, mypy --strict
-pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
-```
+- `quality` runs `pre-commit run --all-files --show-diff-on-failure` once on
+  Ubuntu in Flox.
+- `test-linux` runs `pytest -v -m "unit or e2e"` on Python 3.11, 3.12, and
+  3.13 in Flox. The Python 3.11 leg also enforces
+  `--cov=eden --cov-fail-under=70`.
+- `test-macos` runs `pytest -v -m "unit or e2e"` once on macOS with Python
+  3.13 in Flox.
+- `test-windows` runs `pytest -v -m "unit or e2e"` once on Windows with Python
+  3.13 via `actions/setup-python`.
+- `integration` runs `pytest -v -m integration` once on Ubuntu in Flox.
 
 The same `pre-commit` config (`.pre-commit-config.yaml`) gates every local commit, so format/lint/type errors fail before push instead of after CI.
 
-The `integration` marker runs as a separate step on Linux only.
+The `integration` marker runs separately because those tests touch real
+provider services and are capability-gated by the runner environment.
 
-The coverage gate is **70%**. Current actual coverage is **93%**. The full suite is **451 tests** passing.
+The coverage gate is **70%**.
 
 ## Releasing a new version
 
