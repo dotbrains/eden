@@ -73,6 +73,35 @@ def test_caller_worktree_hosts_two_sequential_sandboxes(e2e_git_repo: Path) -> N
         assert a.branch == b.branch == wt.branch
 
 
+def test_worktree_run_executes_agent_in_owned_worktree(e2e_git_repo: Path) -> None:
+    """WorktreeHandle.run() is the direct API for AFK work in one worktree."""
+    with eden.create_worktree() as wt:
+        result = wt.run(
+            agent=eden.simulated_agent(output="via worktree\n<promise>COMPLETE</promise>\n"),
+            sandbox=no_sandbox(),
+            prompt="x",
+            max_iterations=1,
+            idle_timeout=10.0,
+        )
+        assert result.branch == wt.branch
+        assert "via worktree" in result.stdout
+
+
+def test_worktree_create_sandbox_returns_split_owner_sandbox(e2e_git_repo: Path) -> None:
+    with eden.create_worktree() as wt:
+        with wt.create_sandbox(sandbox=no_sandbox()) as sandbox:
+            assert sandbox.worktree is wt
+            assert sandbox.owns_worktree is False
+            result = sandbox.run(
+                agent=eden.simulated_agent(output="method sandbox\n<promise>COMPLETE</promise>\n"),
+                prompt="x",
+                max_iterations=1,
+                idle_timeout=10.0,
+            )
+        assert result.branch == wt.branch
+        assert wt.worktree_path.exists()
+
+
 def test_sandbox_run_rejects_branch_strategy(e2e_git_repo: Path) -> None:
     """branch_strategy is meaningless after the sandbox owns a branch."""
     with eden.create_sandbox(sandbox=no_sandbox()) as sandbox:

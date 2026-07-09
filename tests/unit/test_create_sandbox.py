@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 import pytest
 
+from eden.lifecycle import Hook, Hooks, HostHooks, SandboxHooks
 from eden.providers._types import (
     BranchStrategy,
     CreateOptions,
@@ -462,3 +463,31 @@ def test_git_setup_timeout_defaults_to_60s(
         assert s.worktree._git_timeout == 60.0
     finally:
         s.close()
+
+
+def test_create_sandbox_runs_creation_and_close_hooks(
+    tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_git_repo)
+    p = _StubProvider()
+    close_marker = tmp_git_repo / "host-closed.txt"
+    hooks = Hooks(
+        host=HostHooks(
+            on_worktree_ready=(Hook("printf ready > host-ready.txt"),),
+            on_close=(Hook(f"printf closed > {str(close_marker)!r}"),),
+        ),
+        sandbox=SandboxHooks(
+            on_sandbox_ready=(Hook("sandbox-ready"),),
+            on_close=(Hook("sandbox-close"),),
+        ),
+    )
+    s = create_sandbox(sandbox=p, hooks=hooks)
+    handle = s.handle
+    assert isinstance(handle, _StubHandle)
+    assert (s.worktree.worktree_path / "host-ready.txt").read_text() == "ready"
+    assert handle.exec_calls[0]["cmd"] == "sandbox-ready"
+
+    s.close()
+
+    assert handle.exec_calls[1]["cmd"] == "sandbox-close"
+    assert close_marker.read_text() == "closed"

@@ -12,7 +12,8 @@ from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.abort._signal import AbortController
 from eden.env import load_eden_env
-from eden.lifecycle import Hooks
+from eden.lifecycle import HookPhase, Hooks
+from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.providers._protocols import SandboxHandle, SandboxProvider
@@ -45,6 +46,9 @@ class Sandbox:
     sandbox_provider: SandboxProvider
     cwd: Path | None = None
     owns_worktree: bool = True
+    hooks: Hooks = field(default_factory=Hooks)
+    create_env: Mapping[str, str] = field(default_factory=dict)
+    timeouts: Timeouts = field(default_factory=Timeouts)
     _last_session_id: str | None = field(default=None, repr=False, compare=False)
     """Session id of the most recent ``run()`` that captured one; powers the
     no-argument :meth:`resume` / :meth:`fork` convenience methods."""
@@ -67,6 +71,31 @@ class Sandbox:
         worktree close is still attempted, but its failure is reported and
         suppressed so it cannot replace the primary error.
         """
+        try:
+            run_sandbox_hooks(
+                phase=HookPhase.OnClose,
+                hooks=self.hooks.sandbox,
+                handle=self.handle,
+                env=self.create_env,
+                timeouts=self.timeouts,
+            )
+            run_host_hooks(
+                phase=HookPhase.OnClose,
+                hooks=self.hooks.host,
+                worktree_path=self.worktree.worktree_path,
+                env=self.create_env,
+                timeouts=self.timeouts,
+            )
+        except BaseException:
+            try:
+                self.handle.close()
+            finally:
+                if self.owns_worktree:
+                    try:
+                        self.worktree.close()
+                    except Exception as cleanup_exc:
+                        print(f"eden: worktree close also failed: {cleanup_exc}")
+            raise
         try:
             self.handle.close()
         except BaseException:
@@ -277,6 +306,7 @@ def create_sandbox(
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
+    hooks: Hooks | None = None,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
     timeouts: Timeouts | None = None,
@@ -298,6 +328,10 @@ def create_sandbox(
     ``copy_to_worktree`` is a list of host-relative file/directory paths to
     copy from the host repo into the freshly-carved worktree before the
     sandbox boots. Incompatible with the ``head`` branch strategy.
+
+    ``hooks`` runs ``host.on_worktree_ready`` after ``copy_to_worktree`` and
+    before sandbox creation, ``sandbox.on_sandbox_ready`` after the provider
+    handle is created, and ``*.on_close`` from :meth:`Sandbox.close`.
 
     ``timeouts`` caps the carve's git plumbing via ``Timeouts.git_setup``
     (and is reused by ``close()`` for the teardown ``git worktree remove``).
@@ -391,6 +425,14 @@ def create_sandbox(
             source_root=host_repo_path,
             worktree_path=wt.worktree_path,
         )
+        resolved_hooks = hooks if hooks is not None else Hooks()
+        run_host_hooks(
+            phase=HookPhase.OnWorktreeReady,
+            hooks=resolved_hooks.host,
+            worktree_path=wt.worktree_path,
+            env=combined_env,
+            timeouts=resolved_timeouts,
+        )
         handle = sandbox.create(
             CreateOptions(
                 branch=wt.branch,
@@ -401,6 +443,19 @@ def create_sandbox(
                 name_hint=name,
             )
         )
+        try:
+            run_sandbox_hooks(
+                phase=HookPhase.OnSandboxReady,
+                hooks=resolved_hooks.sandbox,
+                handle=handle,
+                env=combined_env,
+                timeouts=resolved_timeouts,
+            )
+        except Exception:
+            try:
+                handle.close()
+            finally:
+                raise
     except Exception:
         # A caller-provided worktree outlives this sandbox by design — only
         # close what this factory carved itself. A cleanup failure must not
@@ -418,4 +473,7 @@ def create_sandbox(
         sandbox_provider=sandbox,
         cwd=cwd,
         owns_worktree=owns_worktree,
+        hooks=resolved_hooks,
+        create_env=combined_env,
+        timeouts=resolved_timeouts,
     )

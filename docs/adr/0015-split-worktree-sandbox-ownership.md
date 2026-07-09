@@ -40,6 +40,13 @@ container over the caller's worktree. The returned `Sandbox` carries
 handle only. Self-carved sandboxes keep `owns_worktree=True` and the existing
 close-both behaviour — callers who don't pass `worktree=` see no change.
 
+2026-07-09 update: `WorktreeHandle` now also exposes convenience methods
+`wt.create_sandbox(...)`, `wt.run(...)`, and `wt.interactive(...)`. They are
+thin wrappers over the same split-ownership model: `wt.create_sandbox(...)`
+delegates to `create_sandbox(worktree=wt, ...)`, `wt.run(...)` creates and
+closes a short-lived sandbox handle, and none of these methods close the
+worktree itself.
+
 `worktree=` is mutually exclusive with `branch`/`branch_strategy`/`base_branch`
 (the branch was fixed at carve time; accepting both would invite silent
 disagreement). The provider-side `supports_strategy` check is skipped — there is

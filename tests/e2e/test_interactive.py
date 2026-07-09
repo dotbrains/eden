@@ -79,6 +79,15 @@ def test_interactive_carves_named_branch(e2e_git_repo: Path) -> None:
     assert result.worktree_path != e2e_git_repo
 
 
+def test_worktree_interactive_uses_existing_worktree(e2e_git_repo: Path) -> None:
+    with eden.create_worktree() as wt:
+        result = wt.interactive(agent=_exit_zero_agent(), sandbox=no_sandbox())
+        assert result.exit_code == 0
+        assert result.branch == wt.branch
+        assert result.worktree_path == wt.worktree_path
+        assert wt.worktree_path.exists()
+
+
 def test_interactive_uses_build_interactive_command_when_present(
     e2e_git_repo: Path, tmp_path_factory: pytest.TempPathFactory
 ) -> None:

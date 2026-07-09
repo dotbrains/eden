@@ -20,7 +20,7 @@ from eden.prompt._collect import collect_missing_args
 from eden.prompt._source import resolve_source
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
-from eden.worktree._create import create_worktree
+from eden.worktree._create import WorktreeHandle, create_worktree
 
 
 @dataclass(frozen=True)
@@ -55,6 +55,7 @@ def interactive(
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
     collect_args: bool | None = None,
+    _existing_worktree: WorktreeHandle | None = None,
 ) -> InteractiveResult:
     """Run an agent attached to the parent TTY for an interactive session.
 
@@ -86,7 +87,31 @@ def interactive(
 
         sandbox = no_sandbox()
 
-    cwd_path = Path(cwd) if cwd is not None else Path.cwd()
+    if _existing_worktree is not None:
+        if branch_strategy is not None or base_branch is not None:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "branch_strategy/base_branch are incompatible with an existing worktree; "
+                    "the branch was fixed when the worktree was carved"
+                ),
+            )
+        if copy_to_worktree:
+            raise InvalidOptions(
+                code="config.invalid_options",
+                message=(
+                    "copy_to_worktree= is incompatible with an existing worktree; "
+                    "seed files when creating the worktree or sandbox"
+                ),
+            )
+
+    cwd_path = (
+        _existing_worktree.host_repo_path
+        if _existing_worktree is not None
+        else Path(cwd)
+        if cwd is not None
+        else Path.cwd()
+    )
     if not cwd_path.exists() or not cwd_path.is_dir():
         from eden.errors import CwdError
 
@@ -115,7 +140,9 @@ def interactive(
     # directly. ``resolve_branch_strategy`` defaults bind_mount providers to
     # ``merge_to_head`` (right for ``run()`` loops) which is the wrong default
     # here. Fall back to ``merge_to_head`` only when ``head`` is unsupported.
-    if branch_strategy is not None and base_branch is not None:
+    if _existing_worktree is not None:
+        strategy = BranchStrategy.named(_existing_worktree.branch)
+    elif branch_strategy is not None and base_branch is not None:
         raise InvalidOptions(
             code="config.invalid_options",
             message=(
@@ -159,12 +186,16 @@ def interactive(
     from eden._types import Timeouts
 
     timeouts = Timeouts()
-    wt = create_worktree(
-        host_repo_path=cwd_path,
-        strategy=strategy,
-        name_hint=name,
-        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
-        git_timeout=timeouts.git_setup,
+    wt = (
+        _existing_worktree
+        if _existing_worktree is not None
+        else create_worktree(
+            host_repo_path=cwd_path,
+            strategy=strategy,
+            name_hint=name,
+            throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+            git_timeout=timeouts.git_setup,
+        )
     )
     handle = None
     hooks_or_default = hooks if hooks is not None else Hooks()
@@ -286,7 +317,8 @@ def interactive(
                 handle.close()
             except Exception:
                 pass
-        wt.close()
+        if _existing_worktree is None:
+            wt.close()
 
 
 __all__ = ["InteractiveResult", "interactive"]

@@ -205,6 +205,7 @@ def create_sandbox(
     env: Mapping[str, str] | None = None,
     mounts: tuple[Mount, ...] | None = None,
     name: str | None = None,
+    hooks: Hooks | None = None,
     copy_to_worktree: list[str] | None = None,
     timeouts: Timeouts | None = None,
 ) -> Sandbox: ...
@@ -220,6 +221,8 @@ with eden.create_worktree(branch="eden/feature/x") as wt:
     with eden.create_sandbox(sandbox=docker_provider(image="review:latest"), worktree=wt) as s:
         s.run(agent=eden.claude_code("..."), prompt_file="review.md")
 ```
+
+`hooks` runs `host.on_worktree_ready` after `copy_to_worktree`, `sandbox.on_sandbox_ready` after provider creation, and `*.on_close` when `Sandbox.close()` runs.
 
 `copy_to_worktree` (when supplied) seeds host-relative files into the worktree before the sandbox boots — same semantics as on [`run()`](#run), and the copy happens once at `create_sandbox()` time (not on every subsequent `sb.run()`). Incompatible with `BranchStrategy.head()`.
 
@@ -282,9 +285,31 @@ def create_worktree(
 ) -> WorktreeHandle: ...
 ```
 
-Provide either `branch` (named) or `branch_strategy` (any of the three strategies); supplying both raises `ValueError`. Defaults to `BranchStrategy.merge_to_head()`. Returns a `WorktreeHandle` with `.branch`, `.worktree_path`, and `.close()` (works as a context manager).
+Provide either `branch` (named) or `branch_strategy` (any of the three strategies); supplying both raises `ValueError`. Defaults to `BranchStrategy.merge_to_head()`. Returns a `WorktreeHandle` with `.branch`, `.worktree_path`, `.close()`, `.run(...)`, `.interactive(...)`, and `.create_sandbox(...)` (works as a context manager).
 
-Pass the handle to [`create_sandbox(worktree=...)`](#create_sandbox) to host one or more sequential sandboxes on it without giving up ownership — each `Sandbox.close()` removes only its container; the worktree lives until your `wt.close()`.
+Use the handle directly when a workflow needs to keep one branch/worktree across several steps:
+
+```python
+from eden.sandboxes.no_sandbox import provider as no_sandbox
+
+with eden.create_worktree(branch="eden/issue-42") as wt:
+    explore = wt.interactive(agent=eden.claude_code("..."), sandbox=no_sandbox())
+    result = wt.run(
+        agent=eden.claude_code("..."),
+        sandbox=docker_provider(...),
+        prompt_file=".eden/implement.md",
+        max_iterations=5,
+    )
+    with wt.create_sandbox(sandbox=docker_provider(...)) as sb:
+        checked = sb.exec("pytest -q", timeout=120)
+        checked.check()
+```
+
+`wt.run(...)` creates a short-lived sandbox backed by the worktree, runs one agent loop through [`Sandbox.run(...)`](#sandboxrun), closes only the sandbox handle, and leaves the worktree open for more work. It accepts the same options as `Sandbox.run(...)` plus `sandbox=`, provider `mounts=`, `copy_to_worktree=`, and sandbox-creation `hooks=`.
+
+`wt.interactive(...)` launches an interactive session in the existing worktree without carving or closing another worktree. It accepts the same prompt/env/name/hook options as top-level [`interactive(...)`](#interactive).
+
+`wt.create_sandbox(...)` is equivalent to [`create_sandbox(worktree=wt, ...)`](#create_sandbox): each returned `Sandbox.close()` removes only its provider handle; the worktree lives until `wt.close()`.
 
 ---
 
