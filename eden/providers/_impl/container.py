@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import os
-import re
-import secrets
 import shutil
 import subprocess
 from collections.abc import Mapping
@@ -18,7 +16,12 @@ from eden.providers._impl.container_mounts import (
     SelinuxLabel,
     _ensure_mount_parents,
     _file_mount_parents,
-    _mount_argv,
+)
+from eden.providers._impl.container_run_args import (
+    build_mount_map,
+    build_run_argv,
+    container_name,
+    default_image_name,
 )
 from eden.providers._protocols import (
     BindMountSandboxHandle,
@@ -32,21 +35,6 @@ from eden.sandboxes.errors import (
     ProviderUnavailable,
 )
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
-
-_NAME_RE = re.compile(r"[^a-z0-9-]+")
-_IMAGE_TAG_RE = re.compile(r"[^a-z0-9_.-]+")
-
-
-def _sanitize_container_seed(s: str) -> str:
-    out = _NAME_RE.sub("-", s.lower()).strip("-")
-    return out or "eden"
-
-
-def _default_image_name(repo_path: Path) -> str:
-    repo_name = repo_path.name.lower()
-    tag = _IMAGE_TAG_RE.sub("-", repo_name).strip("-")
-    return f"eden:{tag or 'local'}"
-
 
 _ContainerHandle = ContainerHandle
 
@@ -165,7 +153,7 @@ def make_container_provider(
         if not shutil.which(binary):
             raise ProviderUnavailable(provider=binary, binary=binary)
 
-        resolved_image = image or _default_image_name(opts.host_repo_path)
+        resolved_image = image or default_image_name(opts.host_repo_path)
         inspect = subprocess.run(
             [binary, "image", "inspect", resolved_image],
             capture_output=True,
@@ -176,58 +164,28 @@ def make_container_provider(
 
         _check_image_uid(binary=binary, image=resolved_image, expected_uid=effective_uid)
 
-        # Mount precedence: implicit /workspace, then opts.mounts, then
-        # provider_mounts (last write wins on sandbox-path collision).
-        mount_map: dict[Path, Mount] = {}
-        mount_map[Path("/workspace")] = Mount(host=opts.worktree_path, sandbox=Path("/workspace"))
-        for m in opts.mounts:
-            mount_map[m.sandbox] = m
-        for m in provider_mounts:
-            mount_map[m.sandbox] = m
-
+        mount_map = build_mount_map(
+            worktree_path=opts.worktree_path,
+            opts_mounts=opts.mounts,
+            provider_mounts=provider_mounts,
+        )
         merged_env: dict[str, str] = {**provider_env, **dict(opts.env)}
-
-        suffix = secrets.token_hex(4)
-        seed = opts.name_hint or opts.branch
-        container_name = f"eden-{_sanitize_container_seed(seed)}-{suffix}"
-        container_name = container_name[:63]
-
-        argv: list[str] = [
-            binary,
-            "run",
-            "-d",
-            "--rm",
-            "-i",
-            "--name",
-            container_name,
-            "--user",
-            f"{effective_uid}:{effective_gid}",
-            "--entrypoint",
-            "sleep",
-        ]
-        for m in mount_map.values():
-            argv.extend(
-                _mount_argv(
-                    host=m.host,
-                    sandbox=m.sandbox,
-                    read_only=m.read_only,
-                    selinux=selinux_label,
-                    sandbox_homedir=SANDBOX_HOMEDIR,
-                )
-            )
-        for k, v in merged_env.items():
-            argv.extend(["-e", f"{k}={v}"])
-        for network_name in provider_networks:
-            argv.extend(["--network", network_name])
-        if cpus is not None:
-            argv.extend(["--cpus", str(cpus)])
-        if binary == "podman" and userns == "keep-id":
-            argv.append(f"--userns=keep-id:uid={effective_uid},gid={effective_gid}")
-        for device in provider_devices:
-            argv.extend(["--device", device])
-        for group in provider_groups:
-            argv.extend(["--group-add", str(group)])
-        argv.extend([resolved_image, "infinity"])
+        name = container_name(branch=opts.branch, name_hint=opts.name_hint)
+        argv = build_run_argv(
+            binary=binary,
+            container_name=name,
+            uid=effective_uid,
+            gid=effective_gid,
+            mounts=mount_map,
+            env=merged_env,
+            networks=provider_networks,
+            cpus=cpus,
+            userns=userns,
+            devices=provider_devices,
+            groups=provider_groups,
+            image=resolved_image,
+            selinux_label=selinux_label,
+        )
 
         run_proc = subprocess.run(argv, capture_output=True, text=True)
         if run_proc.returncode != 0:
