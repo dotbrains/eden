@@ -88,6 +88,7 @@ def test_action_inputs_match_eden_run_flags() -> None:
         "image-name",
         "max-iterations",
         "idle-timeout",
+        "completion-timeout",
     }
     # Inputs that the action handles before reaching `eden run`.
     expected_meta = {"python-version", "eden-version"}

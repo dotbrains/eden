@@ -46,7 +46,7 @@ For each iteration (default 1, capped by `max_iterations`):
 3. It spawns the agent process inside the sandbox via the handle's `exec(...)`.
 4. It streams stdout line-by-line, calling `agent.parse_stream(line)` for each line.
 5. Yielded `StreamEvent`s drive logging, idle-warning emission, completion-signal matching, and tool-call accounting.
-6. When the agent exits — whether by hitting the completion signal, exhausting iterations, idle timeout, abort signal, or step timeout — the orchestrator stops the loop. Eden itself does not commit; the agent commits its own work (the scaffolded prompts instruct it to). After the run, the orchestrator censuses those commits with `git rev-list base..HEAD` and reports them on [`RunResult.commits`](python-api.md#runresult) (bounded by `Timeouts.commit_collection`; empty for isolated/cloud providers, which return file diffs rather than commit history).
+6. When the agent exits — whether by hitting the completion signal, exhausting iterations, idle timeout, abort signal, or step timeout — the orchestrator stops the loop. After a completion signal, Eden drains trailing stdout for `completion_timeout` seconds before terminating a still-open process, so final result/usage lines can be captured without letting a child process hold the run open indefinitely. Eden itself does not commit; the agent commits its own work (the scaffolded prompts instruct it to). After the run, the orchestrator censuses those commits with `git rev-list base..HEAD` and reports them on [`RunResult.commits`](python-api.md#runresult) (bounded by `Timeouts.commit_collection`; empty for isolated/cloud providers, which return file diffs rather than commit history).
 
 ## Finalize
 

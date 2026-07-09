@@ -69,6 +69,7 @@ def run(
     completion_signal: str | list[str] = "<promise>COMPLETE</promise>",
     idle_timeout: float | timedelta = 600.0,
     idle_warning_interval: float | timedelta | None = None,
+    completion_timeout: float | timedelta | None = 60.0,
     name: str | None = None,
     hooks: Hooks | None = None,
     timeouts: Timeouts | None = None,
@@ -94,6 +95,7 @@ Parameters:
 - `completion_signal` — string or list-of-strings whose appearance in agent output stops the loop early. Default `"<promise>COMPLETE</promise>"`.
 - `idle_timeout` — seconds (or `timedelta`) of stdout silence before the run aborts with `IdleTimeout`. Default `600.0`.
 - `idle_warning_interval` — emit `StreamEvent(type="idle_warning")` every N seconds during idleness. `None` disables.
+- `completion_timeout` — seconds (or `timedelta`) to keep draining stdout after the completion signal before terminating a still-open agent process. Default `60.0`; pass `None` to wait until EOF or trailing-output idle. This keeps successful agents from failing with `IdleTimeout` when a child process keeps stdout open after the completion signal.
 - `name` — informational tag used in worktree branch slugs and stream events.
 - `hooks` — `Hooks(host=..., sandbox=...)` lifecycle bundle. Default `Hooks()`.
 - `timeouts` — `Timeouts(...)` per-step deadlines. Default `Timeouts()`.
@@ -1126,7 +1128,7 @@ The 20 concrete error classes re-exported from `eden`:
 - `HookError` — base for hook failures.
 - `HookFailed` — a hook command exited non-zero.
 - `HookTimeout` — a hook exceeded `Timeouts.hook_step` (or its own `timeout`).
-- `IdleTimeout` — agent stdout was silent past `idle_timeout`.
+- `IdleTimeout` — agent stdout was silent past `idle_timeout` before any completion signal was seen. After a completion signal, `completion_timeout` bounds the success-path drain instead.
 - `InvalidOptions` — generic kwarg validation failure.
 - `PromptError` — `prompt`/`prompt_file`/`prompt_args` resolution failed.
 - `RestAuthError` — 401/403 from a cloud provider's REST API.

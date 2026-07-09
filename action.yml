@@ -38,6 +38,10 @@ inputs:
     description: "Bail when agent stdout is silent this many seconds."
     required: false
     default: "600"
+  completion-timeout:
+    description: "Grace window after the completion signal before terminating a still-open agent process."
+    required: false
+    default: "60"
   python-version:
     description: "Python version installed before pip-install eden-agent."
     required: false
@@ -80,6 +84,7 @@ runs:
           --backlog "${{ inputs.backlog }}"
           --max-iterations "${{ inputs.max-iterations }}"
           --idle-timeout "${{ inputs.idle-timeout }}"
+          --completion-timeout "${{ inputs.completion-timeout }}"
         )
         if [ -n "${{ inputs.model }}" ]; then
           args+=( --model "${{ inputs.model }}" )

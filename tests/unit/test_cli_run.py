@@ -67,6 +67,7 @@ def test_run_invokes_eden_run_with_simple_loop_prompt(
     assert "gh issue list" in kw["prompt"]
     assert kw["max_iterations"] == 3
     assert kw["idle_timeout"] == 600.0
+    assert kw["completion_timeout"] == 60.0
 
 
 def test_run_rejects_unknown_template(runner: CliRunner, fake_run: MagicMock) -> None:
@@ -112,12 +113,15 @@ def test_run_propagates_max_iterations(runner: CliRunner, fake_run: MagicMock) -
             "7",
             "--idle-timeout",
             "30",
+            "--completion-timeout",
+            "5",
         ],
     )
     assert result.exit_code == 0, result.output
     kw = _kwargs(fake_run.call_args)
     assert kw["max_iterations"] == 7
     assert kw["idle_timeout"] == 30.0
+    assert kw["completion_timeout"] == 5.0
 
 
 def test_run_uses_linear_backlog_prompt(runner: CliRunner, fake_run: MagicMock) -> None:

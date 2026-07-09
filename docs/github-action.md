@@ -40,6 +40,7 @@ jobs:
 | `image-name` | _(empty)_ | Container image; required when `sandbox` is `docker`/`podman`. |
 | `max-iterations` | `3` | Max iteration loop turns. |
 | `idle-timeout` | `600` | Bail when agent stdout is silent this many seconds. |
+| `completion-timeout` | `60` | Grace window after the completion signal before terminating a still-open agent process. |
 | `python-version` | `3.12` | Python the action installs before pip-install. |
 | `eden-version` | _(empty)_ | Pin to a specific PyPI version. Empty = latest. |
 

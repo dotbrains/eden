@@ -79,6 +79,7 @@ For docker/podman sandboxes, supply `--image-name` (the image must already be bu
 | `--image-name` | _(none)_ | any string | Container image tag — required for `--sandbox docker` / `podman`. |
 | `--max-iterations` | `3` | positive int | Max iteration loop turns. |
 | `--idle-timeout` | `600.0` | seconds | Bail when the agent's stdout has been silent this long. |
+| `--completion-timeout` | `60.0` | seconds | Grace window after the completion signal before terminating a still-open agent process. |
 | `--cwd` | current dir | path | Repo to run against. |
 
 The simple-loop prompt is identical to the one written by `eden init --template simple-loop` — see [templates.md](templates.md).

@@ -89,6 +89,14 @@ def run_command(
     idle_timeout: float = typer.Option(
         600.0, "--idle-timeout", help="Idle-timeout (seconds) before bailing"
     ),
+    completion_timeout: float | None = typer.Option(
+        60.0,
+        "--completion-timeout",
+        help=(
+            "Grace window (seconds) after the completion signal before "
+            "terminating a still-open agent process; pass 0 to disable the grace window"
+        ),
+    ),
     cwd: Path | None = typer.Option(None, "--cwd", help="Repo to run in"),  # noqa: B008
 ) -> None:
     """Run a template's iteration loop in-process via ``eden.run()``."""
@@ -133,6 +141,7 @@ def run_command(
         prompt=prompt,
         max_iterations=max_iterations,
         idle_timeout=idle_timeout,
+        completion_timeout=completion_timeout,
         cwd=cwd,
     )
 
