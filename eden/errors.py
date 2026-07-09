@@ -11,15 +11,12 @@ from __future__ import annotations
 import builtins
 from pathlib import Path
 
-
-class EdenError(Exception):
-    """Base for every error raised from the eden package."""
-
-
-def _format(code: str, message: str, hint: str | None) -> str:
-    """Return ``[code] message`` with an optional newline-prefixed hint."""
-    base = f"[{code}] {message}"
-    return f"{base}\nhint: {hint}" if hint else base
+from eden._error_base import EdenError as EdenError
+from eden._error_base import _format as _format
+from eden._rest_errors import RestAuthError as RestAuthError
+from eden._rest_errors import RestError as RestError
+from eden._rest_errors import RestNotFoundError as RestNotFoundError
+from eden._rest_errors import RestRateLimited as RestRateLimited
 
 
 class ConfigError(EdenError):
@@ -378,107 +375,3 @@ class SessionNotFound(EdenError):
             "verify the id is correct, or list captured sessions under <repo>/.eden/sessions/"
         )
         super().__init__(_format(self.code, message, self.hint))
-
-
-class RestError(EdenError):
-    """Non-2xx response from a REST API. Carries status, body, url for debugging.
-
-    `status=0` indicates a connection-level failure (no HTTP response).
-    Catch this at the orchestrator boundary; never let it leak into user
-    code as a generic `RequestException`.
-    """
-
-    def __init__(
-        self,
-        *,
-        code: str = "rest.error",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-        status: int = 0,
-        body: str = "",
-        url: str = "",
-    ) -> None:
-        self.code = code
-        self.message = message
-        self.hint = hint
-        self.cause = cause
-        self.status = status
-        self.body = body
-        self.url = url
-        super().__init__(_format(code, message, hint))
-
-
-class RestAuthError(RestError):
-    """401/403 — Bearer token rejected or insufficient permissions."""
-
-    def __init__(
-        self,
-        *,
-        code: str = "rest.auth",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-        status: int = 0,
-        body: str = "",
-        url: str = "",
-    ) -> None:
-        super().__init__(
-            code=code,
-            message=message,
-            hint=hint,
-            cause=cause,
-            status=status,
-            body=body,
-            url=url,
-        )
-
-
-class RestNotFoundError(RestError):
-    """404 — resource (sandbox/file) not found."""
-
-    def __init__(
-        self,
-        *,
-        code: str = "rest.not_found",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-        status: int = 0,
-        body: str = "",
-        url: str = "",
-    ) -> None:
-        super().__init__(
-            code=code,
-            message=message,
-            hint=hint,
-            cause=cause,
-            status=status,
-            body=body,
-            url=url,
-        )
-
-
-class RestRateLimited(RestError):
-    """429 — server-side rate-limit; retry already exhausted."""
-
-    def __init__(
-        self,
-        *,
-        code: str = "rest.rate_limited",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-        status: int = 0,
-        body: str = "",
-        url: str = "",
-    ) -> None:
-        super().__init__(
-            code=code,
-            message=message,
-            hint=hint,
-            cause=cause,
-            status=status,
-            body=body,
-            url=url,
-        )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
-from eden.sandboxes._factory import Sandbox, create_sandbox
+from eden.sandboxes._factory import create_sandbox
+from eden.sandboxes._sandbox import Sandbox
 
 __all__ = ["Sandbox", "create_sandbox"]

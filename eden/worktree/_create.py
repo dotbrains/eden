@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from eden.output import OutputDefinition
     from eden.providers._protocols import SandboxProvider
     from eden.providers._types import Mount
-    from eden.sandboxes._factory import Sandbox
+    from eden.sandboxes._sandbox import Sandbox
     from eden.streaming import StreamEvent
 
 _SANITIZE_RE = re.compile(r"[^a-z0-9._-]+")
