@@ -11,21 +11,18 @@ from pathlib import Path
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
 from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
-from eden.agents._flox import flox_wrap, validate_flox_env
+from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.orchestrator._agent_exec import execute_agent_iteration
 from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
-from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._finalize import finalize_sandbox
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._loop_cleanup import close_loop_resources
-from eden.orchestrator._loop_resources import (
-    prepare_loop_worktree,
-    register_loop_emergency_cleanup,
-)
+from eden.orchestrator._loop_resources import prepare_loop_worktree
+from eden.orchestrator._loop_startup import start_loop_runtime
 from eden.orchestrator._result import assemble
 from eden.orchestrator._session_capture import capture_iteration_session, resolve_session_storage
 from eden.orchestrator._setup import (
@@ -38,7 +35,7 @@ from eden.orchestrator._summary import (
 from eden.output import OutputDefinition, extract_structured_output
 from eden.prompt import render_prompt
 from eden.providers._protocols import SandboxHandle, SandboxProvider
-from eden.providers._types import BranchStrategy, CreateOptions, Mount
+from eden.providers._types import BranchStrategy, Mount
 from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
 from eden.tracing import span
@@ -146,75 +143,27 @@ def _run_loop(
     )
 
     try:
-        if not caller_managed:
-            # Seed user-supplied files into the worktree before
-            # ``on_worktree_ready`` hooks fire — hooks may depend on the
-            # copied files (e.g. an ``npm install`` hook reading ``.env``).
-            apply_copy_to_worktree(
-                paths=copy_to_worktree,
-                source_root=setup.cwd,
-                worktree_path=wt.worktree_path,
-            )
-            run_host_hooks(
-                phase=HookPhase.OnWorktreeReady,
-                hooks=hooks.host,
-                worktree_path=wt.worktree_path,
-                env=setup.merged_env,
-                timeouts=timeouts,
-            )
-
-        signal.raise_if_aborted()
-
-        if not caller_managed:
-            with span(
-                "eden.sandbox.create",
-                attributes={
-                    "sandbox.name": sandbox.name,
-                    "sandbox.kind": sandbox.kind,
-                    "branch": wt.branch,
-                },
-            ):
-                handle = sandbox.create(
-                    CreateOptions(
-                        branch=wt.branch,
-                        worktree_path=wt.worktree_path,
-                        host_repo_path=wt.host_repo_path,
-                        env=setup.merged_env,
-                        mounts=extra_mounts,
-                        name_hint=name,
-                    )
-                )
-                run_sandbox_hooks(
-                    phase=HookPhase.OnSandboxReady,
-                    hooks=hooks.sandbox,
-                    handle=handle,
-                    env=setup.merged_env,
-                    timeouts=timeouts,
-                )
-        assert handle is not None
-
-        # SIGTERM doesn't run try/finally — register an emergency cleanup so
-        # containers and worktrees don't leak when the parent dies abruptly.
-        # The normal-exit path unregisters this in `finally` before its own
-        # close, so close() runs once on the happy path.
-        if not caller_managed:
-            unregister_shutdown = register_loop_emergency_cleanup(handle=handle, worktree=wt)
-
-        logger = LoopLogger.open(
-            logging_cfg=logging_cfg,
-            host_repo_path=setup.cwd,
-            branch=wt.branch,
-            target_branch=target_branch,
+        runtime = start_loop_runtime(
+            agent=agent,
+            sandbox=sandbox,
+            setup=setup,
+            worktree=wt,
+            caller_managed=caller_managed,
+            existing_handle=handle,
+            copy_to_worktree=copy_to_worktree,
+            hooks=hooks,
+            timeouts=timeouts,
+            extra_mounts=extra_mounts,
             name=name,
-            env_values=tuple(setup.merged_env.values()),
+            target_branch=target_branch,
+            logging_cfg=logging_cfg,
+            signal=signal,
         )
-        log_path = logger.log_path
-
-        # Per-agent Flox runtime (ADR-0014): resolve + validate once so a
-        # dangling flox_env fails before the first iteration, then wrap each
-        # iteration's argv in ``flox activate -d <dir> -- <argv>``.
-        _raw_flox_env = getattr(agent, "flox_env", None)
-        flox_env_dir = validate_flox_env(_raw_flox_env) if _raw_flox_env is not None else None
+        handle = runtime.handle
+        unregister_shutdown = runtime.unregister_shutdown
+        logger = runtime.logger
+        log_path = runtime.log_path
+        flox_env_dir = runtime.flox_env_dir
 
         for i in range(max_iterations):
             signal.raise_if_aborted()
