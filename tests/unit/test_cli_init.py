@@ -10,34 +10,10 @@ from typer.testing import CliRunner
 
 from eden.cli import init as init_mod
 from eden.cli.main import app
+from tests.unit.cli_init_helpers import strip_ansi
 
 pytestmark = pytest.mark.unit
-
-_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-
-def _strip_ansi(text: str) -> str:
-    """Drop ANSI color codes so substring asserts survive rich styling.
-
-    Typer renders BadParameter errors via rich, which wraps flag names in
-    per-character color spans (``\\x1b[1;36m-\\x1b[0m\\x1b[1;36m-sandbox``).
-    CI terminals get color; a plain local run does not — strip it either way.
-    """
-    return _ANSI_RE.sub("", text)
-
-
-@pytest.fixture
-def runner() -> CliRunner:
-    return CliRunner()
-
-
-@pytest.fixture
-def repo_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Create a tmp dir, chdir into it, return the path."""
-    repo = tmp_path / "my-repo"
-    repo.mkdir()
-    monkeypatch.chdir(repo)
-    return repo
+pytest_plugins = ["tests.unit.cli_init_fixtures"]
 
 
 def test_init_writes_5_files_with_yes_defaults(runner: CliRunner, repo_dir: Path) -> None:
@@ -202,99 +178,6 @@ def test_init_unsupported_template_rejected(
     assert result.exit_code != 0
 
 
-def test_init_simple_loop_template_writes_files(runner: CliRunner, repo_dir: Path) -> None:
-    result = runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
-    )
-    assert result.exit_code == 0, result.output
-    eden_dir = repo_dir / ".eden"
-    expected = {"Dockerfile", "prompt.md", "main.py", ".env.example", ".gitignore"}
-    assert {p.name for p in eden_dir.iterdir()} == expected
-
-
-def test_init_simple_loop_github_threads_gh_commands(runner: CliRunner, repo_dir: Path) -> None:
-    runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
-    )
-    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
-    assert "gh issue list" in prompt
-    assert "gh issue view <ID>" in prompt
-    assert "gh issue close <ID>" in prompt
-
-
-def test_init_simple_loop_beads_threads_bd_commands(runner: CliRunner, repo_dir: Path) -> None:
-    runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "beads"],
-    )
-    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
-    assert "bd ready --json" in prompt
-    assert "bd show <ID>" in prompt
-    assert "bd close <ID>" in prompt
-
-
-def test_init_simple_loop_dockerfile_includes_backlog_install(
-    runner: CliRunner, repo_dir: Path
-) -> None:
-    runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "github"],
-    )
-    dockerfile = (repo_dir / ".eden" / "Dockerfile").read_text(encoding="utf-8")
-    assert "gh" in dockerfile  # gh CLI install line present
-    assert "ARG AGENT_UID=1000" in dockerfile
-    assert "USER ${AGENT_UID}:${AGENT_GID}" in dockerfile
-
-
-def test_init_simple_loop_invalid_backlog_rejected(runner: CliRunner, repo_dir: Path) -> None:
-    result = runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "trello"],
-    )
-    assert result.exit_code != 0
-
-
-def test_init_simple_loop_default_backlog_is_github(runner: CliRunner, repo_dir: Path) -> None:
-    """Without --backlog, --yes mode falls back to github."""
-    result = runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop"],
-    )
-    assert result.exit_code == 0, result.output
-    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
-    assert "gh issue list" in prompt
-
-
-def test_init_simple_loop_linear_threads_helpers(runner: CliRunner, repo_dir: Path) -> None:
-    result = runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "linear"],
-    )
-    assert result.exit_code == 0, result.output
-    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
-    assert "linear-list" in prompt
-    dockerfile = (repo_dir / ".eden" / "Dockerfile").read_text(encoding="utf-8")
-    assert "linear-list" in dockerfile  # helper script baked into image
-    env_ex = (repo_dir / ".eden" / ".env.example").read_text(encoding="utf-8")
-    assert "LINEAR_API_KEY" in env_ex
-
-
-def test_init_simple_loop_jira_threads_jira_cli(runner: CliRunner, repo_dir: Path) -> None:
-    result = runner.invoke(
-        app,
-        ["init", "--yes", "--template", "simple-loop", "--backlog", "jira"],
-    )
-    assert result.exit_code == 0, result.output
-    prompt = (repo_dir / ".eden" / "prompt.md").read_text(encoding="utf-8")
-    assert "jira issue list" in prompt
-    dockerfile = (repo_dir / ".eden" / "Dockerfile").read_text(encoding="utf-8")
-    assert "jira-cli" in dockerfile
-    env_ex = (repo_dir / ".eden" / ".env.example").read_text(encoding="utf-8")
-    assert "JIRA_API_TOKEN" in env_ex
-
-
 def test_init_gitignore_includes_runtime_dirs(
     runner: CliRunner,
     repo_dir: Path,
@@ -381,7 +264,7 @@ def test_init_non_tty_missing_flag_fails_fast(
     assert result.exit_code != 0
     # Normalize: drop color, drop rich's box borders, collapse the wrapping
     # whitespace it inserts, so the message reads as one contiguous string.
-    raw = _strip_ansi((result.output or "") + (result.stderr or ""))
+    raw = strip_ansi((result.output or "") + (result.stderr or ""))
     combined = re.sub(r"\s+", " ", raw.replace("│", " "))
     assert "--sandbox" in combined
     assert "is required when stdin is not a TTY" in combined
