@@ -169,6 +169,8 @@ class WorktreeHandle:
         name: str | None = None,
         hooks: Hooks | None = None,
         collect_args: bool | None = None,
+        signal: AbortSignal | None = None,
+        timeouts: Timeouts | None = None,
     ) -> InteractiveResult:
         """Run an interactive agent session in this worktree."""
         from eden.orchestrator._interactive import interactive
@@ -183,6 +185,8 @@ class WorktreeHandle:
             name=name,
             hooks=hooks,
             collect_args=collect_args,
+            signal=signal,
+            timeouts=timeouts,
             _existing_worktree=self,
         )
 

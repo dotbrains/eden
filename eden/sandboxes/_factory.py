@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shlex
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -20,7 +21,7 @@ from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, ExecResult, Mount
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.streaming import StreamEvent
-from eden.worktree._create import WorktreeHandle, create_worktree
+from eden.worktree._create import CloseResult, WorktreeHandle, create_worktree
 
 if TYPE_CHECKING:
     from eden.agents._protocol import Agent
@@ -59,7 +60,7 @@ class Sandbox:
     def __exit__(self, *exc: object) -> None:
         self.close()
 
-    def close(self) -> None:
+    def close(self) -> CloseResult:
         """Close the sandbox handle, and the worktree if this sandbox owns it.
 
         When the sandbox was created over a caller-provided worktree
@@ -106,7 +107,8 @@ class Sandbox:
                     print(f"eden: worktree close also failed: {cleanup_exc}")
             raise
         if self.owns_worktree:
-            self.worktree.close()
+            return self.worktree.close()
+        return CloseResult(action="released_only", reason="caller-owned-worktree")
 
     def exec(
         self,
@@ -117,15 +119,19 @@ class Sandbox:
         env: Mapping[str, str] | None = None,
         timeout: float | timedelta | None = None,
         stdin: str | None = None,
+        sudo: bool = False,
     ) -> ExecResult:
         """Run ``cmd`` inside this reusable sandbox.
 
         ``cwd`` defaults to the sandbox's configured cwd, or the worktree path
         when no cwd was configured. Non-zero exit codes are returned in the
         provider's ``ExecResult``; call ``result.check()`` for strict behavior.
+        ``sudo=True`` runs the command through ``sudo -E -- sh -c`` inside the
+        sandbox so caller-supplied environment variables survive elevation.
         """
+        exec_cmd = f"sudo -E -- sh -c {shlex.quote(cmd)}" if sudo else cmd
         return self.handle.exec(
-            cmd,
+            exec_cmd,
             on_line=on_line,
             cwd=cwd if cwd is not None else self.cwd or self.worktree.worktree_path,
             env=env,

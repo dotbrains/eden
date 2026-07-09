@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from eden.errors import SessionCaptureFailed
 from eden.session._branch import sanitize_branch as _sanitize_branch
@@ -165,6 +165,68 @@ def _default_claude_session_storage() -> object:
     return ClaudeSessionStorage()
 
 
+def encode_project_path(cwd: PurePath | str) -> str:
+    """Return the Claude Code project slug for ``cwd``."""
+    return claude_projects_slug(PurePath(cwd) if isinstance(cwd, str) else cwd)
+
+
+def claude_host_session_path(
+    cwd: PurePath | str,
+    session_id: str,
+    *,
+    projects_dir: Path | None = None,
+) -> Path:
+    """Return the expected host-side Claude Code session JSONL path."""
+    base = projects_dir if projects_dir is not None else Path.home() / ".claude" / "projects"
+    return base / encode_project_path(cwd) / f"{session_id}.jsonl"
+
+
+def claude_sandbox_session_path(
+    cwd: PurePath | str,
+    session_id: str,
+    *,
+    projects_dir: PurePath | str,
+) -> PurePath:
+    """Return the sandbox-side Claude Code session JSONL path."""
+    base = PurePath(projects_dir)
+    return base / encode_project_path(cwd) / f"{session_id}.jsonl"
+
+
+def find_claude_session_on_host(
+    session_id: str,
+    *,
+    projects_dir: Path | None = None,
+) -> Path | None:
+    """Scan ``projects_dir`` for ``<session_id>.jsonl`` and return the first match."""
+    root = projects_dir if projects_dir is not None else Path.home() / ".claude" / "projects"
+    if not root.is_dir():
+        return None
+    try:
+        entries = sorted(root.iterdir())
+    except OSError:
+        return None
+    for entry in entries:
+        try:
+            if not entry.is_dir():
+                continue
+            candidate = entry / f"{session_id}.jsonl"
+            if candidate.is_file():
+                return candidate
+        except OSError:
+            continue
+    return None
+
+
+def find_codex_session_on_host(
+    session_id: str,
+    *,
+    sessions_dir: Path | None = None,
+) -> Path | None:
+    """Scan Codex's host sessions tree for ``session_id``."""
+    root = sessions_dir if sessions_dir is not None else Path.home() / ".codex" / "sessions"
+    return find_codex_session_path(root, session_id)
+
+
 # Re-export per-agent SessionStorage implementations + the cross-host
 # transfer helper so downstream tooling (CI dashboards, multi-host
 # orchestration) can move sessions without poking at private modules.
@@ -180,6 +242,11 @@ __all__ = [
     "CodexSessionStorage",
     "capture_session",
     "capture_sidechain_sessions",
+    "claude_host_session_path",
+    "claude_sandbox_session_path",
+    "encode_project_path",
+    "find_claude_session_on_host",
+    "find_codex_session_on_host",
     "find_codex_session_path",
     "transfer_session",
 ]

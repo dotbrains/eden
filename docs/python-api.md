@@ -165,6 +165,8 @@ def interactive(
     hooks: Hooks | None = None,
     copy_to_worktree: list[str] | None = None,
     collect_args: bool | None = None,
+    signal: AbortSignal | None = None,
+    timeouts: Timeouts | None = None,
 ) -> InteractiveResult: ...
 ```
 
@@ -174,6 +176,8 @@ def interactive(
 - `hooks` runs the same `OnWorktreeReady` / `OnSandboxReady` / `OnClose` lifecycle as `run()`; `OnIterationStart` / `OnIterationEnd` are not relevant.
 - `copy_to_worktree` — same semantics as on [`run()`](#run): host-relative paths copied into the worktree before `on_worktree_ready` hooks fire. Incompatible with `BranchStrategy.head()`, which is the default for interactive sessions — pass `branch_strategy=BranchStrategy.merge_to_head()` (or `named(...)`) to use it.
 - `collect_args` — when the rendered prompt references `{{KEY}}` placeholders not supplied via `prompt_args`, eden prompts the user via stdin for each missing key instead of raising `PromptError`. Defaults to autodetect: collect when `stdin` is a TTY, skip otherwise (so CI runs hit the normal error). Pass `True` / `False` to force.
+- `signal` cancels the interactive subprocess. Pre-aborted signals raise before setup; mid-session aborts terminate the process and raise `Aborted`.
+- `timeouts` applies to git setup and lifecycle hook phases.
 
 Returns an [`InteractiveResult`](#interactiveresult).
 
@@ -228,7 +232,7 @@ with eden.create_worktree(branch="eden/feature/x") as wt:
 
 `timeouts` caps the one-time carve's git plumbing via `Timeouts.git_setup` (reused by `Sandbox.close()` for the teardown `git worktree remove`). Per-run deadlines like `iteration_step` are passed separately to each [`Sandbox.run(timeouts=...)`](#sandboxrun).
 
-The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus `.exec(...)` / `.run(...)` / `.resume(...)` / `.fork(...)` methods. It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
+The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus `.exec(...)` / `.run(...)` / `.resume(...)` / `.fork(...)` methods. `Sandbox.close()` returns a [`CloseResult`](#closeresult): managed sandboxes report whether their worktree was removed or preserved; caller-owned worktree sandboxes report `released_only`. It also doubles as a context manager — `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
 
 ### `Sandbox.exec(...)`
 
@@ -240,7 +244,7 @@ if not result.ok:
     result.check()
 ```
 
-Keyword options mirror `SandboxHandle.exec(...)`: `on_line`, `cwd`, `env`, `timeout`, and `stdin`. `cwd` defaults to the sandbox's configured `cwd`, or the worktree path when no sandbox cwd was configured. Non-zero exit codes are returned, not raised; call `result.check()` for strict behavior.
+Keyword options mirror `SandboxHandle.exec(...)`: `on_line`, `cwd`, `env`, `timeout`, and `stdin`, plus `sudo=True` to run through `sudo -E -- sh -c` inside the sandbox. `cwd` defaults to the sandbox's configured `cwd`, or the worktree path when no sandbox cwd was configured. Non-zero exit codes are returned, not raised; call `result.check()` for strict behavior.
 
 ### `Sandbox.run(...)`
 
@@ -281,11 +285,17 @@ def create_worktree(
     *,
     branch: str | None = None,
     branch_strategy: BranchStrategy | None = None,
+    base_branch: str | None = None,
+    cwd: str | Path | None = None,
+    copy_to_worktree: list[str] | None = None,
+    hooks: Hooks | None = None,
+    timeouts: Timeouts | None = None,
     name: str | None = None,
+    throw_on_duplicate_worktree: bool = True,
 ) -> WorktreeHandle: ...
 ```
 
-Provide either `branch` (named) or `branch_strategy` (any of the three strategies); supplying both raises `ValueError`. Defaults to `BranchStrategy.merge_to_head()`. Returns a `WorktreeHandle` with `.branch`, `.worktree_path`, `.close()`, `.run(...)`, `.interactive(...)`, and `.create_sandbox(...)` (works as a context manager).
+Provide either `branch` (named) or `branch_strategy` (any of the three strategies); supplying both raises `ValueError`. Defaults to `BranchStrategy.merge_to_head()`. `cwd` selects the host repo instead of `Path.cwd()`. `copy_to_worktree` copies host-relative files into the carved worktree before `host.on_worktree_ready` hooks run. `timeouts.git_setup` controls git worktree operations and `timeouts.hook_step` controls hooks. Returns a `WorktreeHandle` with `.branch`, `.worktree_path`, `.close()`, `.run(...)`, `.interactive(...)`, and `.create_sandbox(...)` (works as a context manager).
 
 Use the handle directly when a workflow needs to keep one branch/worktree across several steps:
 
@@ -307,7 +317,7 @@ with eden.create_worktree(branch="eden/issue-42") as wt:
 
 `wt.run(...)` creates a short-lived sandbox backed by the worktree, runs one agent loop through [`Sandbox.run(...)`](#sandboxrun), closes only the sandbox handle, and leaves the worktree open for more work. It accepts the same options as `Sandbox.run(...)` plus `sandbox=`, provider `mounts=`, `copy_to_worktree=`, and sandbox-creation `hooks=`.
 
-`wt.interactive(...)` launches an interactive session in the existing worktree without carving or closing another worktree. It accepts the same prompt/env/name/hook options as top-level [`interactive(...)`](#interactive).
+`wt.interactive(...)` launches an interactive session in the existing worktree without carving or closing another worktree. It accepts the same prompt/env/name/hook/signal/timeout options as top-level [`interactive(...)`](#interactive).
 
 `wt.create_sandbox(...)` is equivalent to [`create_sandbox(worktree=wt, ...)`](#create_sandbox): each returned `Sandbox.close()` removes only its provider handle; the worktree lives until `wt.close()`.
 
@@ -332,7 +342,7 @@ class Timeouts:
 - `hook_step` — seconds budget for any individual hook command. Exceeded → `HookTimeout`.
 - `iteration_step` — seconds budget for one agent iteration. `None` defers to `idle_timeout`. Exceeded → `StepTimeout`.
 - `copy_to_worktree` — seconds budget for the isolated provider's worktree clone. Exceeded → `CopyToWorktreeError(timed_out=True)`. Set the provider's own `copy_timeout` to override per-call; pass `None` to disable the budget.
-- `git_setup` — per-command budget for the host-side git plumbing `run()` runs while carving and tearing down a worktree (`git worktree add`/`remove`, branch/worktree listing, `status`, and the `origin` fast-forward when reusing a clean worktree). Exceeded → `GitCommandTimeout`. Raise it on slow filesystems (NFS, networked volumes) or large repos where worktree creation legitimately takes longer than 60s. Honored by `run()`, `interactive()`, and `create_sandbox(timeouts=...)`; the standalone `create_worktree()` helper carves at the 60s default (pass `git_timeout=` to override).
+- `git_setup` — per-command budget for the host-side git plumbing `run()` runs while carving and tearing down a worktree (`git worktree add`/`remove`, branch/worktree listing, `status`, and the `origin` fast-forward when reusing a clean worktree). Exceeded → `GitCommandTimeout`. Raise it on slow filesystems (NFS, networked volumes) or large repos where worktree creation legitimately takes longer than 60s. Honored by `run()`, `interactive()`, `create_sandbox(timeouts=...)`, and standalone `create_worktree(timeouts=Timeouts(git_setup=...))`.
 - `commit_collection` — seconds budget for the post-run `git rev-list base..HEAD` that censuses the commits the agent made on the branch (populates [`RunResult.commits`](#runresult)). Bounded separately from `git_setup` because it runs after the agent and may walk a long history. Best-effort: a timeout (or any git error) yields no commits rather than raising, so a slow census never sinks an otherwise-good run. Raise it on large repos where the walk legitimately exceeds 60s.
 
 ### `Logging`
@@ -412,6 +422,19 @@ class BranchStrategy:
 ---
 
 ## Result types
+
+### `CloseResult`
+
+Returned by `WorktreeHandle.close()` and `Sandbox.close()`.
+
+```python
+@dataclass(frozen=True)
+class CloseResult:
+    action: Literal["removed", "preserved", "released_only"]
+    reason: str | None = None
+```
+
+`removed` means Eden deleted a clean managed worktree. `preserved` means the worktree was dirty and left on disk for inspection. `released_only` means there was no owned worktree to remove, or it had already been closed.
 
 ### `RunResult`
 
@@ -819,6 +842,36 @@ class PiSessionStorage:
 
 The `SessionStorage` implementation used by `pi(capture_sessions=True)` (the default). Mounts `~/.pi/agent/sessions` into containerized sandboxes and locates pi's per-iteration JSONL by the `--<encoded-cwd>--/<timestamp>_<session_id>.jsonl` convention. Resume rewrites the session header's `cwd` field via `transfer_pi_session(...)` and places the JSONL inside the sandbox-cwd-encoded directory so pi's project-first resolver doesn't trigger the "fork session?" prompt. `home=` overrides `~` for tests.
 
+### Session Lookup Helpers
+
+```python
+def encode_project_path(cwd: PurePath | str) -> str: ...
+def claude_host_session_path(
+    cwd: PurePath | str,
+    session_id: str,
+    *,
+    projects_dir: Path | None = None,
+) -> Path: ...
+def claude_sandbox_session_path(
+    cwd: PurePath | str,
+    session_id: str,
+    *,
+    projects_dir: PurePath | str,
+) -> PurePath: ...
+def find_claude_session_on_host(
+    session_id: str,
+    *,
+    projects_dir: Path | None = None,
+) -> Path | None: ...
+def find_codex_session_on_host(
+    session_id: str,
+    *,
+    sessions_dir: Path | None = None,
+) -> Path | None: ...
+```
+
+Convenience helpers for tooling that needs to locate captured agent transcripts without constructing a `SessionStorage` instance. Claude helpers use the same project-slug convention as `ClaudeSessionStorage`; Codex lookup walks the date-nested `~/.codex/sessions` tree for `rollout-*-<session_id>.jsonl`.
+
 ### `transfer_session`
 
 ```python
@@ -906,7 +959,7 @@ Failure mapping: a hook that exits non-zero raises `HookFailed`; exceeding its `
 
 ## Cancellation
 
-Cooperative cancellation uses an `AbortController` / `AbortSignal` pair. Pass the signal to `run(signal=...)`; call `controller.abort()` from another thread to stop.
+Cooperative cancellation uses an `AbortController` / `AbortSignal` pair. Pass the signal to `run(signal=...)`, `interactive(signal=...)`, `Sandbox.run(signal=...)`, or `WorktreeHandle.interactive(signal=...)`; call `controller.abort()` from another thread to stop.
 
 ### `AbortController`
 

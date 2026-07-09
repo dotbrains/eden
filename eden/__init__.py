@@ -75,12 +75,20 @@ from eden.providers._types import (
     Mount,
 )
 from eden.sandboxes import Sandbox, create_sandbox
+from eden.session import (
+    claude_host_session_path,
+    claude_sandbox_session_path,
+    encode_project_path,
+    find_claude_session_on_host,
+    find_codex_session_on_host,
+    transfer_session,
+)
 from eden.session._claude import ClaudeSessionStorage
 from eden.session._codex import CodexSessionStorage
 from eden.session._pi import PiSessionStorage
 from eden.session._protocol import SessionStorage
-from eden.session._transfer import transfer_session
 from eden.streaming import StreamEvent
+from eden.worktree import CloseResult
 
 __all__ = [
     # cancellation
@@ -94,6 +102,7 @@ __all__ = [
     # provider re-exports
     "BranchStrategy",
     "ClaudeSessionStorage",
+    "CloseResult",
     "CodexSessionStorage",
     "Commit",
     "ConfigError",
@@ -153,12 +162,17 @@ __all__ = [
     "Usage",
     "__version__",
     "claude_code",
+    "claude_host_session_path",
+    "claude_sandbox_session_path",
     "cli_agent",
     "codex",
     "copilot",
     "create_sandbox",
     "create_worktree",
     "cursor",
+    "encode_project_path",
+    "find_claude_session_on_host",
+    "find_codex_session_on_host",
     "format_error_message",
     "interactive",
     "make_bind_mount_provider",

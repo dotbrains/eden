@@ -7,11 +7,13 @@ import re
 import secrets
 import shutil
 import subprocess
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from eden.abort import AbortSignal
 from eden.providers._helpers import make_bind_mount_provider
 from eden.providers._protocols import (
     BindMountSandboxHandle,
@@ -30,6 +32,22 @@ from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
 _NAME_RE = re.compile(r"[^a-z0-9-]+")
 _IMAGE_TAG_RE = re.compile(r"[^a-z0-9_.-]+")
+
+
+def _wait_interactive_process(proc: subprocess.Popen[bytes], signal: AbortSignal | None) -> int:
+    while True:
+        if signal is not None and signal.is_aborted():
+            proc.terminate()
+            try:
+                proc.wait(timeout=5.0)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+            signal.raise_if_aborted()
+        try:
+            return proc.wait(timeout=0.1)
+        except subprocess.TimeoutExpired:
+            time.sleep(0)
 
 
 def _sanitize_container_seed(s: str) -> str:
@@ -103,6 +121,7 @@ class _ContainerHandle:
         *,
         cwd: Path | None = None,
         env: Mapping[str, str] | None = None,
+        signal: AbortSignal | None = None,
     ) -> int:
         """Run ``argv`` inside the container with a TTY attached.
 
@@ -110,6 +129,8 @@ class _ContainerHandle:
         Stdio is inherited from the parent so the user gets a real terminal
         for the agent's TUI. Returns the exec-call's exit code.
         """
+        if signal is not None:
+            signal.raise_if_aborted()
         cmd: list[str] = [self.binary, "exec", "-it"]
         if cwd is not None:
             cmd.extend(["-w", cwd.as_posix()])
@@ -118,8 +139,8 @@ class _ContainerHandle:
                 cmd.extend(["-e", f"{k}={v}"])
         cmd.append(self.container_id)
         cmd.extend(argv)
-        proc = subprocess.run(cmd, check=False)
-        return proc.returncode
+        proc = subprocess.Popen(cmd)
+        return _wait_interactive_process(proc, signal)
 
     def close(self) -> None:
         proc = subprocess.run(

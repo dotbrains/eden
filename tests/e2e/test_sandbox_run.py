@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -26,7 +27,8 @@ def test_sandbox_run_executes_agent(e2e_git_repo: Path) -> None:
         assert result.completion_signal == "<promise>COMPLETE</promise>"
         assert "phase one" in result.stdout
     finally:
-        sandbox.close()
+        close_result = sandbox.close()
+    assert close_result.action in {"removed", "preserved"}
 
 
 def test_sandbox_run_can_be_called_twice(e2e_git_repo: Path) -> None:
@@ -89,7 +91,8 @@ def test_worktree_run_executes_agent_in_owned_worktree(e2e_git_repo: Path) -> No
 
 def test_worktree_create_sandbox_returns_split_owner_sandbox(e2e_git_repo: Path) -> None:
     with eden.create_worktree() as wt:
-        with wt.create_sandbox(sandbox=no_sandbox()) as sandbox:
+        sandbox = wt.create_sandbox(sandbox=no_sandbox())
+        try:
             assert sandbox.worktree is wt
             assert sandbox.owns_worktree is False
             result = sandbox.run(
@@ -98,8 +101,31 @@ def test_worktree_create_sandbox_returns_split_owner_sandbox(e2e_git_repo: Path)
                 max_iterations=1,
                 idle_timeout=10.0,
             )
+        finally:
+            close_result = sandbox.close()
         assert result.branch == wt.branch
+        assert close_result.action == "released_only"
         assert wt.worktree_path.exists()
+
+
+def test_create_worktree_accepts_cwd_copy_hooks_and_timeouts(e2e_git_repo: Path) -> None:
+    (e2e_git_repo / "seed.txt").write_text("seed\n")
+    hooks = eden.Hooks(
+        host=eden.HostHooks(
+            on_worktree_ready=(
+                eden.Hook(f"{sys.executable} -c \"open('hook.txt', 'w').write('ready')\""),
+            )
+        )
+    )
+
+    with eden.create_worktree(
+        cwd=e2e_git_repo,
+        copy_to_worktree=["seed.txt"],
+        hooks=hooks,
+        timeouts=eden.Timeouts(hook_step=5.0, git_setup=5.0),
+    ) as wt:
+        assert (wt.worktree_path / "seed.txt").read_text() == "seed\n"
+        assert (wt.worktree_path / "hook.txt").read_text() == "ready"
 
 
 def test_sandbox_run_rejects_branch_strategy(e2e_git_repo: Path) -> None:

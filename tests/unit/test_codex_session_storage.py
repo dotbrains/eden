@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+import eden
 from eden.providers._types import Mount
 from eden.session._codex import CodexSessionStorage, find_codex_session_path
 
@@ -36,6 +37,13 @@ def test_find_locates_rollout_file_by_session_id(tmp_path: Path) -> None:
     )
     found = find_codex_session_path(tmp_path / ".codex" / "sessions", "abc123")
     assert found == f
+    assert (
+        eden.find_codex_session_on_host(
+            "abc123",
+            sessions_dir=tmp_path / ".codex" / "sessions",
+        )
+        == f
+    )
 
 
 def test_find_skips_non_matching_filenames(tmp_path: Path) -> None:

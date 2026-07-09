@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sys
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -69,6 +71,47 @@ def test_interactive_default_sandbox_is_no_sandbox(e2e_git_repo: Path) -> None:
     assert result.exit_code == 0
 
 
+def test_interactive_rejects_pre_aborted_signal(e2e_git_repo: Path) -> None:
+    ctrl = eden.AbortController()
+    ctrl.abort(reason="stop")
+
+    with pytest.raises(eden.Aborted) as ex:
+        eden.interactive(agent=_exit_zero_agent(), sandbox=no_sandbox(), signal=ctrl.signal)
+
+    assert ex.value.reason == "stop"
+
+
+def test_interactive_aborts_running_session(e2e_git_repo: Path) -> None:
+    ctrl = eden.AbortController()
+
+    def _abort_soon() -> None:
+        time.sleep(0.2)
+        ctrl.abort(reason="stop")
+
+    thread = threading.Thread(target=_abort_soon, daemon=True)
+    thread.start()
+    try:
+        with pytest.raises(eden.Aborted) as ex:
+            eden.interactive(
+                agent=cli_agent(
+                    name="sleepy",
+                    model="x",
+                    binary="ignored",
+                    build_argv=lambda _ctx: [
+                        sys.executable,
+                        "-c",
+                        "import time; time.sleep(30)",
+                    ],
+                ),
+                sandbox=no_sandbox(),
+                signal=ctrl.signal,
+            )
+    finally:
+        thread.join(timeout=2.0)
+
+    assert ex.value.reason == "stop"
+
+
 def test_interactive_carves_named_branch(e2e_git_repo: Path) -> None:
     result = eden.interactive(
         agent=_exit_zero_agent(),
@@ -86,6 +129,17 @@ def test_worktree_interactive_uses_existing_worktree(e2e_git_repo: Path) -> None
         assert result.branch == wt.branch
         assert result.worktree_path == wt.worktree_path
         assert wt.worktree_path.exists()
+
+
+def test_worktree_interactive_rejects_pre_aborted_signal(e2e_git_repo: Path) -> None:
+    ctrl = eden.AbortController()
+    ctrl.abort(reason="stop")
+
+    with eden.create_worktree() as wt:
+        with pytest.raises(eden.Aborted) as ex:
+            wt.interactive(agent=_exit_zero_agent(), sandbox=no_sandbox(), signal=ctrl.signal)
+
+    assert ex.value.reason == "stop"
 
 
 def test_interactive_uses_build_interactive_command_when_present(

@@ -130,6 +130,20 @@ def test_default_strategy_for_none_is_head(
         s.close()
 
 
+def test_sandbox_exec_supports_sudo(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_git_repo)
+    s = create_sandbox(sandbox=_StubProvider())
+    try:
+        result = s.exec("echo $K", env={"K": "V"}, sudo=True)
+        assert result.ok
+        handle = s.handle
+        assert isinstance(handle, _StubHandle)
+        assert handle.exec_calls[-1]["cmd"] == "sudo -E -- sh -c 'echo $K'"
+        assert handle.exec_calls[-1]["env"] == {"K": "V"}
+    finally:
+        s.close()
+
+
 def test_unsupported_strategy_raises(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_git_repo)
     p = _StubProvider(supported=frozenset({"merge_to_head"}))

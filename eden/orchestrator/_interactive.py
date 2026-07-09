@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
+from eden._types import Timeouts
+from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
 from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
@@ -55,6 +58,8 @@ def interactive(
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
     collect_args: bool | None = None,
+    signal: AbortSignal | None = None,
+    timeouts: Timeouts | None = None,
     _existing_worktree: WorktreeHandle | None = None,
 ) -> InteractiveResult:
     """Run an agent attached to the parent TTY for an interactive session.
@@ -81,6 +86,9 @@ def interactive(
     :class:`eden.errors.PromptError`. Pass ``True`` / ``False`` to force.
     """
     import sys
+
+    if signal is not None:
+        signal.raise_if_aborted()
 
     if sandbox is None:
         from eden.sandboxes.no_sandbox import provider as no_sandbox
@@ -183,9 +191,7 @@ def interactive(
 
     target_branch = resolve_target_branch(host_repo_path=cwd_path)
 
-    from eden._types import Timeouts
-
-    timeouts = Timeouts()
+    timeouts_or_default = timeouts if timeouts is not None else Timeouts()
     wt = (
         _existing_worktree
         if _existing_worktree is not None
@@ -194,7 +200,7 @@ def interactive(
             strategy=strategy,
             name_hint=name,
             throw_on_duplicate_worktree=throw_on_duplicate_worktree,
-            git_timeout=timeouts.git_setup,
+            git_timeout=timeouts_or_default.git_setup,
         )
     )
     handle = None
@@ -210,7 +216,7 @@ def interactive(
             hooks=hooks_or_default.host,
             worktree_path=wt.worktree_path,
             env=merged_env,
-            timeouts=timeouts,
+            timeouts=timeouts_or_default,
         )
         handle = sandbox.create(
             CreateOptions(
@@ -227,7 +233,7 @@ def interactive(
             hooks=hooks_or_default.sandbox,
             handle=handle,
             env=merged_env,
-            timeouts=timeouts,
+            timeouts=timeouts_or_default,
         )
 
         if not prompt_text:
@@ -283,7 +289,15 @@ def interactive(
             )
         # The exec runs inside the sandbox, so cwd is the in-container
         # worktree path (``handle.worktree_path``), not the host path.
-        exit_code = ix(argv, cwd=handle.worktree_path, env=merged_env)
+        interactive_params: Mapping[str, inspect.Parameter]
+        try:
+            interactive_params = inspect.signature(ix).parameters
+        except (TypeError, ValueError):
+            interactive_params = {}
+        if "signal" in interactive_params:
+            exit_code = ix(argv, cwd=handle.worktree_path, env=merged_env, signal=signal)
+        else:
+            exit_code = ix(argv, cwd=handle.worktree_path, env=merged_env)
         return InteractiveResult(
             branch=wt.branch,
             exit_code=exit_code,
@@ -298,7 +312,7 @@ def interactive(
                     hooks=hooks_or_default.sandbox,
                     handle=handle,
                     env=merged_env,
-                    timeouts=timeouts,
+                    timeouts=timeouts_or_default,
                 )
             except Exception:
                 pass
@@ -308,7 +322,7 @@ def interactive(
                 hooks=hooks_or_default.host,
                 worktree_path=wt.worktree_path,
                 env=merged_env,
-                timeouts=timeouts,
+                timeouts=timeouts_or_default,
             )
         except Exception:
             pass

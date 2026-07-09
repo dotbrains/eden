@@ -166,6 +166,7 @@ def test_container_start_failed(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+
     p = make_container_provider(binary=binary, image="alpine")  # type: ignore[arg-type]
     with pytest.raises(ContainerStartFailed) as excinfo:
         p.create(_opts(tmp_path))
@@ -188,6 +189,7 @@ def test_implicit_workspace_mount(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+
     p = make_container_provider(binary=binary, image="alpine")  # type: ignore[arg-type]
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
@@ -299,6 +301,7 @@ def test_cpus_omitted_when_none(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+
     p = make_container_provider(binary=binary, image="alpine")  # type: ignore[arg-type]
     p.create(_opts(tmp_path))
     run_cmd = _find_run(captured)
@@ -797,6 +800,21 @@ def test_interactive_exec_builds_exec_it_argv(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+
+    class _FakePopen:
+        def __init__(self, cmd: list[str]) -> None:
+            captured.append(list(cmd))
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+        def terminate(self) -> None:
+            return None
+
+        def kill(self) -> None:
+            return None
+
+    monkeypatch.setattr("eden.providers._impl.container.subprocess.Popen", _FakePopen)
     p = make_container_provider(binary=binary, image="alpine")  # type: ignore[arg-type]
     handle = p.create(_opts(tmp_path))
 
