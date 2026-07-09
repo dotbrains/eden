@@ -66,10 +66,10 @@ the important coverage:
   enforces `--cov=eden --cov-fail-under=70`.
 - `test-linux-compat` runs `pytest -v -m unit` on Python 3.12 and 3.13 in
   Flox.
-- `test-macos` runs `pytest -v -m "unit or e2e"` once on macOS with Python
-  3.13 in Flox.
-- `test-windows` runs `pytest -v -m "unit or e2e"` once on Windows with Python
-  3.13 via `actions/setup-python`.
+- `test-macos` runs `pytest -v -m unit` once on macOS with Python 3.13 in
+  Flox.
+- `test-windows` runs `pytest -v -m unit` once on Windows with Python 3.13 via
+  `actions/setup-python`.
 - `integration` runs `pytest -v -m integration` once on Ubuntu in Flox.
 
 The same `pre-commit` config (`.pre-commit-config.yaml`) gates every local commit, so format/lint/type errors fail before push instead of after CI.

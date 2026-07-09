@@ -1,0 +1,22 @@
+name: Flox command
+description: Install Flox and run a command inside flox activate.
+
+inputs:
+  eden-python:
+    description: Python executable selected by the Flox activation hook.
+    default: python3.11
+  command:
+    description: Command to run inside the activated Flox environment.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install Flox
+      uses: flox/install-flox-action@v2
+
+    - name: Run command
+      shell: bash
+      env:
+        EDEN_PYTHON: ${{ inputs.eden-python }}
+      run: flox activate -- ${{ inputs.command }}
