@@ -5,7 +5,6 @@ from __future__ import annotations
 import time
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack
-from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -19,14 +18,12 @@ from eden.errors import AgentError
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
-from eden.orchestrator._completion import match
+from eden.orchestrator._agent_exec import execute_agent_iteration
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._finalize import finalize_sandbox
-from eden.orchestrator._idle import IdleWatchdog
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._recovery import format_agent_error_recovery
 from eden.orchestrator._result import assemble
-from eden.orchestrator._runner import _AgentRunner
 from eden.orchestrator._session_capture import capture_iteration_session, resolve_session_storage
 from eden.orchestrator._setup import (
     SetupResult,
@@ -304,156 +301,32 @@ def _run_loop(
             # so a transcript written moments after start isn't dropped.
             iter_started_at = time.time() - _SIDECHAIN_MTIME_SLACK
 
-            wd = IdleWatchdog(
+            agent_execution = execute_agent_iteration(
+                agent=agent,
+                argv=argv,
+                env=setup.merged_env,
+                handle=handle,
+                worktree_path=wt.worktree_path,
+                branch=wt.branch,
+                name=name,
+                resume_session=resume_session,
+                rendered_prompt=rendered_prompt,
+                iteration=i,
                 idle_timeout=idle_timeout,
                 idle_warning_interval=idle_warning_interval,
+                completion_signal=completion_signal,
+                completion_timeout=completion_timeout,
+                logger=logger,
+                on_event=on_event,
+                signal=signal,
+                stdout_chunks=stdout_chunks,
+                timestamp=_utcnow,
             )
-            wd.start()
-            try:
-                iter_completion: str | None = None
-                agent_exit_code: int | None = None
-                agent_stderr: str = ""
-                agent_cwd = handle.worktree_path if handle.worktree_path.exists() else None
-                # Optional stdin payload — agents that override prompt
-                # delivery (e.g. claude_code, to dodge the 128 KB execve
-                # arg limit on Linux) implement ``stdin_content(ctx)``.
-                stdin_fn = getattr(agent, "stdin_content", None)
-                stdin_payload = (
-                    stdin_fn(
-                        IterationContext(
-                            iteration=i,
-                            prompt=rendered_prompt,
-                            sandbox_handle=handle,
-                            worktree_path=wt.worktree_path,
-                            branch=wt.branch,
-                            name=name,
-                            resume_session=resume_session,
-                        )
-                    )
-                    if callable(stdin_fn)
-                    else None
-                )
-                with (
-                    span(
-                        "eden.agent.exec",
-                        attributes={
-                            "agent.name": agent.name,
-                            "agent.model": getattr(agent, "model", None),
-                            "iteration.index": i,
-                            "branch": wt.branch,
-                        },
-                    ),
-                    _AgentRunner(
-                        argv=argv,
-                        env=setup.merged_env,
-                        watchdog=wd,
-                        cwd=agent_cwd,
-                        stdin=stdin_payload,
-                    ) as runner,
-                ):
-
-                    def _emit_warning(minutes: int, _i: int = i) -> None:
-                        assert logger is not None
-                        logger.emit_idle_warning(
-                            agent_name=agent.name,
-                            iteration=_i,
-                            timestamp=_utcnow(),
-                            minutes_idle=minutes,
-                            on_event=on_event,
-                        )
-
-                    def _emit_raw(raw_line: str, _i: int = i) -> None:
-                        assert logger is not None
-                        logger.emit_raw(
-                            agent_name=agent.name,
-                            iteration=_i,
-                            timestamp=_utcnow(),
-                            text=raw_line,
-                        )
-
-                    for line in runner.iter_lines(signal=signal, on_warning=_emit_warning):
-                        stdout_chunks.push(line + "\n")
-                        _emit_raw(line)
-                        parsed = agent.parse_stream(line)
-                        if parsed is not None:
-                            # Parser doesn't know the real iteration; rewrap.
-                            ev = replace(parsed, iteration=i, agent_name=agent.name)
-                        else:
-                            ev = StreamEvent(
-                                type="text",
-                                agent_name=agent.name,
-                                iteration=i,
-                                timestamp=_utcnow(),
-                                text=line,
-                            )
-                        if ev.type == "usage":
-                            iter_session_id = ev.session_id
-                            iter_usage = ev.usage
-                        elif ev.type == "session_id":
-                            iter_session_id = ev.session_id
-                        if logger is not None:
-                            logger.write(ev)
-                        if on_event is not None:
-                            on_event(ev)
-                        if logger is not None:
-                            logger.forward_agent_event(ev)
-                        hit = match(line, completion_signal)
-                        if hit is not None:
-                            iter_completion = hit
-                            # Drain any trailing lines before terminating so that
-                            # the agent's final ``result`` line (carrying
-                            # session_id + usage) is captured even when the
-                            # completion signal fires before the process exits.
-                            # ``completion_timeout`` bounds the total wait so a
-                            # child process that holds the pipe open after the
-                            # agent emits the signal can't hang the loop until
-                            # the much-larger ``idle_timeout`` trips.
-                            drain = runner.drain_remaining(total_timeout=completion_timeout)
-                            if drain.timed_out and logger is not None:
-                                warn_ev = StreamEvent(
-                                    type="text",
-                                    agent_name=agent.name,
-                                    iteration=i,
-                                    timestamp=_utcnow(),
-                                    text=(
-                                        f"[eden] completion_timeout ({completion_timeout}s) "
-                                        "elapsed after completion signal — agent process did "
-                                        "not EOF; terminating now. Iteration succeeded."
-                                    ),
-                                )
-                                logger.write(warn_ev)
-                                if on_event is not None:
-                                    on_event(warn_ev)
-                            for trailing in drain.lines:
-                                stdout_chunks.push(trailing + "\n")
-                                _emit_raw(trailing)
-                                trailing_parsed = agent.parse_stream(trailing)
-                                if trailing_parsed is not None:
-                                    tev = replace(
-                                        trailing_parsed,
-                                        iteration=i,
-                                        agent_name=agent.name,
-                                    )
-                                    if tev.type == "usage":
-                                        iter_session_id = tev.session_id
-                                        iter_usage = tev.usage
-                                    elif tev.type == "session_id":
-                                        iter_session_id = tev.session_id
-                                    if logger is not None:
-                                        logger.write(tev)
-                                    if on_event is not None:
-                                        on_event(tev)
-                                    if logger is not None:
-                                        logger.forward_agent_event(tev)
-                            runner.terminate()
-                            break
-                    # Capture exit code BEFORE the with-block's __exit__ runs
-                    # ``terminate()`` and nulls the process handle. Only used
-                    # when ``iter_completion`` stays ``None`` below.
-                    agent_exit_code = runner.exit_code()
-                    agent_stderr = runner.stderr_text
-            finally:
-                wd.stop()
+            iter_completion = agent_execution.completion
+            agent_exit_code = agent_execution.exit_code
+            agent_stderr = agent_execution.stderr
+            iter_session_id = agent_execution.session_id
+            iter_usage = agent_execution.usage
 
             # Agent process EOFed without matching the completion signal.
             # If it exited non-zero, surface the failure as a typed
