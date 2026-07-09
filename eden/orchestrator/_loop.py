@@ -9,25 +9,26 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
-from eden.abort import AbortSignal, register_shutdown
+from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
-from eden.agents._errors import parse_stdout_error
 from eden.agents._flox import flox_wrap, validate_flox_env
 from eden.agents._protocol import Agent
-from eden.errors import AgentError
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.orchestrator._agent_exec import execute_agent_iteration
+from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._finalize import finalize_sandbox
 from eden.orchestrator._logging import LoopLogger
-from eden.orchestrator._recovery import format_agent_error_recovery
+from eden.orchestrator._loop_resources import (
+    prepare_loop_worktree,
+    register_loop_emergency_cleanup,
+)
 from eden.orchestrator._result import assemble
 from eden.orchestrator._session_capture import capture_iteration_session, resolve_session_storage
 from eden.orchestrator._setup import (
     SetupResult,
-    resolve_branch_strategy,
     resolve_target_branch,
 )
 from eden.orchestrator._summary import (
@@ -37,11 +38,10 @@ from eden.output import OutputDefinition, extract_structured_output
 from eden.prompt import render_prompt
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
-from eden.sandboxes.errors import UnsupportedStrategy
 from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
 from eden.tracing import set_attributes, span
-from eden.worktree._create import WorktreeHandle, create_worktree
+from eden.worktree._create import WorktreeHandle
 from eden.worktree._git import head_sha, new_commits
 
 # Slack subtracted from an iteration's start time before scoping the subagent
@@ -86,35 +86,17 @@ def _run_loop(
     # ``existing_handle`` are provided, the loop reuses them and skips both
     # creation and teardown — used by ``Sandbox.run()`` so multiple agents
     # can share one container and one branch.
-    caller_managed = existing_worktree is not None and existing_handle is not None
-    if caller_managed:
-        assert existing_worktree is not None
-        wt: WorktreeHandle = existing_worktree
-        if branch_strategy is not None:
-            from eden.errors import InvalidOptions
-
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(
-                    "branch_strategy is incompatible with caller-managed runs; "
-                    "the sandbox already owns its worktree and branch"
-                ),
-            )
-    else:
-        strategy = resolve_branch_strategy(
-            branch_strategy=branch_strategy,
-            sandbox_kind=sandbox.kind,
-            base_branch=base_branch,
-        )
-        if not sandbox.supports_strategy(strategy):
-            raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
-        wt = create_worktree(
-            host_repo_path=setup.cwd,
-            strategy=strategy,
-            name_hint=name,
-            throw_on_duplicate_worktree=throw_on_duplicate_worktree,
-            git_timeout=timeouts.git_setup,
-        )
+    wt, caller_managed = prepare_loop_worktree(
+        sandbox=sandbox,
+        setup=setup,
+        branch_strategy=branch_strategy,
+        base_branch=base_branch,
+        name=name,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+        git_timeout=timeouts.git_setup,
+        existing_worktree=existing_worktree,
+        existing_handle=existing_handle,
+    )
 
     target_branch = resolve_target_branch(host_repo_path=setup.cwd)
 
@@ -215,20 +197,7 @@ def _run_loop(
         # The normal-exit path unregisters this in `finally` before its own
         # close, so close() runs once on the happy path.
         if not caller_managed:
-            _emergency_handle = handle
-            _emergency_wt = wt
-
-            def _emergency_cleanup() -> None:
-                try:
-                    _emergency_handle.close()
-                except Exception:
-                    pass
-                try:
-                    _emergency_wt.close()
-                except Exception:
-                    pass
-
-            unregister_shutdown = register_shutdown(_emergency_cleanup)
+            unregister_shutdown = register_loop_emergency_cleanup(handle=handle, worktree=wt)
 
         logger = LoopLogger.open(
             logging_cfg=logging_cfg,
@@ -336,45 +305,19 @@ def _run_loop(
             # events on stdout instead of stderr.
             if iter_completion is None:
                 if agent_exit_code is not None and agent_exit_code != 0:
-                    parsed_stdout: str | None = parse_stdout_error(stdout_chunks.to_string())
-                    stderr_text = agent_stderr.strip()
-                    body = parsed_stdout or stderr_text or "(no output)"
-                    err = AgentError(
-                        message=(
-                            f"agent {agent.name!r} exited with code {agent_exit_code} "
-                            f"on iteration {i} without a completion signal: {body}"
-                        ),
-                        hint=(
-                            "check the agent's stdout/stderr in the run log; for "
-                            "claude-code, ensure the prompt requests a "
-                            "<promise>COMPLETE</promise> tag"
-                        ),
+                    raise_agent_exit_without_completion(
                         agent_name=agent.name,
+                        iteration=i,
                         exit_code=agent_exit_code,
-                        stderr=stderr_text,
-                        parsed_error=parsed_stdout,
-                    )
-                    # Emit a copy-pastable recovery hint via the sink so it
-                    # lands in the run log even if the caller catches the
-                    # exception silently.
-                    recovery_text = format_agent_error_recovery(
-                        error=err,
+                        stderr=agent_stderr,
+                        stdout=stdout_chunks.to_string(),
                         branch=wt.branch,
                         worktree_path=wt.worktree_path,
                         log_path=log_path,
+                        sink=logger.sink if logger is not None else None,
+                        on_event=on_event,
+                        timestamp=_utcnow,
                     )
-                    recovery_ev = StreamEvent(
-                        type="text",
-                        agent_name=agent.name,
-                        iteration=i,
-                        timestamp=_utcnow(),
-                        text=recovery_text,
-                    )
-                    if logger is not None:
-                        logger.write(recovery_ev)
-                    if on_event is not None:
-                        on_event(recovery_ev)
-                    raise err
 
             iter_session_file = capture_iteration_session(
                 session_storage=session_storage,
