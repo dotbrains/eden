@@ -9,7 +9,6 @@ set ``__cause__``; callers who want chained tracebacks must use
 from __future__ import annotations
 
 import builtins
-from pathlib import Path
 
 from eden._error_base import EdenError as EdenError
 from eden._error_base import _format as _format
@@ -17,6 +16,11 @@ from eden._rest_errors import RestAuthError as RestAuthError
 from eden._rest_errors import RestError as RestError
 from eden._rest_errors import RestNotFoundError as RestNotFoundError
 from eden._rest_errors import RestRateLimited as RestRateLimited
+from eden._runtime_errors import AgentError as AgentError
+from eden._runtime_errors import CopyToWorktreeError as CopyToWorktreeError
+from eden._runtime_errors import SessionCaptureFailed as SessionCaptureFailed
+from eden._runtime_errors import SessionNotFound as SessionNotFound
+from eden._runtime_errors import StructuredOutputError as StructuredOutputError
 
 
 class ConfigError(EdenError):
@@ -201,177 +205,3 @@ class Aborted(EdenError):
     def __init__(self, *, reason: str = "abort-signal") -> None:
         self.reason = reason
         super().__init__(f"aborted: {reason}")
-
-
-class StructuredOutputError(EdenError):
-    """Raised when ``run(output=...)`` fails to extract or validate a payload.
-
-    Failure modes:
-    - The configured XML tag was not found in stdout (``raw_matched`` is ``None``).
-    - The tag contents failed ``json.loads`` (``cause`` carries the parse error).
-    - The schema callable raised (``cause`` carries the validation error).
-
-    Carries ``branch`` and ``preserved_worktree_path`` so callers can recover
-    side effects without losing the run's commits and worktree state.
-
-    Also carries ``session_id`` (and ``session_file_path`` when the session
-    was captured to the host) of the iteration that produced the bad
-    output. Callers running claude_code can resume that same session with
-    corrective feedback and re-emit the output without repeating the work:
-
-        try:
-            return run(..., output=Output.object(...))
-        except StructuredOutputError as e:
-            if e.session_id is not None:
-                return run(
-                    ...,
-                    output=Output.object(...),
-                    resume_session=e.session_id,
-                    prompt="Your previous output was malformed; re-emit it.",
-                )
-            raise
-    """
-
-    def __init__(
-        self,
-        *,
-        code: str = "output.extraction_failed",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-        tag: str,
-        raw_matched: str | None,
-        branch: str,
-        preserved_worktree_path: object = None,
-        session_id: str | None = None,
-        session_file_path: object = None,
-    ) -> None:
-        self.code = code
-        self.message = message
-        self.hint = hint
-        self.cause = cause
-        self.tag = tag
-        self.raw_matched = raw_matched
-        self.branch = branch
-        self.preserved_worktree_path = preserved_worktree_path
-        self.session_id = session_id
-        self.session_file_path = session_file_path
-        super().__init__(_format(code, message, hint))
-
-
-class CopyToWorktreeError(EdenError):
-    """Raised when the isolated provider's worktree clone fails or times out.
-
-    Wraps the underlying ``OSError`` / ``CalledProcessError`` / ``TimeoutExpired``
-    so callers can branch on a typed error rather than swallowing failures
-    deep inside ``provider.create()``. ``timed_out`` distinguishes a budget
-    overrun from a "real" copy failure.
-    """
-
-    def __init__(
-        self,
-        *,
-        code: str = "copy.to_worktree_failed",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-        source: object = None,
-        target: object = None,
-        timeout: float | None = None,
-        timed_out: bool = False,
-    ) -> None:
-        self.code = code
-        self.message = message
-        self.hint = hint
-        self.cause = cause
-        self.source = source
-        self.target = target
-        self.timeout = timeout
-        self.timed_out = timed_out
-        super().__init__(_format(code, message, hint))
-
-
-class AgentError(EdenError):
-    """Raised when the agent subprocess exits non-zero without a completion signal.
-
-    Carries the exit code, captured stderr, and an optional ``parsed_error``
-    extracted from the agent's stdout (used by Codex / Pi / OpenCode, which
-    emit error events on stdout rather than stderr). When stderr is empty the
-    parsed-stdout text is used as the message body so the failure isn't silent.
-    """
-
-    def __init__(
-        self,
-        *,
-        code: str = "agent.failed",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-        agent_name: str = "",
-        exit_code: int | None = None,
-        stderr: str = "",
-        parsed_error: str | None = None,
-    ) -> None:
-        self.code = code
-        self.message = message
-        self.hint = hint
-        self.cause = cause
-        self.agent_name = agent_name
-        self.exit_code = exit_code
-        self.stderr = stderr
-        self.parsed_error = parsed_error
-        super().__init__(_format(code, message, hint))
-
-
-class SessionCaptureFailed(EdenError):
-    """Raised when capture_session() can't locate, read, or write the JSONL.
-
-    Always a soft failure — the orchestrator catches it and surfaces a warning
-    event without aborting the run.
-    """
-
-    def __init__(
-        self,
-        *,
-        code: str = "session.capture_failed",
-        message: str,
-        hint: str | None = None,
-        cause: Exception | None = None,
-    ) -> None:
-        self.code = code
-        self.message = message
-        self.hint = hint
-        self.cause = cause
-        super().__init__(_format(code, message, hint))
-
-
-class SessionNotFound(EdenError):
-    """Raised at run start when ``resume_session=<id>`` references a JSONL that
-    does not exist on the host filesystem.
-
-    The orchestrator runs this precheck before spawning the agent so the user
-    sees a clean host-side error with the expected path, instead of a buried
-    in-container failure ("session not found" in agent stderr).
-    """
-
-    def __init__(
-        self,
-        *,
-        session_id: str,
-        agent_name: str,
-        expected_path: Path | None = None,
-        hint: str | None = None,
-    ) -> None:
-        self.code = "session.not_found"
-        self.session_id = session_id
-        self.agent_name = agent_name
-        self.expected_path = expected_path
-        path_suffix = f" (expected at {expected_path})" if expected_path is not None else ""
-        message = (
-            f"resume_session={session_id!r} not found on host for agent {agent_name!r}{path_suffix}"
-        )
-        self.message = message
-        self.hint = hint or (
-            "verify the id is correct, or list captured sessions under <repo>/.eden/sessions/"
-        )
-        super().__init__(_format(self.code, message, self.hint))

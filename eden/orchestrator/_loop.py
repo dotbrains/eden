@@ -19,12 +19,11 @@ from eden.errors import AgentError
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
-from eden.logging._file import FileLogSink, default_log_path
-from eden.logging._stdout import StdoutLogSink
 from eden.orchestrator._completion import match
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._finalize import finalize_sandbox
 from eden.orchestrator._idle import IdleWatchdog
+from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._recovery import format_agent_error_recovery
 from eden.orchestrator._result import assemble
 from eden.orchestrator._runner import _AgentRunner
@@ -129,7 +128,7 @@ def _run_loop(
     commit_base_sha = head_sha(repo_path=wt.worktree_path, timeout=timeouts.git_setup)
     collected_commits: list[Commit] = []
 
-    sink: FileLogSink | StdoutLogSink | None = None
+    logger: LoopLogger | None = None
     handle: SandboxHandle | None = existing_handle if caller_managed else None
     iterations: list[Iteration] = []
     # Bounded rolling tail — capped to keep memory finite on long agent
@@ -234,43 +233,15 @@ def _run_loop(
 
             unregister_shutdown = register_shutdown(_emergency_cleanup)
 
-        log_cfg = logging_cfg or Logging.file(
-            default_log_path(
-                host_repo_path=setup.cwd,
-                branch=wt.branch,
-                target_branch=target_branch,
-                name=name,
-            )
+        logger = LoopLogger.open(
+            logging_cfg=logging_cfg,
+            host_repo_path=setup.cwd,
+            branch=wt.branch,
+            target_branch=target_branch,
+            name=name,
+            env_values=tuple(setup.merged_env.values()),
         )
-        if log_cfg.type == "file" and log_cfg.path is not None:
-            log_path = log_cfg.path
-            sink = FileLogSink.open(
-                log_cfg.path,
-                level=log_cfg.level,
-                env_values=tuple(setup.merged_env.values()),
-            )
-        else:
-            # Logging.stdout() — no log file; RunResult.log_file_path stays None.
-            sink = StdoutLogSink(
-                level=log_cfg.level,
-                env_values=tuple(setup.merged_env.values()),
-            )
-        agent_stream_cb = log_cfg.on_agent_stream_event
-
-        def _forward_agent_event(ev: StreamEvent) -> None:
-            """Fire ``Logging.on_agent_stream_event`` for agent-derived events.
-
-            Errors raised by the callback are swallowed so a broken forwarder
-            cannot kill the run.
-            """
-            if agent_stream_cb is None:
-                return
-            if ev.type not in ("text", "tool_call", "usage", "session_id", "raw"):
-                return
-            try:
-                agent_stream_cb(ev)
-            except Exception:
-                pass
+        log_path = logger.log_path
 
         # Per-agent Flox runtime (ADR-0014): resolve + validate once so a
         # dangling flox_env fails before the first iteration, then wrap each
@@ -382,38 +353,23 @@ def _run_loop(
                 ):
 
                     def _emit_warning(minutes: int, _i: int = i) -> None:
-                        ev = StreamEvent(
-                            type="idle_warning",
+                        assert logger is not None
+                        logger.emit_idle_warning(
                             agent_name=agent.name,
                             iteration=_i,
                             timestamp=_utcnow(),
                             minutes_idle=minutes,
+                            on_event=on_event,
                         )
-                        if sink is not None:
-                            sink.write(ev)
-                        if on_event is not None:
-                            on_event(ev)
 
                     def _emit_raw(raw_line: str, _i: int = i) -> None:
-                        """Surface the literal stdout line as a ``raw`` event.
-
-                        Only when ``Logging(verbose=True)``; written to the log
-                        and forwarded to ``on_agent_stream_event`` (not the
-                        generic ``on_event``, which already carries the parsed
-                        ``text`` event for unparsed lines).
-                        """
-                        if not log_cfg.verbose:
-                            return
-                        rev = StreamEvent(
-                            type="raw",
+                        assert logger is not None
+                        logger.emit_raw(
                             agent_name=agent.name,
                             iteration=_i,
                             timestamp=_utcnow(),
                             text=raw_line,
                         )
-                        if sink is not None:
-                            sink.write(rev)
-                        _forward_agent_event(rev)
 
                     for line in runner.iter_lines(signal=signal, on_warning=_emit_warning):
                         stdout_chunks.push(line + "\n")
@@ -435,11 +391,12 @@ def _run_loop(
                             iter_usage = ev.usage
                         elif ev.type == "session_id":
                             iter_session_id = ev.session_id
-                        if sink is not None:
-                            sink.write(ev)
+                        if logger is not None:
+                            logger.write(ev)
                         if on_event is not None:
                             on_event(ev)
-                        _forward_agent_event(ev)
+                        if logger is not None:
+                            logger.forward_agent_event(ev)
                         hit = match(line, completion_signal)
                         if hit is not None:
                             iter_completion = hit
@@ -452,7 +409,7 @@ def _run_loop(
                             # agent emits the signal can't hang the loop until
                             # the much-larger ``idle_timeout`` trips.
                             drain = runner.drain_remaining(total_timeout=completion_timeout)
-                            if drain.timed_out and sink is not None:
+                            if drain.timed_out and logger is not None:
                                 warn_ev = StreamEvent(
                                     type="text",
                                     agent_name=agent.name,
@@ -464,7 +421,7 @@ def _run_loop(
                                         "not EOF; terminating now. Iteration succeeded."
                                     ),
                                 )
-                                sink.write(warn_ev)
+                                logger.write(warn_ev)
                                 if on_event is not None:
                                     on_event(warn_ev)
                             for trailing in drain.lines:
@@ -482,11 +439,12 @@ def _run_loop(
                                         iter_usage = tev.usage
                                     elif tev.type == "session_id":
                                         iter_session_id = tev.session_id
-                                    if sink is not None:
-                                        sink.write(tev)
+                                    if logger is not None:
+                                        logger.write(tev)
                                     if on_event is not None:
                                         on_event(tev)
-                                    _forward_agent_event(tev)
+                                    if logger is not None:
+                                        logger.forward_agent_event(tev)
                             runner.terminate()
                             break
                     # Capture exit code BEFORE the with-block's __exit__ runs
@@ -539,8 +497,8 @@ def _run_loop(
                         timestamp=_utcnow(),
                         text=recovery_text,
                     )
-                    if sink is not None:
-                        sink.write(recovery_ev)
+                    if logger is not None:
+                        logger.write(recovery_ev)
                     if on_event is not None:
                         on_event(recovery_ev)
                     raise err
@@ -555,7 +513,7 @@ def _run_loop(
                 since=iter_started_at,
                 agent_name=agent.name,
                 timestamp=_utcnow(),
-                sink=sink,
+                sink=logger.sink if logger is not None else None,
             )
 
             if iter_usage is not None:
@@ -566,8 +524,8 @@ def _run_loop(
                     timestamp=_utcnow(),
                     text=format_context_window_line(iter_usage),
                 )
-                if sink is not None:
-                    sink.write(ctx_ev)
+                if logger is not None:
+                    logger.write(ctx_ev)
                 if on_event is not None:
                     on_event(ctx_ev)
 
@@ -606,7 +564,7 @@ def _run_loop(
                 agent_name=agent.name,
                 iteration=len(iterations),
                 timestamp=_utcnow,
-                sink=sink,
+                sink=logger.sink if logger is not None else None,
             )
 
     finally:
@@ -642,8 +600,8 @@ def _run_loop(
                 handle.close()
             except Exception:
                 pass
-        if sink is not None:
-            sink.close()
+        if logger is not None:
+            logger.close()
         # Census the agent's commits while the worktree is still on disk —
         # ``wt.close()`` below may remove it. Runs for caller-managed runs
         # too (their worktree outlives this loop but the SHAs are this run's).
