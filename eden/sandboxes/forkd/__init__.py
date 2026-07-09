@@ -24,19 +24,22 @@ construction (custom controller URL, memory limits, live-branch snapshots, …).
 from __future__ import annotations
 
 import base64
-import shlex
-import tempfile
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, cast
 
 from eden.providers._helpers import make_isolated_provider
-from eden.providers._impl import patch_sync
-from eden.providers._impl.dir_upload import upload_dir_via_tar as _upload_dir_via_tar
 from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
-from eden.sandboxes.errors import ExecFailed, ProviderUnavailable
+from eden.sandboxes._remote_exec import (
+    copy_file_in_via_exec,
+    copy_file_out_via_exec,
+    finalize_from_remote_snapshot,
+    snapshot_via_exec,
+    upload_tree_via_exec,
+)
+from eden.sandboxes.errors import ProviderUnavailable
 
 _SANDBOX_WORKDIR = Path("/workspace")
 
@@ -111,8 +114,17 @@ def provider(
             timeout=fixed_timeout,
         )
         try:
-            _upload_tree(handle.exec, src=opts.worktree_path, dst=_SANDBOX_WORKDIR)
-            handle.baseline = _snapshot_via_exec(handle.exec, root=_SANDBOX_WORKDIR)
+            upload_tree_via_exec(
+                handle.exec,
+                src=opts.worktree_path,
+                dst=_SANDBOX_WORKDIR,
+                quote_paths=True,
+            )
+            handle.baseline = snapshot_via_exec(
+                handle.exec,
+                root=_SANDBOX_WORKDIR,
+                quote_root=True,
+            )
         except Exception:
             handle.close()
             raise
@@ -182,51 +194,19 @@ class _ForkdHandle:
         return out
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
-        if host.is_dir():
-            result = _upload_dir_via_tar(self.exec, host=host, sandbox=sandbox)
-            if result.exit_code != 0:
-                raise ExecFailed(
-                    result=result,
-                    argv_or_cmd=f"copy_file_in (dir) {host} -> {sandbox}",
-                )
-            return
-        data = host.read_bytes()
-        b64 = base64.b64encode(data).decode("ascii")
-        result = self.exec(
-            f"mkdir -p {shlex.quote(sandbox.parent.as_posix())} && "
-            f"echo {b64} | base64 -d > {shlex.quote(sandbox.as_posix())}",
-        )
-        if result.exit_code != 0:
-            raise ExecFailed(
-                result=result,
-                argv_or_cmd=f"copy_file_in {host} -> {sandbox}",
-            )
+        copy_file_in_via_exec(self.exec, host=host, sandbox=sandbox, quote_paths=True)
 
     def copy_file_out(self, sandbox: Path, host: Path) -> None:
-        result = self.exec(f"base64 {shlex.quote(sandbox.as_posix())}")
-        if result.exit_code != 0:
-            raise ExecFailed(
-                result=result,
-                argv_or_cmd=f"copy_file_out {sandbox} -> {host}",
-            )
-        host.parent.mkdir(parents=True, exist_ok=True)
-        host.write_bytes(base64.b64decode(result.stdout))
+        copy_file_out_via_exec(self.exec, sandbox=sandbox, host=host, quote_paths=True)
 
     def finalize(self, target: Path) -> FinalizeResult:
-        try:
-            after = _snapshot_via_exec(self.exec, root=self.worktree_path)
-        except Exception:
-            return FinalizeResult(applied=False, files_changed=(), patch_size_bytes=0)
-
-        diff_result = patch_sync.diff(before=self.baseline, after=after)
-        if not (diff_result.added or diff_result.changed or diff_result.removed):
-            return FinalizeResult(applied=True, files_changed=(), patch_size_bytes=0)
-
-        with tempfile.TemporaryDirectory() as tmp_root_str:
-            tmp_root = Path(tmp_root_str)
-            for rel in sorted(diff_result.added | diff_result.changed):
-                self.copy_file_out(self.worktree_path / rel, tmp_root / rel)
-            return patch_sync.apply(diff_result, src=tmp_root, dst=target)
+        return finalize_from_remote_snapshot(
+            snapshot=lambda: snapshot_via_exec(self.exec, root=self.worktree_path, quote_root=True),
+            copy_file_out=self.copy_file_out,
+            baseline=self.baseline,
+            worktree_path=self.worktree_path,
+            target=target,
+        )
 
     def close(self) -> None:
         # Called from a finally block; never raise on teardown (matches the
@@ -257,65 +237,6 @@ def _exc_to_exec_result(exc: Exception) -> ExecResult:
             exit_code=code,
         )
     return ExecResult(stdout="", stderr=str(exc), exit_code=-1)
-
-
-def _upload_tree(
-    exec_fn: Callable[..., ExecResult],
-    *,
-    src: Path,
-    dst: Path,
-) -> None:
-    """Upload every file under `src` (host) to `dst` (sandbox), preserving structure."""
-    for path in src.rglob("*"):
-        if path.is_dir():
-            continue
-        rel = path.relative_to(src)
-        if any(part in (".git", ".eden") for part in rel.parts):
-            continue
-        b64 = base64.b64encode(path.read_bytes()).decode("ascii")
-        target = dst / rel
-        result = exec_fn(
-            f"mkdir -p {shlex.quote(target.parent.as_posix())} && "
-            f"echo {b64} | base64 -d > {shlex.quote(target.as_posix())}",
-        )
-        if result.exit_code != 0:
-            raise RuntimeError(f"upload of {rel} failed: {result.stderr}")
-
-
-def _snapshot_via_exec(
-    exec_fn: Callable[..., ExecResult],
-    *,
-    root: Path,
-) -> dict[Path, str]:
-    """Hash every file under `root` in the sandbox into the `dict[Path, hex]`
-    shape produced by `patch_sync.snapshot()` locally.
-
-    Uses ``-exec sha256sum {} +`` rather than ``... | xargs sha256sum``: GNU
-    xargs runs the command once with no arguments when find finds nothing, which
-    makes sha256sum hash empty stdin and emit ``<hash>  -`` — corrupting the
-    parsed snapshot. ``-exec ... +`` skips the command entirely on no matches
-    and is portable across GNU/BSD find.
-    """
-    result = exec_fn(
-        f"cd {shlex.quote(root.as_posix())} && "
-        "find . -type f "
-        "-not -path './.git/*' -not -path './.eden/*' "
-        "-exec sha256sum {} + 2>/dev/null"
-    )
-    out: dict[Path, str] = {}
-    for line in result.stdout.splitlines():
-        if not line.strip():
-            continue
-        # `sha256sum` format: "<hex>  ./relative/path"
-        try:
-            hex_digest, rest = line.split(maxsplit=1)
-        except ValueError:
-            continue
-        rel = rest.strip()
-        if rel.startswith("./"):
-            rel = rel[2:]
-        out[Path(rel)] = hex_digest
-    return out
 
 
 __all__ = ["provider"]

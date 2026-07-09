@@ -9,19 +9,23 @@ from __future__ import annotations
 
 import base64
 import os
-import tempfile
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
 from eden.errors import RestNotFoundError
 from eden.providers._helpers import make_isolated_provider
-from eden.providers._impl import patch_sync
-from eden.providers._impl.dir_upload import upload_dir_via_tar as _upload_dir_via_tar
 from eden.providers._impl.http_rest import RestClient
 from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
-from eden.sandboxes.errors import ExecFailed, ProviderUnavailable
+from eden.sandboxes._remote_exec import (
+    copy_file_in_via_exec,
+    copy_file_out_via_exec,
+    finalize_from_remote_snapshot,
+    snapshot_via_rest_exec,
+    upload_tree_via_rest_exec,
+)
+from eden.sandboxes.errors import ProviderUnavailable
 
 _DEFAULT_BASE_URL = "https://api.daytona.io"
 _DEFAULT_IMAGE = "ubuntu:24.04"
@@ -91,8 +95,14 @@ def provider(
 
         # Upload host worktree contents to /workspace, then snapshot baseline.
         try:
-            _upload_tree(client, sandbox_id, src=opts.worktree_path, dst=_SANDBOX_WORKDIR)
-            baseline = _snapshot_remote(client, sandbox_id, root=_SANDBOX_WORKDIR)
+            endpoint = f"/toolbox/{sandbox_id}/process/execute"
+            upload_tree_via_rest_exec(
+                client,
+                endpoint,
+                src=opts.worktree_path,
+                dst=_SANDBOX_WORKDIR,
+            )
+            baseline = snapshot_via_rest_exec(client, endpoint, root=_SANDBOX_WORKDIR)
         except Exception:
             try:
                 client.delete(f"/api/sandbox/{sandbox_id}")
@@ -164,52 +174,24 @@ class _DaytonaHandle:
         return ExecResult(stdout=stdout, stderr=stderr, exit_code=exit_code)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
-        if host.is_dir():
-            result = _upload_dir_via_tar(self.exec, host=host, sandbox=sandbox)
-            if result.exit_code != 0:
-                raise ExecFailed(
-                    result=result,
-                    argv_or_cmd=f"copy_file_in (dir) {host} -> {sandbox}",
-                )
-            return
-        data = host.read_bytes()
-        b64 = base64.b64encode(data).decode("ascii")
-        result = self.exec(
-            f"mkdir -p {sandbox.parent.as_posix()} && "
-            f"echo {b64} | base64 -d > {sandbox.as_posix()}",
-        )
-        if result.exit_code != 0:
-            raise ExecFailed(
-                result=result,
-                argv_or_cmd=f"copy_file_in {host} -> {sandbox}",
-            )
+        copy_file_in_via_exec(self.exec, host=host, sandbox=sandbox)
 
     def copy_file_out(self, sandbox: Path, host: Path) -> None:
-        result = self.exec(f"base64 {sandbox.as_posix()}")
-        if result.exit_code != 0:
-            raise ExecFailed(
-                result=result,
-                argv_or_cmd=f"copy_file_out {sandbox} -> {host}",
-            )
-        host.parent.mkdir(parents=True, exist_ok=True)
-        host.write_bytes(base64.b64decode(result.stdout))
+        copy_file_out_via_exec(self.exec, sandbox=sandbox, host=host)
 
     def finalize(self, target: Path) -> FinalizeResult:
-        try:
-            after = _snapshot_remote(self.client, self.sandbox_id, root=self.worktree_path)
-        except Exception:
-            return FinalizeResult(applied=False, files_changed=(), patch_size_bytes=0)
-
-        diff_result = patch_sync.diff(before=self.baseline, after=after)
-        if not (diff_result.added or diff_result.changed or diff_result.removed):
-            return FinalizeResult(applied=True, files_changed=(), patch_size_bytes=0)
-
-        # Pull each added/changed file to a tmp dir, then patch_sync.apply against target.
-        with tempfile.TemporaryDirectory() as tmp_root_str:
-            tmp_root = Path(tmp_root_str)
-            for rel in sorted(diff_result.added | diff_result.changed):
-                self.copy_file_out(self.worktree_path / rel, tmp_root / rel)
-            return patch_sync.apply(diff_result, src=tmp_root, dst=target)
+        endpoint = f"/toolbox/{self.sandbox_id}/process/execute"
+        return finalize_from_remote_snapshot(
+            snapshot=lambda: snapshot_via_rest_exec(
+                self.client,
+                endpoint,
+                root=self.worktree_path,
+            ),
+            copy_file_out=self.copy_file_out,
+            baseline=self.baseline,
+            worktree_path=self.worktree_path,
+            target=target,
+        )
 
     def close(self) -> None:
         try:
@@ -220,60 +202,6 @@ class _DaytonaHandle:
             pass  # don't propagate teardown errors (matches docker/podman)
         finally:
             self.client.close()
-
-
-def _upload_tree(client: RestClient, sandbox_id: str, *, src: Path, dst: Path) -> None:
-    """Upload every file under `src` (host) to `dst` (sandbox), preserving structure."""
-    for path in src.rglob("*"):
-        if path.is_dir():
-            continue
-        rel = path.relative_to(src)
-        if any(part in (".git", ".eden") for part in rel.parts):
-            continue
-        b64 = base64.b64encode(path.read_bytes()).decode("ascii")
-        target = dst / rel
-        cmd = f"mkdir -p {target.parent.as_posix()} && echo {b64} | base64 -d > {target.as_posix()}"
-        result = client.post(
-            f"/toolbox/{sandbox_id}/process/execute",
-            json={"command": cmd},
-        )
-        if int(result.get("exit_code", result.get("exitCode", 0))) != 0:
-            raise RuntimeError(f"upload of {rel} failed: {result.get('stderr', '')}")
-
-
-def _snapshot_remote(client: RestClient, sandbox_id: str, *, root: Path) -> dict[Path, str]:
-    """REST-shell `find ... | xargs sha256sum` and parse stdout into the
-    `dict[Path, hex]` shape produced by `patch_sync.snapshot()` locally.
-    """
-    # Use ``-exec sha256sum {} +`` rather than ``-print0 | xargs -0 sha256sum``:
-    # GNU xargs runs the command once with no arguments when find finds nothing,
-    # which makes sha256sum hash empty stdin and emit "<hash>  -" — corrupting the
-    # parsed snapshot. ``-exec ... +`` skips the command entirely on no matches
-    # and is portable across GNU/BSD find.
-    cmd = (
-        f"cd {root.as_posix()} && "
-        "find . -type f "
-        "-not -path './.git/*' -not -path './.eden/*' "
-        "-exec sha256sum {} + 2>/dev/null"
-    )
-    response = client.post(
-        f"/toolbox/{sandbox_id}/process/execute",
-        json={"command": cmd},
-    )
-    out: dict[Path, str] = {}
-    for line in str(response.get("stdout", "")).splitlines():
-        if not line.strip():
-            continue
-        # `sha256sum` format: "<hex>  ./relative/path"
-        try:
-            hex_digest, rest = line.split(maxsplit=1)
-        except ValueError:
-            continue
-        rel = rest.strip()
-        if rel.startswith("./"):
-            rel = rel[2:]
-        out[Path(rel)] = hex_digest
-    return out
 
 
 __all__ = ["provider"]
