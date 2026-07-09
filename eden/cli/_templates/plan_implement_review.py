@@ -11,30 +11,13 @@ state the planner reasoned about.
 from __future__ import annotations
 
 from eden.cli._templates._backlog import BacklogManager
+from eden.cli._templates._common import (
+    GITIGNORE,
+    render_agent_call,
+    render_backlog_dockerfile,
+    render_image_arg,
+)
 from eden.cli._templates._env import render_env_example
-
-_DOCKERFILE = """\
-FROM python:3.13-slim
-
-ARG AGENT_UID=1000
-ARG AGENT_GID=1000
-
-RUN apt-get update && apt-get install -y --no-install-recommends \\
-    git gnupg \\
-    && rm -rf /var/lib/apt/lists/*
-
-{backlog_install}
-
-RUN groupadd --gid ${{AGENT_GID}} agent \\
-    && useradd --uid ${{AGENT_UID}} --gid ${{AGENT_GID}} \\
-       --create-home --home-dir /home/agent --shell /bin/sh agent
-
-WORKDIR /workspace
-USER ${{AGENT_UID}}:${{AGENT_GID}}
-
-CMD ["sleep", "infinity"]
-"""
-
 
 _PLAN_PROMPT = """\
 # Context
@@ -245,31 +228,6 @@ if __name__ == "__main__":
 """
 
 
-_GITIGNORE = """\
-# Eden runtime artifacts
-.eden/logs/
-.eden/sessions/
-.eden/worktrees/
-.eden/isolated/
-.env
-"""
-
-
-_AGENT_IMPORT: dict[str, str] = {
-    "claude-code": "claude_code",
-    "codex": "codex",
-    "opencode": "opencode",
-    "pi": "pi",
-}
-
-_AGENT_CALL: dict[str, str] = {
-    "claude-code": 'claude_code("{model}")',
-    "codex": 'codex("{model}")',
-    "opencode": 'opencode("{model}")',
-    "pi": 'pi("{model}")',
-}
-
-
 def render_plan_implement_review(
     *,
     sandbox: str,
@@ -279,14 +237,16 @@ def render_plan_implement_review(
     backlog: BacklogManager,
 ) -> dict[str, str]:
     """Return ``{filename: contents}`` for the plan-implement-review files."""
-    if agent not in _AGENT_IMPORT:
-        raise ValueError(f"unsupported agent for plan-implement-review: {agent!r}")
-    image_arg = f'image="{image_name}"' if sandbox in ("docker", "podman") else ""
+    _, agent_call = render_agent_call(
+        template="plan-implement-review",
+        agent=agent,
+        model=model,
+    )
+    image_arg = render_image_arg(sandbox=sandbox, image_name=image_name)
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
 
-    agent_call = _AGENT_CALL[agent].format(model=model)
     return {
-        "Dockerfile": _DOCKERFILE.format(backlog_install=backlog.dockerfile_install),
+        "Dockerfile": render_backlog_dockerfile(backlog),
         "plan-prompt.md": _PLAN_PROMPT.format(
             list_tasks_command=backlog.list_tasks_command,
         ),
@@ -301,7 +261,7 @@ def render_plan_implement_review(
             agent_call=agent_call,
         ),
         ".env.example": env_example,
-        ".gitignore": _GITIGNORE,
+        ".gitignore": GITIGNORE,
     }
 
 

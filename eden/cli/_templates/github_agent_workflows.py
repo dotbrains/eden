@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 from eden.cli._templates._backlog import BacklogManager
+from eden.cli._templates._common import (
+    GITIGNORE,
+    render_agent_call,
+    render_backlog_dockerfile,
+    render_image_arg,
+)
 from eden.cli._templates._env import render_env_example
 from eden.cli._templates._github_assets import (
     FACTORY_SCRIPT,
@@ -18,25 +24,7 @@ from eden.cli._templates._github_workflows import (
     REVIEW_WORKFLOW,
     render_workflow,
 )
-from eden.cli._templates.plan_implement_review import (
-    _CODING_STANDARDS,
-    _DOCKERFILE,
-    _GITIGNORE,
-)
-
-_AGENT_IMPORT: dict[str, str] = {
-    "claude-code": "claude_code",
-    "codex": "codex",
-    "opencode": "opencode",
-    "pi": "pi",
-}
-
-_AGENT_CALL: dict[str, str] = {
-    "claude-code": 'claude_code("{model}")',
-    "codex": 'codex("{model}")',
-    "opencode": 'opencode("{model}")',
-    "pi": 'pi("{model}")',
-}
+from eden.cli._templates._parallel_prompts import PARALLEL_CODING_STANDARDS
 
 
 def render_github_agent_workflows(
@@ -48,11 +36,12 @@ def render_github_agent_workflows(
     backlog: BacklogManager,
 ) -> dict[str, str]:
     """Return files for GitHub label-driven Eden agent workflows."""
-    if agent not in _AGENT_IMPORT:
-        raise ValueError(f"unsupported agent for github-agent-workflows: {agent!r}")
-    agent_import = _AGENT_IMPORT[agent]
-    agent_call = _AGENT_CALL[agent].format(model=model)
-    image_arg = f'image="{image_name}"' if sandbox in ("docker", "podman") else ""
+    agent_import, agent_call = render_agent_call(
+        template="github-agent-workflows",
+        agent=agent,
+        model=model,
+    )
+    image_arg = render_image_arg(sandbox=sandbox, image_name=image_name)
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
     script_args = {
         "agent_import": agent_import,
@@ -69,7 +58,7 @@ def render_github_agent_workflows(
             REVIEW_WORKFLOW,
             image_name=image_name,
         ),
-        "Dockerfile": _DOCKERFILE.format(backlog_install=backlog.dockerfile_install),
+        "Dockerfile": render_backlog_dockerfile(backlog),
         "github/implement_issue.py": IMPLEMENT_SCRIPT.format(**script_args),
         "github/review_pr.py": REVIEW_SCRIPT.format(**script_args),
         "github/factory.py": FACTORY_SCRIPT.format(
@@ -80,9 +69,9 @@ def render_github_agent_workflows(
         "github/review-pr.md": REVIEW_PROMPT,
         "github/SETUP_TRACKER.md": SETUP_TRACKER.format(backlog_name=backlog.name),
         "github/REVIEW_OUTPUT.md": REVIEW_CONTRACT,
-        "CODING_STANDARDS.md": _CODING_STANDARDS,
+        "CODING_STANDARDS.md": PARALLEL_CODING_STANDARDS,
         ".env.example": env_example,
-        ".gitignore": _GITIGNORE,
+        ".gitignore": GITIGNORE,
     }
 
 
