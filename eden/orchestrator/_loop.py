@@ -2,38 +2,29 @@
 
 from __future__ import annotations
 
-import time
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack
 from datetime import UTC, datetime
 from pathlib import Path
 
-from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
+from eden._types import Commit, Iteration, RunResult, Timeouts
 from eden.abort import AbortSignal
-from eden.agents._context import IterationContext
-from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
-from eden.lifecycle import HookPhase, Hooks
-from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
+from eden.lifecycle import Hooks
 from eden.logging._config import Logging
-from eden.orchestrator._agent_exec import execute_agent_iteration
-from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
 from eden.orchestrator._finalize import finalize_sandbox
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._loop_cleanup import close_loop_resources
+from eden.orchestrator._loop_iteration import run_loop_iteration
 from eden.orchestrator._loop_resources import prepare_loop_worktree
 from eden.orchestrator._loop_startup import start_loop_runtime
 from eden.orchestrator._result import assemble
-from eden.orchestrator._session_capture import capture_iteration_session, resolve_session_storage
+from eden.orchestrator._session_capture import resolve_session_storage
 from eden.orchestrator._setup import (
     SetupResult,
     resolve_target_branch,
 )
-from eden.orchestrator._summary import (
-    format_context_window_line,
-)
 from eden.output import OutputDefinition, extract_structured_output
-from eden.prompt import render_prompt
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, Mount
 from eden.streaming import StreamEvent
@@ -41,12 +32,6 @@ from eden.streaming._bounded_tail import BoundedTail
 from eden.tracing import span
 from eden.worktree._create import WorktreeHandle
 from eden.worktree._git import head_sha
-
-# Slack subtracted from an iteration's start time before scoping the subagent
-# transcript sweep, to tolerate second-granularity mtime truncation on some
-# filesystems (a file written at start+0.4s can report an mtime floored below
-# the fractional start instant).
-_SIDECHAIN_MTIME_SLACK = 2.0
 
 
 def _utcnow() -> datetime:
@@ -164,73 +149,23 @@ def _run_loop(
         logger = runtime.logger
         log_path = runtime.log_path
         flox_env_dir = runtime.flox_env_dir
+        assert logger is not None
 
         for i in range(max_iterations):
-            signal.raise_if_aborted()
-            iter_session_id: str | None = None
-            iter_usage: Usage | None = None
-            iter_session_file: Path | None = None
-
-            run_host_hooks(
-                phase=HookPhase.OnIterationStart,
-                hooks=hooks.host,
-                worktree_path=wt.worktree_path,
-                env=setup.merged_env,
-                timeouts=timeouts,
-            )
-            run_sandbox_hooks(
-                phase=HookPhase.OnIterationStart,
-                hooks=hooks.sandbox,
-                handle=handle,
-                env=setup.merged_env,
-                timeouts=timeouts,
-            )
-
-            if setup.prompt_is_literal:
-                # Inline prompts (``prompt="..."``) are passed to the agent
-                # verbatim — no ``{{KEY}}`` substitution, no ``!`cmd``` shell
-                # expansion, no built-in branch injection.
-                rendered_prompt = setup.prompt_text
-            else:
-                rendered_prompt = render_prompt(
-                    text=setup.prompt_text,
-                    args=prompt_args or {},
-                    source_branch=wt.branch,
-                    target_branch=target_branch,
-                    handle=handle,
-                )
-
-            argv = agent.build_command(
-                IterationContext(
-                    iteration=i,
-                    prompt=rendered_prompt,
-                    sandbox_handle=handle,
-                    worktree_path=wt.worktree_path,
-                    branch=wt.branch,
-                    name=name,
-                    resume_session=resume_session,
-                    fork_session=fork_session,
-                )
-            )
-            argv = flox_wrap(argv, flox_env=flox_env_dir)
-
-            # Wall-clock start of this iteration's agent, used to scope the
-            # subagent/sidechain transcript sweep to this run. A small slack
-            # absorbs second-granularity mtime truncation on some filesystems
-            # so a transcript written moments after start isn't dropped.
-            iter_started_at = time.time() - _SIDECHAIN_MTIME_SLACK
-
-            agent_execution = execute_agent_iteration(
+            iteration_result = run_loop_iteration(
+                iteration_index=i,
                 agent=agent,
-                argv=argv,
-                env=setup.merged_env,
+                setup=setup,
+                worktree=wt,
+                target_branch=target_branch,
                 handle=handle,
-                worktree_path=wt.worktree_path,
-                branch=wt.branch,
+                hooks=hooks,
+                timeouts=timeouts,
                 name=name,
+                prompt_args=prompt_args,
                 resume_session=resume_session,
-                rendered_prompt=rendered_prompt,
-                iteration=i,
+                fork_session=fork_session,
+                flox_env_dir=flox_env_dir,
                 idle_timeout=idle_timeout,
                 idle_warning_interval=idle_warning_interval,
                 completion_signal=completion_signal,
@@ -239,88 +174,13 @@ def _run_loop(
                 on_event=on_event,
                 signal=signal,
                 stdout_chunks=stdout_chunks,
-                timestamp=_utcnow,
-            )
-            iter_completion = agent_execution.completion
-            agent_exit_code = agent_execution.exit_code
-            agent_stderr = agent_execution.stderr
-            iter_session_id = agent_execution.session_id
-            iter_usage = agent_execution.usage
-
-            # Agent process EOFed without matching the completion signal.
-            # If it exited non-zero, surface the failure as a typed
-            # ``AgentError`` rather than letting the loop wait for an
-            # idle/iteration timeout. ``parse_stdout_error`` extracts the
-            # message body for Codex / Pi / OpenCode, which emit error
-            # events on stdout instead of stderr.
-            if iter_completion is None:
-                if agent_exit_code is not None and agent_exit_code != 0:
-                    raise_agent_exit_without_completion(
-                        agent_name=agent.name,
-                        iteration=i,
-                        exit_code=agent_exit_code,
-                        stderr=agent_stderr,
-                        stdout=stdout_chunks.to_string(),
-                        branch=wt.branch,
-                        worktree_path=wt.worktree_path,
-                        log_path=log_path,
-                        sink=logger.sink if logger is not None else None,
-                        on_event=on_event,
-                        timestamp=_utcnow,
-                    )
-
-            iter_session_file = capture_iteration_session(
                 session_storage=session_storage,
-                handle=handle,
-                session_id=iter_session_id,
-                host_repo_path=setup.cwd,
-                target_branch=target_branch,
-                iteration=i,
-                since=iter_started_at,
-                agent_name=agent.name,
-                timestamp=_utcnow(),
-                sink=logger.sink if logger is not None else None,
+                log_path=log_path,
             )
-
-            if iter_usage is not None:
-                ctx_ev = StreamEvent(
-                    type="text",
-                    agent_name=agent.name,
-                    iteration=i,
-                    timestamp=_utcnow(),
-                    text=format_context_window_line(iter_usage),
-                )
-                if logger is not None:
-                    logger.write(ctx_ev)
-                if on_event is not None:
-                    on_event(ctx_ev)
-
-            run_sandbox_hooks(
-                phase=HookPhase.OnIterationEnd,
-                hooks=hooks.sandbox,
-                handle=handle,
-                env=setup.merged_env,
-                timeouts=timeouts,
-            )
-            run_host_hooks(
-                phase=HookPhase.OnIterationEnd,
-                hooks=hooks.host,
-                worktree_path=wt.worktree_path,
-                env=setup.merged_env,
-                timeouts=timeouts,
-            )
-
-            iterations.append(
-                Iteration(
-                    index=i,
-                    completion_signal=iter_completion,
-                    session_id=iter_session_id,
-                    session_file_path=iter_session_file,
-                    usage=iter_usage,
-                )
-            )
-            if iter_completion is not None:
-                completion_hit = iter_completion
+            rendered_prompt = iteration_result.rendered_prompt
+            iterations.append(iteration_result.iteration)
+            if iteration_result.completion is not None:
+                completion_hit = iteration_result.completion
                 break
 
         if handle is not None:
