@@ -21,6 +21,7 @@ from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._finalize import finalize_sandbox
 from eden.orchestrator._logging import LoopLogger
+from eden.orchestrator._loop_cleanup import close_loop_resources
 from eden.orchestrator._loop_resources import (
     prepare_loop_worktree,
     register_loop_emergency_cleanup,
@@ -40,9 +41,9 @@ from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
-from eden.tracing import set_attributes, span
+from eden.tracing import span
 from eden.worktree._create import WorktreeHandle
-from eden.worktree._git import head_sha, new_commits
+from eden.worktree._git import head_sha
 
 # Slack subtracted from an iteration's start time before scoping the subagent
 # transcript sweep, to tolerate second-granularity mtime truncation on some
@@ -384,66 +385,21 @@ def _run_loop(
             )
 
     finally:
-        if unregister_shutdown is not None:
-            try:
-                unregister_shutdown()
-            except Exception:
-                pass
-        if handle is not None and not caller_managed:
-            try:
-                run_sandbox_hooks(
-                    phase=HookPhase.OnClose,
-                    hooks=hooks.sandbox,
-                    handle=handle,
-                    env=setup.merged_env,
-                    timeouts=timeouts,
-                )
-            except Exception:
-                pass
-        if not caller_managed:
-            try:
-                run_host_hooks(
-                    phase=HookPhase.OnClose,
-                    hooks=hooks.host,
-                    worktree_path=wt.worktree_path,
-                    env=setup.merged_env,
-                    timeouts=timeouts,
-                )
-            except Exception:
-                pass
-        if handle is not None and not caller_managed:
-            try:
-                handle.close()
-            except Exception:
-                pass
-        if logger is not None:
-            logger.close()
-        # Census the agent's commits while the worktree is still on disk —
-        # ``wt.close()`` below may remove it. Runs for caller-managed runs
-        # too (their worktree outlives this loop but the SHAs are this run's).
-        collected_commits = [
-            Commit(sha=sha)
-            for sha in new_commits(
-                worktree_path=wt.worktree_path,
-                base_sha=commit_base_sha,
-                timeout=timeouts.commit_collection,
-            )
-        ]
-        if not caller_managed:
-            close_result = wt.close()
-            if close_result.action == "preserved":
-                preserved = wt.worktree_path
-        # Record the final outcome on the eden.run span, then close the
-        # ExitStack (which exits the span). Done after the rest of cleanup
-        # so the span reflects the full lifecycle including hook teardown.
-        set_attributes(
-            run_span,
-            {
-                "iterations": len(iterations),
-                "completion_signal": completion_hit,
-            },
+        collected_commits, preserved = close_loop_resources(
+            unregister_shutdown=unregister_shutdown,
+            handle=handle,
+            caller_managed=caller_managed,
+            hooks=hooks,
+            worktree=wt,
+            env=setup.merged_env,
+            timeouts=timeouts,
+            logger=logger,
+            commit_base_sha=commit_base_sha,
+            completion_hit=completion_hit,
+            iteration_count=len(iterations),
+            run_span=run_span,
+            stack=_stack,
         )
-        _stack.close()
 
     last = iterations[-1] if iterations else None
     full_stdout = stdout_chunks.to_string()
