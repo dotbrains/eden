@@ -32,18 +32,35 @@ jobs:
       - name: Run pre-commit hooks (ruff format + lint, mypy --strict)
         run: flox activate -- pre-commit run --all-files --show-diff-on-failure
 
-  # Linux is the only OS where we need the full supported-Python matrix.
-  # Coverage is collected on the oldest supported Python; the remaining
-  # Linux legs prove interpreter compatibility without repeating coverage.
+  # Run the full default suite once with coverage. The e2e tests exercise
+  # orchestration behavior, so avoid repeating them across every Python leg.
   test-linux:
-    name: test-linux (py${{ matrix.python }})
+    name: test-linux (py3.11, coverage)
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      EDEN_PYTHON: python3.11
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: pytest (unit + e2e, coverage)
+        run: flox activate -- pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
+
+  # Compatibility legs keep the supported-Python matrix on Linux without
+  # duplicating the e2e suite or coverage collection.
+  test-linux-compat:
+    name: test-linux-compat (py${{ matrix.python }})
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.11", "3.12", "3.13"]
+        python: ["3.12", "3.13"]
     env:
       EDEN_PYTHON: python${{ matrix.python }}
     steps:
@@ -52,13 +69,8 @@ jobs:
       - name: Install Flox
         uses: flox/install-flox-action@v2
 
-      - name: pytest (unit + e2e, coverage)
-        if: matrix.python == '3.11'
-        run: flox activate -- pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
-
-      - name: pytest (unit + e2e)
-        if: matrix.python != '3.11'
-        run: flox activate -- pytest -v -m "unit or e2e"
+      - name: pytest (unit)
+        run: flox activate -- pytest -v -m unit
 
   # macOS catches platform-specific path/process behavior; one current
   # Python leg avoids duplicating Linux's interpreter matrix.

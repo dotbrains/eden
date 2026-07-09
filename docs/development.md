@@ -62,9 +62,10 @@ the important coverage:
 
 - `quality` runs `pre-commit run --all-files --show-diff-on-failure` once on
   Ubuntu in Flox.
-- `test-linux` runs `pytest -v -m "unit or e2e"` on Python 3.11, 3.12, and
-  3.13 in Flox. The Python 3.11 leg also enforces
-  `--cov=eden --cov-fail-under=70`.
+- `test-linux` runs `pytest -v -m "unit or e2e"` on Python 3.11 in Flox and
+  enforces `--cov=eden --cov-fail-under=70`.
+- `test-linux-compat` runs `pytest -v -m unit` on Python 3.12 and 3.13 in
+  Flox.
 - `test-macos` runs `pytest -v -m "unit or e2e"` once on macOS with Python
   3.13 in Flox.
 - `test-windows` runs `pytest -v -m "unit or e2e"` once on Windows with Python
