@@ -32,24 +32,21 @@ jobs:
             bash -lc 'pre-commit run --all-files --show-diff-on-failure &&
             pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70'
 
-  # Compatibility legs keep the supported-Python matrix on Linux without
-  # duplicating the e2e suite or coverage collection.
+  # Python 3.12 compatibility runs on Linux only. Python 3.13 is covered by
+  # the macOS/Windows unit legs plus the Linux integration leg, so keep it out
+  # of this job to avoid another duplicate unit run.
   test-linux-compat:
-    name: test-linux-compat (py${{ matrix.python }})
+    name: test-linux-compat (py3.12)
     needs: check
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        python: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v5
 
       - name: pytest (unit)
         uses: ./.github/actions/flox-command
         with:
-          eden-python: python${{ matrix.python }}
+          eden-python: python3.12
           command: pytest -v -m unit
 
   # macOS catches platform-specific path/process behavior with unit tests only;
