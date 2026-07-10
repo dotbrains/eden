@@ -12,6 +12,7 @@ from eden.providers._impl.http_rest import RestClient
 from eden.providers._types import BranchStrategy, CreateOptions, ExecResult
 from eden.sandboxes.daytona import provider as daytona_provider
 from eden.sandboxes.errors import ExecFailed, ProviderUnavailable
+from tests.unit.daytona_provider_helpers import mock_client
 
 pytestmark = pytest.mark.unit
 
@@ -25,18 +26,6 @@ def _opts(tmp_path: Path) -> CreateOptions:
         mounts=(),
         name_hint="test",
     )
-
-
-def _mock_client(
-    post_returns: dict[str, object] | list[dict[str, object]] | None = None,
-) -> MagicMock:
-    """Build a MagicMock(spec=RestClient) whose post() returns canned data."""
-    client = MagicMock(spec=RestClient)
-    if isinstance(post_returns, list):
-        client.post.side_effect = post_returns
-    elif post_returns is not None:
-        client.post.return_value = post_returns
-    return client
 
 
 def test_provider_kind_and_name() -> None:
@@ -153,7 +142,7 @@ def test_create_posts_sandbox_with_image_and_env(
 def test_handle_exec_returns_exec_result() -> None:
     from eden.sandboxes.daytona import _DaytonaHandle
 
-    client = _mock_client(
+    client = mock_client(
         {"stdout": "hello\n", "stderr": "", "exit_code": 0},
     )
     handle = _DaytonaHandle(
@@ -195,7 +184,7 @@ def test_handle_copy_file_in_base64_shells(tmp_path: Path) -> None:
 
     src = tmp_path / "payload.bin"
     src.write_bytes(b"\x00\x01\x02\x03")
-    client = _mock_client({"stdout": "", "stderr": "", "exit_code": 0})
+    client = mock_client({"stdout": "", "stderr": "", "exit_code": 0})
     handle = _DaytonaHandle(
         client=client,
         sandbox_id="sb-1",
@@ -216,7 +205,7 @@ def test_handle_copy_file_in_raises_exec_failed_on_nonzero(tmp_path: Path) -> No
 
     src = tmp_path / "payload.bin"
     src.write_bytes(b"x")
-    client = _mock_client({"stdout": "", "stderr": "boom", "exit_code": 1})
+    client = mock_client({"stdout": "", "stderr": "boom", "exit_code": 1})
     handle = _DaytonaHandle(
         client=client,
         sandbox_id="sb-1",
@@ -263,89 +252,3 @@ def test_handle_close_idempotent_on_not_found() -> None:
     )
     handle.close()  # must not raise
     client.close.assert_called_once()
-
-
-def test_finalize_no_changes_returns_applied_true(tmp_path: Path) -> None:
-    """When sandbox snapshot equals baseline, finalize is a no-op success."""
-    from eden.sandboxes.daytona import _DaytonaHandle
-
-    # The shell command in _snapshot_remote returns empty stdout when no files.
-    client = _mock_client({"stdout": "", "stderr": "", "exit_code": 0})
-    handle = _DaytonaHandle(
-        client=client,
-        sandbox_id="sb-1",
-        worktree_path=Path("/workspace"),
-        host_worktree_path=tmp_path,
-        baseline={},
-    )
-    fr = handle.finalize(target=tmp_path)
-    assert fr.applied is True
-    assert fr.files_changed == ()
-    assert fr.patch_size_bytes == 0
-
-
-def test_finalize_pulls_added_files_to_target(tmp_path: Path) -> None:
-    """Sandbox has a file not in baseline — finalize REST-pulls it to target."""
-    from eden.sandboxes.daytona import _DaytonaHandle
-
-    target = tmp_path / "target"
-    target.mkdir()
-
-    # Mock REST responses:
-    # - First post (snapshot): stdout lists one file with its sha256.
-    # - Second post (copy_file_out via exec): base64 of the file's contents.
-    base64_payload = "aGVsbG8="  # "hello"
-    client = MagicMock(spec=RestClient)
-    client.post.side_effect = [
-        {"stdout": "abc123  ./new.txt\n", "stderr": "", "exit_code": 0},
-        {"stdout": base64_payload, "stderr": "", "exit_code": 0},
-    ]
-    handle = _DaytonaHandle(
-        client=client,
-        sandbox_id="sb-1",
-        worktree_path=Path("/workspace"),
-        host_worktree_path=target,
-        baseline={},  # nothing in baseline → new.txt counts as added
-    )
-    fr = handle.finalize(target=target)
-    assert fr.applied is True
-    assert (target / "new.txt").read_bytes() == b"hello"
-    assert Path("new.txt") in fr.files_changed
-
-
-def test_finalize_propagates_deletes(tmp_path: Path) -> None:
-    """Baseline has a file; sandbox snapshot doesn't — finalize removes it from target."""
-    from eden.sandboxes.daytona import _DaytonaHandle
-
-    target = tmp_path / "target"
-    target.mkdir()
-    (target / "to_delete.txt").write_text("gone soon", encoding="utf-8")
-
-    client = _mock_client({"stdout": "", "stderr": "", "exit_code": 0})
-    handle = _DaytonaHandle(
-        client=client,
-        sandbox_id="sb-1",
-        worktree_path=Path("/workspace"),
-        host_worktree_path=target,
-        baseline={Path("to_delete.txt"): "old-hash"},
-    )
-    fr = handle.finalize(target=target)
-    assert fr.applied is True
-    assert not (target / "to_delete.txt").exists()
-
-
-def test_finalize_returns_not_applied_on_snapshot_failure(tmp_path: Path) -> None:
-    """REST failure during finalize snapshot → soft-fail."""
-    from eden.sandboxes.daytona import _DaytonaHandle
-
-    client = MagicMock(spec=RestClient)
-    client.post.side_effect = RuntimeError("network down")
-    handle = _DaytonaHandle(
-        client=client,
-        sandbox_id="sb-1",
-        worktree_path=Path("/workspace"),
-        host_worktree_path=tmp_path,
-        baseline={},
-    )
-    fr = handle.finalize(target=tmp_path)
-    assert fr.applied is False
