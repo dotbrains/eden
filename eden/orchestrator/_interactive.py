@@ -10,13 +10,16 @@ from eden._types import Timeouts
 from eden.abort import AbortSignal
 from eden.agents._protocol import Agent
 from eden.env import load_eden_env, merge_env
-from eden.errors import InvalidOptions
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._interactive_exec import build_interactive_argv, run_interactive_exec
 from eden.orchestrator._interactive_prompt import render_interactive_prompt
-from eden.orchestrator._setup import resolve_branch_strategy, resolve_target_branch
+from eden.orchestrator._interactive_setup import (
+    resolve_interactive_strategy,
+    validate_existing_worktree_options,
+)
+from eden.orchestrator._setup import resolve_target_branch
 from eden.prompt._source import resolve_source
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
@@ -90,23 +93,12 @@ def interactive(
 
         sandbox = no_sandbox()
 
-    if _existing_worktree is not None:
-        if branch_strategy is not None or base_branch is not None:
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(
-                    "branch_strategy/base_branch are incompatible with an existing worktree; "
-                    "the branch was fixed when the worktree was carved"
-                ),
-            )
-        if copy_to_worktree:
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(
-                    "copy_to_worktree= is incompatible with an existing worktree; "
-                    "seed files when creating the worktree or sandbox"
-                ),
-            )
+    validate_existing_worktree_options(
+        existing_worktree=_existing_worktree,
+        branch_strategy=branch_strategy,
+        base_branch=base_branch,
+        copy_to_worktree=copy_to_worktree,
+    )
 
     cwd_path = (
         _existing_worktree.host_repo_path
@@ -138,52 +130,13 @@ def interactive(
     caller_env = {**load_eden_env(cwd_path), **(dict(env) if env else {})}
     merged_env = merge_env({}, caller_env)
 
-    # Interactive sessions default to ``head`` when the provider supports it
-    # — interactive UX expects the agent's writes to land in the host repo
-    # directly. ``resolve_branch_strategy`` defaults bind_mount providers to
-    # ``merge_to_head`` (right for ``run()`` loops) which is the wrong default
-    # here. Fall back to ``merge_to_head`` only when ``head`` is unsupported.
-    if _existing_worktree is not None:
-        strategy = BranchStrategy.named(_existing_worktree.branch)
-    elif branch_strategy is not None and base_branch is not None:
-        raise InvalidOptions(
-            code="config.invalid_options",
-            message=(
-                "base_branch is mutually exclusive with branch_strategy; the "
-                "strategy's own `base` controls the fork point"
-            ),
-            hint=(
-                "pass base via BranchStrategy.merge_to_head(base=...) or .named(branch, base=...)"
-            ),
-        )
-    if branch_strategy is not None:
-        strategy = branch_strategy
-    elif sandbox.supports_strategy(BranchStrategy.head()):
-        strategy = BranchStrategy.head()
-    else:
-        strategy = resolve_branch_strategy(
-            branch_strategy=None,
-            sandbox_kind=sandbox.kind,
-            base_branch=base_branch,
-        )
-    if not sandbox.supports_strategy(strategy):
-        from eden.sandboxes.errors import UnsupportedStrategy
-
-        raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
-
-    if copy_to_worktree and strategy.tag == "head":
-        raise InvalidOptions(
-            code="config.invalid_options",
-            message=(
-                "copy_to_worktree= is incompatible with branch_strategy 'head'; "
-                "the worktree IS the host repo, so copying would overwrite it"
-            ),
-            hint=(
-                "drop copy_to_worktree or pick a branch strategy that carves "
-                "a separate worktree (merge_to_head or named)"
-            ),
-        )
-
+    strategy = resolve_interactive_strategy(
+        sandbox=sandbox,
+        existing_worktree=_existing_worktree,
+        branch_strategy=branch_strategy,
+        base_branch=base_branch,
+        copy_to_worktree=copy_to_worktree,
+    )
     target_branch = resolve_target_branch(host_repo_path=cwd_path)
 
     timeouts_or_default = timeouts if timeouts is not None else Timeouts()
