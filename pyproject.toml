@@ -70,6 +70,13 @@ Issues = "https://github.com/dotbrains/eden/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["eden"]
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.flox/cache",
+    "/.flox/log",
+    "/.flox/run",
+]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
