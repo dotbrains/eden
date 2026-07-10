@@ -9,21 +9,10 @@ import pytest
 
 from eden.providers._types import BranchStrategy
 from eden.worktree._create import create_worktree
-from eden.worktree._git import refresh_from_origin
 from eden.worktree.errors import BranchExists
+from tests.unit.worktree_strategy_helpers import branch_of
 
 pytestmark = pytest.mark.unit
-
-
-def _branch_of(repo: Path, worktree: Path) -> str:
-    out = subprocess.run(
-        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-        cwd=str(worktree),
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-    return out
 
 
 def test_merge_to_head_creates_managed_worktree(tmp_git_repo: Path) -> None:
@@ -36,7 +25,7 @@ def test_merge_to_head_creates_managed_worktree(tmp_git_repo: Path) -> None:
         assert h.branch.startswith("eden/")
         assert h.worktree_path.exists()
         assert h.worktree_path != tmp_git_repo
-        assert _branch_of(tmp_git_repo, h.worktree_path) == h.branch
+        assert branch_of(h.worktree_path) == h.branch
     finally:
         h.close()
 
@@ -87,7 +76,7 @@ def test_named_strategy_creates_branch(tmp_git_repo: Path) -> None:
     )
     try:
         assert h.branch == "feat/x"
-        assert _branch_of(tmp_git_repo, h.worktree_path) == "feat/x"
+        assert branch_of(h.worktree_path) == "feat/x"
     finally:
         h.close()
 
@@ -180,136 +169,3 @@ def test_named_reuse_default_true_still_raises(tmp_git_repo: Path) -> None:
             strategy=BranchStrategy.named("feat/no-reuse"),
         )
     assert excinfo.value.branch == "feat/no-reuse"
-
-
-def _git(repo: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", *args],
-        cwd=str(repo),
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-
-
-def _advance_origin(origin: Path, repo_parent: Path, branch: str) -> None:
-    """Push one extra commit to ``origin/<branch>`` via a throwaway clone."""
-    clone = repo_parent / f"pusher-{branch.replace('/', '-')}"
-    _git(repo_parent, "clone", str(origin), str(clone))
-    _git(clone, "config", "user.email", "test@example.com")
-    _git(clone, "config", "user.name", "Test")
-    _git(clone, "config", "commit.gpgsign", "false")
-    _git(clone, "checkout", branch)
-    (clone / "ahead.txt").write_text("ahead\n")
-    _git(clone, "add", "ahead.txt")
-    _git(clone, "commit", "-m", "advance origin")
-    _git(clone, "push", "origin", branch)
-
-
-def test_refresh_from_origin_fast_forwards_behind_worktree(tmp_git_repo: Path) -> None:
-    """A clean worktree strictly behind origin/<branch> is fast-forwarded."""
-
-    origin = tmp_git_repo.parent / "origin.git"
-    _git(tmp_git_repo, "clone", "--bare", str(tmp_git_repo), str(origin))
-
-    wt = create_worktree(
-        host_repo_path=tmp_git_repo,
-        strategy=BranchStrategy.named("feat/ff"),
-    )
-    try:
-        _git(wt.worktree_path, "remote", "add", "origin", str(origin))
-        _git(wt.worktree_path, "push", "origin", "feat/ff")
-        head_before = _git(wt.worktree_path, "rev-parse", "HEAD")
-        _advance_origin(origin, tmp_git_repo.parent, "feat/ff")
-
-        refresh_from_origin(worktree_path=wt.worktree_path, branch="feat/ff")
-
-        head_after = _git(wt.worktree_path, "rev-parse", "HEAD")
-        assert head_after != head_before
-        assert (wt.worktree_path / "ahead.txt").exists()
-    finally:
-        wt.close()
-
-
-def test_refresh_from_origin_without_origin_is_noop(tmp_git_repo: Path) -> None:
-    """No origin remote → reuse the worktree as-is, never raising."""
-
-    wt = create_worktree(
-        host_repo_path=tmp_git_repo,
-        strategy=BranchStrategy.named("feat/no-origin"),
-    )
-    try:
-        head_before = _git(wt.worktree_path, "rev-parse", "HEAD")
-        refresh_from_origin(worktree_path=wt.worktree_path, branch="feat/no-origin")
-        assert _git(wt.worktree_path, "rev-parse", "HEAD") == head_before
-    finally:
-        wt.close()
-
-
-def test_refresh_from_origin_detached_head_skips(tmp_git_repo: Path) -> None:
-    """A detached HEAD (e.g. paused mid-rebase) is left untouched."""
-
-    origin = tmp_git_repo.parent / "origin3.git"
-    _git(tmp_git_repo, "clone", "--bare", str(tmp_git_repo), str(origin))
-
-    wt = create_worktree(
-        host_repo_path=tmp_git_repo,
-        strategy=BranchStrategy.named("feat/detach"),
-    )
-    try:
-        _git(wt.worktree_path, "remote", "add", "origin", str(origin))
-        _git(wt.worktree_path, "push", "origin", "feat/detach")
-        _advance_origin(origin, tmp_git_repo.parent, "feat/detach")
-        # Detach HEAD; the branch ref still trails origin.
-        _git(wt.worktree_path, "checkout", "--detach", "HEAD")
-        head_before = _git(wt.worktree_path, "rev-parse", "HEAD")
-
-        refresh_from_origin(worktree_path=wt.worktree_path, branch="feat/detach")
-
-        assert _git(wt.worktree_path, "rev-parse", "HEAD") == head_before
-    finally:
-        wt.close()
-
-
-def test_named_reuse_dirty_worktree_skips_refresh(tmp_git_repo: Path) -> None:
-    """A dirty reused worktree is returned untouched — no fetch/merge."""
-    origin = tmp_git_repo.parent / "origin2.git"
-    _git(tmp_git_repo, "clone", "--bare", str(tmp_git_repo), str(origin))
-    _git(tmp_git_repo, "remote", "add", "origin", str(origin))
-
-    first = create_worktree(
-        host_repo_path=tmp_git_repo,
-        strategy=BranchStrategy.named("feat/dirty"),
-    )
-    wt_path = first.worktree_path
-    _git(wt_path, "push", "origin", "feat/dirty")
-    (wt_path / "uncommitted.txt").write_text("dirt")
-    result = first.close()
-    assert result.action == "preserved"
-
-    second = create_worktree(
-        host_repo_path=tmp_git_repo,
-        strategy=BranchStrategy.named("feat/dirty"),
-        throw_on_duplicate_worktree=False,
-    )
-    try:
-        # Uncommitted change survives — reuse left the tree alone.
-        assert (second.worktree_path / "uncommitted.txt").read_text() == "dirt"
-    finally:
-        second.close()
-
-
-def test_named_reuse_branch_without_worktree_raises(tmp_git_repo: Path) -> None:
-    """Reuse path requires an actual on-disk worktree; bare branches still raise."""
-    subprocess.run(
-        ["git", "branch", "feat/bare"],
-        cwd=str(tmp_git_repo),
-        check=True,
-        capture_output=True,
-    )
-    with pytest.raises(BranchExists):
-        create_worktree(
-            host_repo_path=tmp_git_repo,
-            strategy=BranchStrategy.named("feat/bare"),
-            throw_on_duplicate_worktree=False,
-        )
