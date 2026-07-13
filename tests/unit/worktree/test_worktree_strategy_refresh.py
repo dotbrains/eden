@@ -11,7 +11,7 @@ from eden.providers._types import BranchStrategy
 from eden.worktree._create import create_worktree
 from eden.worktree._git import refresh_from_origin
 from eden.worktree.errors import BranchExists
-from tests.unit.worktree_strategy_helpers import advance_origin, git
+from tests.unit.worktree.worktree_strategy_helpers import advance_origin, git
 
 pytestmark = pytest.mark.unit
 
