@@ -2,8 +2,6 @@
 
 Every error Eden raises descends from `EdenError`. Catch the base class to handle anything; catch a specific subclass to handle one failure mode.
 
----
-
 ## Conventions
 
 Each concrete error in `eden/errors.py` carries the same shape:
