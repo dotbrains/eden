@@ -160,12 +160,4 @@ python -m pytest test_calc.py   # passes
 - **Want a more interesting workflow** — try `eden init --template plan-implement-review`. Three sequential agents (planner, implementer, reviewer) on one shared sandbox per task. See [Templates](templates.md).
 - **Want to understand how the loop works under the hood** — read [How it works](how-it-works.md). It walks through worktree creation, sandbox lifecycle, the iteration state machine, and how completion signals are matched.
 - **Want to see what's happening live** — wire up [tracing](python-api.md#tracing) to a local Jaeger or Honeycomb. Every iteration shows up as a span tree with `eden.run > eden.iteration > eden.agent.exec`.
-
----
-
-## Common gotchas
-
-- **`max_iterations: 1`** — the simple-loop default in older docs is 1, which means the loop runs once and stops regardless of completion. Use `max_iterations: 3` (or higher) so the agent gets a chance to react to test failures across iterations.
-- **The agent never terminates** — confirm your prompt asks for the completion signal explicitly, and that the signal is unique enough that intermediate text won't false-match.
-- **Branch already exists** — eden refuses to overwrite. Either pass `branch_strategy=BranchStrategy.named(...)` with a fresh name, or delete the leftover branch with `git branch -D <name>`.
-- **Agent sees stale files** — when running with `no-sandbox`, the agent has direct access to your current worktree. If you have uncommitted changes in the host repo, the agent sees them. Use `docker` or `podman` for isolation.
+- **Hit a setup snag** — see [Tutorial first-loop troubleshooting](tutorial-first-loop-troubleshooting.md).

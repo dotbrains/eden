@@ -9,6 +9,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [What is Eden?](what-is-eden.md) — positioning, feature matrix, when to use it.
 - [Quick start](quick-start.md) — `eden init` to first run in five minutes.
 - [Tutorial: build your first agent loop](tutorial-first-loop.md) — 10-minute walkthrough that ends with a real agent fixing a real bug.
+- [Tutorial first-loop troubleshooting](tutorial-first-loop-troubleshooting.md) — common setup gotchas.
 
 ## Reference
 
@@ -45,6 +46,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [GitHub agent workflow template](github-agent-workflow-template.md) — label-driven GitHub Actions scaffold.
 - [Errors](errors.md) — the `EdenError` hierarchy and top-level public errors.
 - [Top-level errors](top-level-errors.md) — top-level `EdenError` subclasses.
+- [REST errors](rest-errors.md) — cloud-provider REST error subclasses.
 - [Error recovery](error-recovery.md) — handling strategies and catch-all examples.
 - [Sandbox and worktree errors](sandbox-worktree-errors.md) — provider and worktree error families.
 

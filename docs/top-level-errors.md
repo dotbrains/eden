@@ -134,38 +134,24 @@ aborting the run; you only see this exception if you opt into stricter handling.
 
 ## `RestError`
 
-Base for non-2xx responses from cloud-provider REST APIs (`daytona`, `vercel`,
-future cloud providers). Carries the standard fields plus:
+Moved to [REST errors](rest-errors.md#resterror).
 
-- `status: int` - HTTP status (`0` for connection-level failures with no HTTP
-  response).
-- `body: str` - response body if available.
-- `url: str` - request URL.
-
-Default `code="rest.error"`. Catch this at the orchestrator boundary; never let
-the provider's `requests.RequestException` leak through.
+Compatibility anchors: <a id="resterror"></a>
 
 ### `RestAuthError`
 
-401 / 403: Bearer token rejected or insufficient permissions. Default
-`code="rest.auth"`.
+Moved to [REST errors](rest-errors.md#restautherror).
 
-**Recovery:** rotate or refresh the API token (`DAYTONA_API_KEY`,
-`VERCEL_TOKEN`, etc.); verify the org/team scope.
+Compatibility anchors: <a id="restautherror"></a>
 
 ### `RestNotFoundError`
 
-404: sandbox, project, or file does not exist on the cloud side. Default
-`code="rest.not_found"`. Notably, `daytona`/`vercel` `close()` swallows this for
-the sandbox-delete call (idempotent teardown).
+Moved to [REST errors](rest-errors.md#restnotfounderror).
 
-**Recovery:** the resource is gone; treat as terminal unless the resource ID is
-known-stale, in which case stop using it.
+Compatibility anchors: <a id="restnotfounderror"></a>
 
 ### `RestRateLimited`
 
-429: server-side rate-limit; eden's automatic retries were exhausted. Default
-`code="rest.rate_limited"`.
+Moved to [REST errors](rest-errors.md#restratelimited).
 
-**Recovery:** retry with backoff, parallelize fewer runs, or upgrade the
-provider plan.
+Compatibility anchors: <a id="restratelimited"></a>
