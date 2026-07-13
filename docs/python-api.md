@@ -36,7 +36,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [Types and streaming](python-api-types.md) — configuration dataclasses, result types, and `StreamEvent`.
 - [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
 - [Agents and sessions](python-api-agents.md) — agent Protocols, built-in factories, transcript capture, and session helpers.
-- [Extensibility](python-api-extensibility.md) — hooks, cancellation, provider Protocols, and display sinks.
+- [Extensibility](python-api-extensibility.md) — hooks, cancellation, and provider Protocols.
+- [Display](python-api-display.md) — display sinks and display entries.
 - [Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
 
 ## Public Surface
@@ -121,11 +122,11 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 ### Display
 
-- [`Display`](python-api-extensibility.md#display)
-- [`DisplayEntry`](python-api-extensibility.md#displayentry)
-- [`SilentDisplay`](python-api-extensibility.md#silentdisplay)
-- [`FileDisplay`](python-api-extensibility.md#filedisplay)
-- [`RichDisplay`](python-api-extensibility.md#richdisplay)
+- [`Display`](python-api-display.md#display)
+- [`DisplayEntry`](python-api-display.md#displayentry)
+- [`SilentDisplay`](python-api-display.md#silentdisplay)
+- [`FileDisplay`](python-api-display.md#filedisplay)
+- [`RichDisplay`](python-api-display.md#richdisplay)
 
 ### Errors
 
@@ -178,7 +179,7 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a>[Lifecycle hooks](python-api-extensibility.md#lifecycle-hooks)
 - <a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>[Cancellation](python-api-extensibility.md#cancellation)
 - <a id="provider-protocol-re-exports"></a><a id="sandboxhandle"></a><a id="bindmountsandboxhandle"></a><a id="isolatedsandboxhandle"></a><a id="sandboxprovider"></a><a id="createoptions"></a><a id="execresult"></a><a id="make_bind_mount_provider"></a><a id="make_isolated_provider"></a>[Provider Protocol re-exports](python-api-extensibility.md#provider-protocol-re-exports)
-- <a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>[Display](python-api-extensibility.md#display)
+- <a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>[Display](python-api-display.md#display)
 - <a id="errors"></a><a id="format_error_messageerror"></a><a id="structuredoutputerror"></a>[Errors](python-api-errors-tracing.md#errors)
 - <a id="tracing"></a>[Tracing](python-api-errors-tracing.md#tracing)
 - <a id="version"></a><a id="__version__"></a>[Version](python-api-errors-tracing.md#version)

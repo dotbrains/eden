@@ -1,6 +1,6 @@
 # Python API: Extensibility
 
-Detailed reference for lifecycle hooks, cancellation, provider protocols, and display sinks. See [Python API](python-api.md) for the canonical public API index, and [Python API: Errors and tracing](python-api-errors-tracing.md) for error formatting, tracing, and version metadata.
+Detailed reference for lifecycle hooks, cancellation, and provider protocols. See [Python API](python-api.md) for the canonical public API index, [Python API: Display](python-api-display.md) for display sinks, and [Python API: Errors and tracing](python-api-errors-tracing.md) for error formatting, tracing, and version metadata.
 
 ---
 
@@ -234,55 +234,27 @@ Same idea, but the returned handle must expose `finalize(target) -> FinalizeResu
 
 ## Display
 
-A swappable sink abstraction for orchestrator → user output. Eden re-exports the Protocol and three concrete sinks; pass any of them to higher-level CLI / interactive helpers that accept a `display=` argument. Built on a tagged `DisplayEntry` ADT.
+Moved to [Python API: Display](python-api-display.md#display).
 
 ### `Display`
 
-```python
-class Display(Protocol):
-    def intro(self, title: str) -> None: ...
-    def status(self, message: str, severity: Severity = "info") -> None: ...
-    def text(self, message: str) -> None: ...
-    def text_chunk(self, chunk: str) -> None: ...
-    def tool_call(self, name: str, formatted_args: str) -> None: ...
-    def summary(self, title: str, rows: Mapping[str, str]) -> None: ...
-    @contextmanager
-    def spinner(self, message: str) -> Iterator[None]: ...
-    @contextmanager
-    def task_log(self, title: str) -> Iterator[Callable[[str], None]]: ...
-```
-
-`Severity` is one of `"info" | "success" | "warn" | "error"`. `text()` emits a line-oriented message; `text_chunk()` emits raw streaming text with no implied newline, so adjacent chunks render as contiguous prose. The two context managers wrap long-running blocks: `spinner` for an indeterminate progress indicator; `task_log` for collecting per-step messages and emitting them on exit (the yielded callable pushes messages into the log).
+Moved to [Python API: Display](python-api-display.md#display).
 
 ### `DisplayEntry`
 
-Tagged-union of `IntroEntry | StatusEntry | SpinnerEntry | SummaryEntry | TaskLogEntry | TextEntry | TextChunkEntry | ToolCallEntry`. Each has a `.tag` literal and the relevant payload fields. Used by `SilentDisplay` to record everything for test assertions.
+Moved to [Python API: Display](python-api-display.md#displayentry).
 
 ### `SilentDisplay`
 
-```python
-display = SilentDisplay()
-# ... orchestrator runs ...
-assert display.entries[-1].title == "Run complete"
-```
-
-Records every entry on `.entries`, prints nothing. The test sink.
+Moved to [Python API: Display](python-api-display.md#silentdisplay).
 
 ### `FileDisplay`
 
-```python
-display = FileDisplay(Path(".eden/logs/run.log"))
-```
-
-Append-only file sink with timestamped delimiter on construction. Spinners and task logs record their duration. `text_chunk()` writes chunks verbatim, and later line-oriented entries start on a fresh line if a chunk ended mid-line. Suitable for unattended / CI runs.
+Moved to [Python API: Display](python-api-display.md#filedisplay).
 
 ### `RichDisplay`
 
-```python
-display = RichDisplay()  # uses default rich.console.Console()
-```
-
-Live terminal output powered by the bundled `rich` dependency. Renders severities with color glyphs, spinners with `rich.status.Status`, summaries as bold-key / dim-value blocks. Inject a custom `Console` via `RichDisplay(console=Console(file=...))` for capturing tests.
+Moved to [Python API: Display](python-api-display.md#richdisplay).
 
 ## Compatibility anchors
 

@@ -17,7 +17,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Python API: Types and streaming](python-api-types.md) — configuration, results, and stream events.
 - [Python API: Structured output](python-api-output.md) — `Output`, schema validation, and retries.
 - [Python API: Agents and sessions](python-api-agents.md) — agent factories, Protocols, and transcript helpers.
-- [Python API: Extensibility](python-api-extensibility.md) — hooks, cancellation, provider Protocols, and display.
+- [Python API: Extensibility](python-api-extensibility.md) — hooks, cancellation, and provider Protocols.
+- [Python API: Display](python-api-display.md) — display sinks and display entries.
 - [Python API: Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
 - [CLI](cli.md) — `eden init`, `eden run`, `eden cost`, `eden clean`, `eden replay`, `eden version`.
 - [GitHub Action](github-action.md) — run an eden iteration loop in any GitHub workflow.
