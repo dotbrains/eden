@@ -13,14 +13,17 @@ from eden.env import load_eden_env, merge_env
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
-from eden.orchestrator._interactive_cleanup import close_interactive_resources
-from eden.orchestrator._interactive_exec import build_interactive_argv, run_interactive_exec
-from eden.orchestrator._interactive_prompt import render_interactive_prompt
-from eden.orchestrator._interactive_setup import (
+from eden.orchestrator._setup import resolve_target_branch
+from eden.orchestrator.interactive._interactive_cleanup import close_interactive_resources
+from eden.orchestrator.interactive._interactive_exec import (
+    build_interactive_argv,
+    run_interactive_exec,
+)
+from eden.orchestrator.interactive._interactive_prompt import render_interactive_prompt
+from eden.orchestrator.interactive._interactive_setup import (
     resolve_interactive_strategy,
     validate_existing_worktree_options,
 )
-from eden.orchestrator._setup import resolve_target_branch
 from eden.prompt._source import resolve_source
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
