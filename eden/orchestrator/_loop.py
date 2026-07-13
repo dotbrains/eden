@@ -18,13 +18,13 @@ from eden.orchestrator._loop_cleanup import close_loop_resources
 from eden.orchestrator._loop_iteration import run_loop_iteration
 from eden.orchestrator._loop_resources import prepare_loop_worktree
 from eden.orchestrator._loop_startup import start_loop_runtime
-from eden.orchestrator._result import assemble
+from eden.orchestrator._result import assemble_loop_result
 from eden.orchestrator._session_capture import resolve_session_storage
 from eden.orchestrator._setup import (
     SetupResult,
     resolve_target_branch,
 )
-from eden.output import OutputDefinition, extract_structured_output
+from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, Mount
 from eden.streaming import StreamEvent
@@ -210,21 +210,8 @@ def _run_loop(
             stack=_stack,
         )
 
-    last = iterations[-1] if iterations else None
     full_stdout = stdout_chunks.to_string()
-    extracted: object | None = None
-    if output is not None:
-        extracted = extract_structured_output(
-            full_stdout,
-            output,
-            branch=wt.branch,
-            preserved_worktree_path=preserved,
-            session_id=last.session_id if last else None,
-            session_file_path=last.session_file_path if last else None,
-        )
-    from eden._types import _RunContext
-
-    return assemble(
+    return assemble_loop_result(
         iterations=iterations,
         completion_signal=completion_hit,
         branch=wt.branch,
@@ -235,12 +222,10 @@ def _run_loop(
         prompt=rendered_prompt,
         env=setup.merged_env,
         log_file_path=log_path,
-        session_id=last.session_id if last else None,
-        session_file_path=last.session_file_path if last else None,
-        usage=last.usage if last else None,
         commits=collected_commits,
-        output=extracted,
-        ctx=_RunContext(agent=agent, sandbox=sandbox, cwd=setup.cwd),
+        output=output,
+        agent=agent,
+        sandbox=sandbox,
     )
 
 
