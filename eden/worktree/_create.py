@@ -14,11 +14,10 @@ from eden.worktree._git import (
     list_worktrees,
     refresh_from_origin,
     status_porcelain,
-    worktree_add,
-    worktree_remove,
 )
 from eden.worktree._handle import CloseResult, WorktreeHandle
 from eden.worktree._lock import acquire_lock
+from eden.worktree._worktree_ops import worktree_add, worktree_remove
 from eden.worktree.errors import BranchExists, DirtyHostBlocked
 
 __all__ = [

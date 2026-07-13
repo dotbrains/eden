@@ -18,7 +18,8 @@ from unittest.mock import patch
 
 import pytest
 
-from eden.worktree._git import _run_git, branch_exists, c_locale_env, worktree_add
+from eden.worktree._git import _run_git, branch_exists, c_locale_env
+from eden.worktree._worktree_ops import worktree_add
 
 pytestmark = pytest.mark.unit
 
@@ -91,13 +92,13 @@ def test_worktree_add_disables_branch_auto_setup(
     """Generated worktrees must not contend on .git/config tracking writes."""
     seen: list[tuple[str, ...]] = []
 
-    monkeypatch.setattr("eden.worktree._git._check_collisions", lambda **_: None)
+    monkeypatch.setattr("eden.worktree._worktree_ops._check_collisions", lambda **_: None)
 
     def _capture(argv: tuple[str, ...], *, cwd: Path, timeout: float = 60.0) -> tuple[str, str]:
         seen.append(argv)
         return "", ""
 
-    monkeypatch.setattr("eden.worktree._git._run_git", _capture)
+    monkeypatch.setattr("eden.worktree._worktree_ops._run_git", _capture)
 
     worktree_add(
         repo_path=tmp_path,
@@ -121,7 +122,7 @@ def test_worktree_add_serializes_git_metadata_mutation(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """Concurrent adds must not overlap inside Git's .git/worktrees mutation."""
-    monkeypatch.setattr("eden.worktree._git._check_collisions", lambda **_: None)
+    monkeypatch.setattr("eden.worktree._worktree_ops._check_collisions", lambda **_: None)
 
     active = 0
     max_active = 0
@@ -141,7 +142,7 @@ def test_worktree_add_serializes_git_metadata_mutation(
             with guard:
                 active -= 1
 
-    monkeypatch.setattr("eden.worktree._git._run_git", _capture)
+    monkeypatch.setattr("eden.worktree._worktree_ops._run_git", _capture)
 
     threads = [
         threading.Thread(

@@ -8,8 +8,9 @@ from datetime import timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Protocol
 
-from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, status_porcelain, worktree_remove
+from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, status_porcelain
 from eden.worktree._lock import _LockHandle
+from eden.worktree._worktree_ops import worktree_remove
 
 if TYPE_CHECKING:
     from eden._types import RunResult, Timeouts

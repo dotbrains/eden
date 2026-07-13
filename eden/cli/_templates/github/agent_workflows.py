@@ -11,15 +11,9 @@ from eden.cli._templates._common import (
 )
 from eden.cli._templates._env import render_env_example
 from eden.cli._templates._parallel_prompts import PARALLEL_CODING_STANDARDS
-from eden.cli._templates.github._assets import (
-    FACTORY_SCRIPT,
-    IMPLEMENT_PROMPT,
-    IMPLEMENT_SCRIPT,
-    REVIEW_CONTRACT,
-    REVIEW_PROMPT,
-    REVIEW_SCRIPT,
-    SETUP_TRACKER,
-)
+from eden.cli._templates.github._prompts import IMPLEMENT_PROMPT, REVIEW_PROMPT
+from eden.cli._templates.github._scripts import FACTORY_SCRIPT, IMPLEMENT_SCRIPT, REVIEW_SCRIPT
+from eden.cli._templates.github._support_docs import REVIEW_CONTRACT, SETUP_TRACKER
 from eden.cli._templates.github._workflows import (
     IMPLEMENT_WORKFLOW,
     REVIEW_WORKFLOW,
