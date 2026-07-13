@@ -36,7 +36,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
 - [Types and streaming](python-api-types.md) — configuration dataclasses, result types, and `StreamEvent`.
 - [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
-- [Agents and sessions](python-api-agents.md) — agent Protocols, built-in factories, transcript capture, and session helpers.
+- [Agents](python-api-agents.md) — agent Protocols and built-in factories.
+- [Sessions](python-api-sessions.md) — transcript capture, storage, and session helpers.
 - [Extensibility](python-api-extensibility.md) — hooks, cancellation, and provider Protocols.
 - [Display](python-api-display.md) — display sinks and display entries.
 - [Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
@@ -86,16 +87,16 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [`cursor`](python-api-agents.md#cursor)
 - [`copilot`](python-api-agents.md#copilot)
 - [`cli_agent`](python-api-agents.md#cli_agent)
-- [`SessionStorage`](python-api-agents.md#session-storage)
-- [`ClaudeSessionStorage`](python-api-agents.md#claudesessionstorage)
-- [`CodexSessionStorage`](python-api-agents.md#codexsessionstorage)
-- [`PiSessionStorage`](python-api-agents.md#pisessionstorage)
-- [`encode_project_path`](python-api-agents.md#session-lookup-helpers)
-- [`claude_host_session_path`](python-api-agents.md#session-lookup-helpers)
-- [`claude_sandbox_session_path`](python-api-agents.md#session-lookup-helpers)
-- [`find_claude_session_on_host`](python-api-agents.md#session-lookup-helpers)
-- [`find_codex_session_on_host`](python-api-agents.md#session-lookup-helpers)
-- [`transfer_session`](python-api-agents.md#transfer_session)
+- [`SessionStorage`](python-api-sessions.md#session-storage)
+- [`ClaudeSessionStorage`](python-api-sessions.md#claudesessionstorage)
+- [`CodexSessionStorage`](python-api-sessions.md#codexsessionstorage)
+- [`PiSessionStorage`](python-api-sessions.md#pisessionstorage)
+- [`encode_project_path`](python-api-sessions.md#session-lookup-helpers)
+- [`claude_host_session_path`](python-api-sessions.md#session-lookup-helpers)
+- [`claude_sandbox_session_path`](python-api-sessions.md#session-lookup-helpers)
+- [`find_claude_session_on_host`](python-api-sessions.md#session-lookup-helpers)
+- [`find_codex_session_on_host`](python-api-sessions.md#session-lookup-helpers)
+- [`transfer_session`](python-api-sessions.md#transfer_session)
 
 ### Lifecycle and Cancellation
 
@@ -176,7 +177,8 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="result-types"></a><a id="closeresult"></a><a id="runresult"></a><a id="iteration"></a><a id="commit"></a><a id="usage"></a><a id="finalizeresult"></a>[Result types](python-api-types.md#result-types)
 - <a id="structured-output"></a><a id="output"></a><a id="outputdefinition"></a>[Structured output](python-api-output.md#structured-output)
 - <a id="streaming"></a><a id="streamevent"></a>[Streaming](python-api-types.md#streaming)
-- <a id="agents"></a><a id="agent-protocol"></a><a id="iterationcontext"></a><a id="factories"></a><a id="session-storage"></a><a id="claudesessionstorage"></a><a id="codexsessionstorage"></a><a id="pisessionstorage"></a><a id="session-lookup-helpers"></a><a id="transfer_session"></a>[Agents and sessions](python-api-agents.md#agents)
+- <a id="agents"></a><a id="agent-protocol"></a><a id="iterationcontext"></a><a id="factories"></a>[Agents](python-api-agents.md#agents)
+- <a id="session-storage"></a><a id="claudesessionstorage"></a><a id="codexsessionstorage"></a><a id="pisessionstorage"></a><a id="session-lookup-helpers"></a><a id="transfer_session"></a>[Sessions](python-api-sessions.md#session-storage)
 - <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a>[Lifecycle hooks](python-api-extensibility.md#lifecycle-hooks)
 - <a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>[Cancellation](python-api-extensibility.md#cancellation)
 - <a id="provider-protocol-re-exports"></a><a id="sandboxhandle"></a><a id="bindmountsandboxhandle"></a><a id="isolatedsandboxhandle"></a><a id="sandboxprovider"></a><a id="createoptions"></a><a id="execresult"></a><a id="make_bind_mount_provider"></a><a id="make_isolated_provider"></a>[Provider Protocol re-exports](python-api-extensibility.md#provider-protocol-re-exports)

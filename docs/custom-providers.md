@@ -2,8 +2,6 @@
 
 Implement the `SandboxProvider` Protocol — and one of `BindMountSandboxHandle` or `IsolatedSandboxHandle` for the handle it produces — to plug your own sandbox into `eden.run(sandbox=...)`.
 
----
-
 ## When to write one
 
 The seven in-tree providers (`no_sandbox`, `docker`, `podman`, `isolated`, `daytona`, `vercel`, `forkd`) cover most workflows; see [sandbox-providers.md](sandbox-providers.md) for the matrix. Reach for a custom provider when:

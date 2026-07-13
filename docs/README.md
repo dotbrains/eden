@@ -17,7 +17,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Python API: Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
 - [Python API: Types and streaming](python-api-types.md) — configuration, results, and stream events.
 - [Python API: Structured output](python-api-output.md) — `Output`, schema validation, and retries.
-- [Python API: Agents and sessions](python-api-agents.md) — agent factories, Protocols, and transcript helpers.
+- [Python API: Agents](python-api-agents.md) — agent factories and Protocols.
+- [Python API: Sessions](python-api-sessions.md) — transcript capture, storage, and helpers.
 - [Python API: Extensibility](python-api-extensibility.md) — hooks, cancellation, and provider Protocols.
 - [Python API: Display](python-api-display.md) — display sinks and display entries.
 - [Python API: Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
