@@ -112,7 +112,6 @@ def run_loop_iteration(
     session_storage: SessionStorage | None,
     log_path: Path | None,
 ) -> LoopIterationResult:
-    """Run one agent iteration and return its public result fields."""
     signal.raise_if_aborted()
 
     run_host_hooks(

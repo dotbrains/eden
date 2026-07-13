@@ -1,5 +1,3 @@
-"""Verify the local isolated() provider's lifecycle and finalize behavior."""
-
 from __future__ import annotations
 
 from pathlib import Path
