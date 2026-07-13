@@ -35,7 +35,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Sandbox provider usage](sandbox-provider-usage.md) — selection flowchart and import examples.
 - [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
 - [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code`.
-- [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, `cursor`, `copilot`, and `cli_agent`.
+- [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, and `cli_agent`.
+- [Agent CLI editor factories](agent-cli-editor-factories.md) — `cursor` and `copilot`.
 - [Agent CLI adapter](agent-cli-adapter.md) — generic `cli_agent` reference.
 - [Prompts](prompts.md) — `PromptSource`, args, shell blocks, built-ins.
 - [Templates](templates.md) — local `eden init` template reference.

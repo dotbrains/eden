@@ -73,11 +73,11 @@ Moved to [Agent CLI factories](agent-cli-factories.md#pi).
 
 #### `cursor(...)`
 
-Moved to [Agent CLI factories](agent-cli-factories.md#cursor).
+Moved to [Agent CLI editor factories](agent-cli-editor-factories.md#cursor).
 
 #### `copilot(...)`
 
-Moved to [Agent CLI factories](agent-cli-factories.md#copilot).
+Moved to [Agent CLI editor factories](agent-cli-editor-factories.md#copilot).
 
 #### `cli_agent(...)`
 

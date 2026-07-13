@@ -1,6 +1,6 @@
 # Agent Factories
 
-Detailed reference for Eden's in-process and dedicated agent factories. See [Agents](agents.md) for the overview, runtime guidance, and authentication notes, and [Agent CLI factories](agent-cli-factories.md) for `cli_agent`-backed adapters.
+Detailed reference for Eden's in-process and dedicated agent factories. See [Agents](agents.md) for the overview, runtime guidance, and authentication notes, [Agent CLI factories](agent-cli-factories.md) for `cli_agent`-backed adapters, and [Agent CLI editor factories](agent-cli-editor-factories.md) for editor-backed adapters.
 
 ---
 
@@ -117,11 +117,11 @@ Moved to [Agent CLI factories](agent-cli-factories.md#pi).
 
 ## `cursor`
 
-Moved to [Agent CLI factories](agent-cli-factories.md#cursor).
+Moved to [Agent CLI editor factories](agent-cli-editor-factories.md#cursor).
 
 ## `copilot`
 
-Moved to [Agent CLI factories](agent-cli-factories.md#copilot).
+Moved to [Agent CLI editor factories](agent-cli-editor-factories.md#copilot).
 
 ## `cli_agent`
 
@@ -129,7 +129,8 @@ Moved to [Agent CLI adapter](agent-cli-adapter.md#cli_agent).
 
 ## See also
 
-- [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, `cursor`, and `copilot`.
+- [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, and `pi`.
+- [Agent CLI editor factories](agent-cli-editor-factories.md) — `cursor` and `copilot`.
 - [Agent CLI adapter](agent-cli-adapter.md) — generic `cli_agent` reference.
 - [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
 - [Python API: Agents](python-api-agents.md) — public Protocol and session helper reference.

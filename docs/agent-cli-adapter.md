@@ -2,7 +2,8 @@
 
 Detailed reference for the generic `cli_agent` adapter. See
 [Agent CLI factories](agent-cli-factories.md) for dedicated `codex`, `opencode`,
-`pi`, `cursor`, and `copilot` wrappers.
+and `pi` wrappers, and [Agent CLI editor factories](agent-cli-editor-factories.md)
+for `cursor` and `copilot`.
 
 ## `cli_agent`
 
@@ -65,4 +66,5 @@ Whatever you pass as `binary`. The codex/opencode/pi factories are wrappers over
 ## See also
 
 - [Agent CLI factories](agent-cli-factories.md) - dedicated CLI-backed factories.
+- [Agent CLI editor factories](agent-cli-editor-factories.md) - editor-backed CLI factories.
 - [Python API: Agents](python-api-agents.md) - public Protocol and context types.

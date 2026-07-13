@@ -51,7 +51,7 @@ You can also import directly from each subpackage (`from eden.agents.codex impor
 
 ## Factory Reference
 
-Detailed per-factory options moved to [Agent factories](agent-factories.md) and [Agent CLI factories](agent-cli-factories.md).
+Detailed per-factory options moved to [Agent factories](agent-factories.md), [Agent CLI factories](agent-cli-factories.md), and [Agent CLI editor factories](agent-cli-editor-factories.md).
 
 ### `simulated_agent`
 
@@ -75,11 +75,11 @@ Moved to [`pi`](agent-factories.md#pi).
 
 ### `cursor`
 
-Moved to [`cursor`](agent-factories.md#cursor).
+Moved to [`cursor`](agent-cli-editor-factories.md#cursor).
 
 ### `copilot`
 
-Moved to [`copilot`](agent-factories.md#copilot).
+Moved to [`copilot`](agent-cli-editor-factories.md#copilot).
 
 ### `cli_agent`
 
@@ -133,6 +133,7 @@ Each agent reads its own credentials from environment variables, per its own doc
 - [Python API: Agents](python-api.md#agents) — full Protocol and factory reference.
 - [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code` arguments and behavior.
 - [Agent CLI factories](agent-cli-factories.md) — CLI adapter arguments, argv shapes, and stream parsers.
+- [Agent CLI editor factories](agent-cli-editor-factories.md) — Cursor and Copilot factory options.
 - [Custom providers](custom-providers.md) — for sandbox-side provider authoring (the agent side stays unchanged).
 - [How it works](how-it-works.md) — where `build_command(ctx)` and `parse_stream(line)` plug into the iteration loop.
 - [ADR 0003 — One agent per file](adr/0003-one-agent-per-file.md) — the rationale behind the per-agent subpackage layout.
