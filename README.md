@@ -96,6 +96,7 @@ Full documentation lives in [`docs/`](docs/README.md):
 - [Python API reference](docs/python-api.md) — every name importable from `eden`
 - [How it works](docs/how-it-works.md) — branch strategies, sandbox lifecycle, iteration loop
 - [Sandbox providers](docs/sandbox-providers.md) — provider matrix and local provider catalog
+- [Container sandbox providers](docs/container-sandbox-providers.md) — Docker and Podman details
 - [Agents](docs/agents.md) — six agent factories
 
 ## License

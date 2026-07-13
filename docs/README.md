@@ -29,6 +29,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [GitHub Action](github-action.md) — run an eden iteration loop in any GitHub workflow.
 - [Configuration](configuration.md) — environment variables, `Logging`, `Timeouts`.
 - [Sandbox providers](sandbox-providers.md) — provider matrix and local provider behavior.
+- [Container sandbox providers](container-sandbox-providers.md) — Docker and Podman details.
 - [Cloud sandbox providers](cloud-sandbox-providers.md) — Daytona, Vercel, and forkd details.
 - [Sandbox provider usage](sandbox-provider-usage.md) — selection flowchart and import examples.
 - [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
