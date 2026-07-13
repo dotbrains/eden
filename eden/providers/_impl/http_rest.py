@@ -35,28 +35,8 @@ _DEFAULT_MAX_RETRY_AFTER = 60.0
 class RestClient:
     """Sync REST client with auth-header injection + smart retries.
 
-    Caller supplies ``headers`` at construction (e.g.
-    ``{"Authorization": f"Bearer {key}"}``). Errors map to typed exceptions:
-    401/403 → :class:`RestAuthError`, 404 → :class:`RestNotFoundError`,
-    429 (after retries exhausted or after Retry-After exceeds
-    ``max_retry_after_seconds``) → :class:`RestRateLimited`,
-    other 4xx/5xx → :class:`RestError`.
-
-    Retry policy:
-
-    - **5xx (500/502/503/504)** — full-jitter exponential backoff with base
-      0.5s and cap 30s. Each attempt picks a fresh random delay in
-      ``[0, min(cap, base * 2**attempt)]``.
-    - **429** — honours the ``Retry-After`` response header (seconds or
-      HTTP-date per RFC 9110). When the header is absent or unparseable,
-      falls back to the same full-jitter schedule used for 5xx. When the
-      header asks for longer than ``max_retry_after_seconds`` (default 60),
-      raises :class:`RestRateLimited` immediately rather than blocking the
-      run.
-    - **Connection errors** — retried with the same schedule as 5xx.
-
-    All sleeps go through the injected ``sleep`` callable so tests can stub
-    them out without timing-sensitive assertions.
+    Errors map to typed exceptions; injected ``sleep`` and ``rand`` keep retry
+    tests deterministic.
     """
 
     base_url: str
