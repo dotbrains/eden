@@ -30,7 +30,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 ## Concepts
 
 - [How it works](how-it-works.md) — branch strategies, worktrees, sandbox lifecycle, iteration loop.
-- [Custom providers](custom-providers.md) — implementing the `IsolatedSandboxHandle` Protocol.
+- [Custom providers](custom-providers.md) — `SandboxProvider` and handle Protocol reference.
+- [Custom provider guide](custom-provider-guide.md) — skeleton implementation, in-tree examples, and conventions.
 - [Development](development.md) — repo layout, test markers, lint and type gates, contributing.
 
 ## Architecture decision records
