@@ -32,7 +32,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 ## Detailed Reference
 
-- [Entry points](python-api-entrypoints.md) — `run`, `interactive`, caller-managed `Sandbox`, and `create_worktree`.
+- [Entry points](python-api-entrypoints.md) — `run`, `interactive`, and async wrappers.
+- [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
 - [Types and streaming](python-api-types.md) — configuration dataclasses, result types, and `StreamEvent`.
 - [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
 - [Agents and sessions](python-api-agents.md) — agent Protocols, built-in factories, transcript capture, and session helpers.
@@ -47,9 +48,9 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [`run`](python-api-entrypoints.md#run)
 - [`interactive`](python-api-entrypoints.md#interactive)
 - [`InteractiveResult`](python-api-entrypoints.md#interactiveresult)
-- [`create_sandbox`](python-api-entrypoints.md#create_sandbox)
-- [`create_worktree`](python-api-entrypoints.md#create_worktree)
-- [`Sandbox`](python-api-entrypoints.md#sandboxexec)
+- [`create_sandbox`](python-api-sandboxes.md#create_sandbox)
+- [`create_worktree`](python-api-sandboxes.md#create_worktree)
+- [`Sandbox`](python-api-sandboxes.md#sandboxexec)
 
 ### Configuration
 
@@ -166,11 +167,11 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="async-api"></a>[Async API](python-api-entrypoints.md#async-api)
 - <a id="interactive"></a>[`interactive(...)`](python-api-entrypoints.md#interactive)
 - <a id="interactiveresult"></a>[`InteractiveResult`](python-api-entrypoints.md#interactiveresult)
-- <a id="create_sandbox"></a>[`create_sandbox(...)`](python-api-entrypoints.md#create_sandbox)
-- <a id="sandboxexec"></a>[`Sandbox.exec(...)`](python-api-entrypoints.md#sandboxexec)
-- <a id="sandboxrun"></a>[`Sandbox.run(...)`](python-api-entrypoints.md#sandboxrun)
-- <a id="sandboxresume-sandboxfork"></a>[`Sandbox.resume(...)` / `Sandbox.fork(...)`](python-api-entrypoints.md#sandboxresume-sandboxfork)
-- <a id="create_worktree"></a>[`create_worktree(...)`](python-api-entrypoints.md#create_worktree)
+- <a id="create_sandbox"></a>[`create_sandbox(...)`](python-api-sandboxes.md#create_sandbox)
+- <a id="sandboxexec"></a>[`Sandbox.exec(...)`](python-api-sandboxes.md#sandboxexec)
+- <a id="sandboxrun"></a>[`Sandbox.run(...)`](python-api-sandboxes.md#sandboxrun)
+- <a id="sandboxresume-sandboxfork"></a>[`Sandbox.resume(...)` / `Sandbox.fork(...)`](python-api-sandboxes.md#sandboxresume-sandboxfork)
+- <a id="create_worktree"></a>[`create_worktree(...)`](python-api-sandboxes.md#create_worktree)
 - <a id="configuration-types"></a><a id="timeouts"></a><a id="logging"></a><a id="mount"></a><a id="branchstrategy"></a>[Configuration types](python-api-types.md#configuration-types)
 - <a id="result-types"></a><a id="closeresult"></a><a id="runresult"></a><a id="iteration"></a><a id="commit"></a><a id="usage"></a><a id="finalizeresult"></a>[Result types](python-api-types.md#result-types)
 - <a id="structured-output"></a><a id="output"></a><a id="outputdefinition"></a>[Structured output](python-api-output.md#structured-output)
