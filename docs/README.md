@@ -12,7 +12,11 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 
 ## Reference
 
-- [Python API](python-api.md) — every name importable from `eden`.
+- [Python API](python-api.md) — canonical index for every name importable from `eden`.
+- [Python API: Entry points](python-api-entrypoints.md) — `run`, `interactive`, caller-managed `Sandbox`, and worktree creation.
+- [Python API: Types and streaming](python-api-types.md) — configuration, results, structured output, and stream events.
+- [Python API: Agents and sessions](python-api-agents.md) — agent factories, Protocols, and transcript helpers.
+- [Python API: Extensibility](python-api-extensibility.md) — hooks, cancellation, provider Protocols, display, errors, tracing.
 - [CLI](cli.md) — `eden init`, `eden run`, `eden cost`, `eden clean`, `eden replay`, `eden version`.
 - [GitHub Action](github-action.md) — run an eden iteration loop in any GitHub workflow.
 - [Configuration](configuration.md) — environment variables, `Logging`, `Timeouts`.
