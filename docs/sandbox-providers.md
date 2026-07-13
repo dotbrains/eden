@@ -105,13 +105,14 @@ Moved to [Cloud and microVM sandbox providers](cloud-sandbox-providers.md#vercel
 
 ## `forkd`
 
-Moved to [Cloud and microVM sandbox providers](cloud-sandbox-providers.md#forkd).
+Moved to [MicroVM sandbox providers](microvm-sandbox-providers.md#forkd).
 
 ## See also
 
 - [Custom providers](custom-providers.md) — implementing your own `SandboxProvider` and `IsolatedSandboxHandle`.
 - [Container sandbox providers](container-sandbox-providers.md) — Docker and Podman details.
-- [Cloud and microVM sandbox providers](cloud-sandbox-providers.md) — Daytona, Vercel, and forkd details.
+- [Cloud sandbox providers](cloud-sandbox-providers.md) — Daytona and Vercel details.
+- [MicroVM sandbox providers](microvm-sandbox-providers.md) — forkd details.
 - [Sandbox provider usage](sandbox-provider-usage.md) — provider selection flowchart and import examples.
 - [Configuration](configuration.md) — the env vars each cloud provider falls back to.
 - [Python API: `Mount`, `BranchStrategy`, `FinalizeResult`](python-api.md#configuration-types) — provider-agnostic types.
