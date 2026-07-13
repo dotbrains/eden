@@ -26,11 +26,11 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: pre-commit + pytest (unit + e2e, coverage)
-        uses: ./.github/actions/flox-command
-        with:
-          command: |
-            pre-commit run --all-files --show-diff-on-failure
-            pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -e ".[dev]"
+          pre-commit run --all-files --show-diff-on-failure
+          pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
 
   # Package build is checked once so release packaging failures are caught
   # before tag publish.
@@ -43,9 +43,10 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: python -m build
-        uses: ./.github/actions/flox-command
-        with:
-          command: python -m build
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install build
+          python3 -m build
 
   # Compatibility matrix keeps each remaining runtime/platform concern to one
   # unit-only leg. Linux owns e2e and coverage in the canonical gate.
@@ -60,43 +61,26 @@ jobs:
         include:
           - name: linux py3.12
             os: blacksmith-2vcpu-ubuntu-2404
-            eden-python: python3.12
-            setup: flox
+            python: python3
+            shell: bash
           - name: macos py3.13
             os: blacksmith-6vcpu-macos-15
-            eden-python: python3.13
-            setup: flox
+            python: python3
+            shell: bash
           - name: windows py3.13
             os: blacksmith-2vcpu-windows-2025
-            python-version: "3.13"
-            setup: pip
+            python: python
+            shell: pwsh
     steps:
       - uses: actions/checkout@v5
 
-      - name: pytest (unit, Flox)
-        if: matrix.setup == 'flox'
-        uses: ./.github/actions/flox-command
-        with:
-          eden-python: ${{ matrix.eden-python }}
-          command: pytest -v -m unit
-
-      - name: Set up Python 3.13
-        if: matrix.setup == 'pip'
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-          cache-dependency-path: pyproject.toml
-
-      - name: Install package with dev extras
-        if: matrix.setup == 'pip'
+      - name: pytest (unit)
+        shell: ${{ matrix.shell }}
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e ".[dev]"
-
-      - name: pytest (unit, pip)
-        if: matrix.setup == 'pip'
-        run: pytest -v -m unit
+          ${{ matrix.python }} --version
+          ${{ matrix.python }} -m pip install --upgrade pip
+          ${{ matrix.python }} -m pip install -e ".[dev]"
+          ${{ matrix.python }} -m pytest -v -m unit
 
   # Real provider tests are Linux-only and heavily capability-gated. Run them
   # once instead of once per Python version.
@@ -109,7 +93,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: pytest (integration)
-        uses: ./.github/actions/flox-command
-        with:
-          eden-python: python3.13
-          command: pytest -v -m integration
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -e ".[dev]"
+          pytest -v -m integration

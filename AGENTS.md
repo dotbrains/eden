@@ -38,7 +38,7 @@ Manual path (no Flox, and required on Windows):
 - Build the package: `python -m build`
 - Check the installed CLI version: `eden version`
 
-CI minimizes overlap while preserving coverage: `check` runs `pre-commit run --all-files --show-diff-on-failure` and `pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70` once on Ubuntu with Python 3.11 in Flox; `build` runs `python -m build` once on Ubuntu in Flox; `test-compat` runs unit-only compatibility legs for Linux/Python 3.12 in Flox, macOS/Python 3.13 in Flox, and Windows/Python 3.13 via `actions/setup-python` + pip. Integration tests run once on Linux inside Flox.
+CI minimizes overlap while preserving coverage: `check` runs `pre-commit run --all-files --show-diff-on-failure` and `pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70` once on Ubuntu; `build` runs `python -m build` once on Ubuntu; `test-compat` runs unit-only compatibility legs once each on Linux, macOS, and Windows; integration tests run once on Linux. CI installs dev dependencies with pip to avoid extra marketplace action downloads during transient GitHub Actions service outages.
 
 For Warp environment setup, use: `cd eden && python -m pip install --upgrade pip && python -m pip install -e ".[dev]"`.
 
