@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from eden.agents._protocol import Agent
     from eden.lifecycle import Hooks
     from eden.logging import Logging
-    from eden.orchestrator._interactive import InteractiveResult
+    from eden.orchestrator.interactive import InteractiveResult
     from eden.output import OutputDefinition
     from eden.providers._protocols import SandboxProvider
     from eden.providers._types import Mount
@@ -169,7 +169,7 @@ class WorktreeHandle:
         timeouts: Timeouts | None = None,
     ) -> InteractiveResult:
         """Run an interactive agent session in this worktree."""
-        from eden.orchestrator._interactive import interactive
+        from eden.orchestrator.interactive import interactive
 
         return interactive(
             agent=agent,

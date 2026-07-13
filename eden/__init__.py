@@ -58,7 +58,7 @@ from eden.errors import (
 from eden.lifecycle import Hook, HookPhase, Hooks, HostHooks, SandboxHooks
 from eden.logging import Logging
 from eden.orchestrator import create_worktree, run
-from eden.orchestrator._interactive import InteractiveResult, interactive
+from eden.orchestrator.interactive import InteractiveResult, interactive
 from eden.output import Output, OutputDefinition
 from eden.providers import make_bind_mount_provider, make_isolated_provider
 from eden.providers._protocols import (

@@ -115,8 +115,8 @@ class Sandbox:
         fork_session: bool = False,
     ) -> RunResult:
         """Run an agent against this existing sandbox + worktree."""
-        from eden.orchestrator._loop import _run_loop
         from eden.orchestrator._setup import resolve_setup
+        from eden.orchestrator.loop import _run_loop
 
         cwd_path = self.cwd if self.cwd is not None else self.worktree.host_repo_path
         provider_env: dict[str, str] = {}

@@ -12,9 +12,9 @@ from eden.abort._signal import AbortController
 from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
-from eden.orchestrator._loop import _run_loop
 from eden.orchestrator._setup import SetupResult, resolve_setup
 from eden.orchestrator._worktree_api import create_worktree
+from eden.orchestrator.loop import _run_loop
 from eden.orchestrator.run._run_output_retry import (
     corrective_output_prompt as _corrective_output_prompt,
 )

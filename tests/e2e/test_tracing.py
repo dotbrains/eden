@@ -47,12 +47,12 @@ def captured_spans() -> Iterator[InMemorySpanExporter]:
         import importlib
 
         import eden.lifecycle._runner
-        import eden.orchestrator._loop
         import eden.providers._impl.http_rest
         import eden.tracing as eden_tracing
 
+        loop_module = importlib.import_module("eden.orchestrator.loop._run_loop")
         importlib.reload(eden_tracing)
-        importlib.reload(eden.orchestrator._loop)
+        importlib.reload(loop_module)
         importlib.reload(eden.lifecycle._runner)
         importlib.reload(eden.providers._impl.http_rest)
     else:

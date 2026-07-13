@@ -14,8 +14,8 @@ from eden.agents import simulated_agent
 from eden.errors import Aborted, IdleTimeout
 from eden.lifecycle import Hooks
 from eden.logging import Logging
-from eden.orchestrator._loop import _run_loop
 from eden.orchestrator._setup import SetupResult, resolve_setup
+from eden.orchestrator.loop import _run_loop
 from eden.sandboxes.no_sandbox import provider as no_sandbox_provider
 from eden.streaming import StreamEvent
 
