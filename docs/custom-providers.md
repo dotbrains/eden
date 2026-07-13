@@ -70,21 +70,6 @@ from eden import (
 )
 ```
 
-```python
-from typing import Literal, Protocol
-
-from eden import BranchStrategy, CreateOptions, SandboxHandle
-
-
-class SandboxProvider(Protocol):
-    name: str
-    kind: Literal["bind_mount", "isolated", "none"]
-
-    def supports_strategy(self, strategy: BranchStrategy) -> bool: ...
-
-    def create(self, opts: CreateOptions) -> SandboxHandle: ...
-```
-
 `kind` controls the orchestrator's behavior:
 
 - `"bind_mount"` — host filesystem is mounted into the sandbox; no `finalize()` step.
@@ -266,13 +251,13 @@ Use for detached, patch-sync, or cloud providers. The handle returned by `create
 
 Moved to [Custom provider guide](custom-provider-guide.md#skeleton-a-custom-isolated-provider).
 
-## Worked examples in-tree
+Compatibility anchors:
 
-Moved to [Custom provider guide](custom-provider-guide.md#worked-examples-in-tree).
+<a id="worked-examples-in-tree"></a>
+<a id="conventions-worth-following"></a>
 
-## Conventions worth following
-
-Moved to [Custom provider guide](custom-provider-guide.md#conventions-worth-following).
+- [Worked examples in-tree](custom-provider-guide.md#worked-examples-in-tree)
+- [Conventions worth following](custom-provider-guide.md#conventions-worth-following)
 
 ## See also
 

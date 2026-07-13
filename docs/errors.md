@@ -211,61 +211,43 @@ Default `code="rest.error"`. Catch this at the orchestrator boundary; never let 
 
 Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#sandbox-errors).
 
-### `SandboxError`
+Compatibility anchors:
 
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#sandboxerror).
+<a id="sandboxerror"></a>
+<a id="providerunavailable"></a>
+<a id="imagenotfound"></a>
+<a id="containerstartfailed"></a>
+<a id="execfailed"></a>
+<a id="exectimeout"></a>
+<a id="mountconfigerror"></a>
+<a id="unsupportedstrategy"></a>
 
-### `ProviderUnavailable`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#providerunavailable).
-
-### `ImageNotFound`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#imagenotfound).
-
-### `ContainerStartFailed`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#containerstartfailed).
-
-### `ExecFailed`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#execfailed).
-
-### `ExecTimeout`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#exectimeout).
-
-### `MountConfigError`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#mountconfigerror).
-
-### `UnsupportedStrategy`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#unsupportedstrategy).
+- [`SandboxError`](sandbox-worktree-errors.md#sandboxerror)
+- [`ProviderUnavailable`](sandbox-worktree-errors.md#providerunavailable)
+- [`ImageNotFound`](sandbox-worktree-errors.md#imagenotfound)
+- [`ContainerStartFailed`](sandbox-worktree-errors.md#containerstartfailed)
+- [`ExecFailed`](sandbox-worktree-errors.md#execfailed)
+- [`ExecTimeout`](sandbox-worktree-errors.md#exectimeout)
+- [`MountConfigError`](sandbox-worktree-errors.md#mountconfigerror)
+- [`UnsupportedStrategy`](sandbox-worktree-errors.md#unsupportedstrategy)
 
 ## Worktree errors
 
 Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#worktree-errors).
 
-### `WorktreeError`
+Compatibility anchors:
 
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#worktreeerror).
+<a id="worktreeerror"></a>
+<a id="worktreelocked"></a>
+<a id="dirtyhostblocked"></a>
+<a id="branchexists"></a>
+<a id="gitcommandfailed"></a>
 
-### `WorktreeLocked`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#worktreelocked).
-
-### `DirtyHostBlocked`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#dirtyhostblocked).
-
-### `BranchExists`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#branchexists).
-
-### `GitCommandFailed`
-
-Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#gitcommandfailed).
+- [`WorktreeError`](sandbox-worktree-errors.md#worktreeerror)
+- [`WorktreeLocked`](sandbox-worktree-errors.md#worktreelocked)
+- [`DirtyHostBlocked`](sandbox-worktree-errors.md#dirtyhostblocked)
+- [`BranchExists`](sandbox-worktree-errors.md#branchexists)
+- [`GitCommandFailed`](sandbox-worktree-errors.md#gitcommandfailed)
 
 ## Recovery patterns at a glance
 
