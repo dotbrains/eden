@@ -17,30 +17,9 @@ If you just want a one-liner, skip to the [Quick start](quick-start.md).
 
 ## 1. Create a sandbox repo
 
-We need a git repo with an actual bug for the agent to fix. The smaller, the faster the demo.
-
-```bash
-mkdir eden-tutorial && cd eden-tutorial
-git init -q
-cat > calc.py <<'EOF'
-def add(a, b):
-    return a - b   # wrong: should be a + b
-EOF
-cat > test_calc.py <<'EOF'
-from calc import add
-
-def test_add():
-    assert add(2, 3) == 5
-EOF
-git add . && git commit -qm "initial buggy calc"
-```
-
-Sanity-check the bug exists:
-
-```bash
-python -m pytest test_calc.py
-# 1 failed, 0 passed
-```
+Create the tiny buggy repository from
+[Tutorial sample repo setup](tutorial-first-loop-sample-repo.md), then return
+here from inside the `eden-tutorial` directory.
 
 ---
 

@@ -9,6 +9,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [What is Eden?](what-is-eden.md) — positioning, feature matrix, when to use it.
 - [Quick start](quick-start.md) — `eden init` to first run in five minutes.
 - [Tutorial: build your first agent loop](tutorial-first-loop.md) — 10-minute walkthrough that ends with a real agent fixing a real bug.
+- [Tutorial sample repo setup](tutorial-first-loop-sample-repo.md) — tiny buggy repository used by the first-loop walkthrough.
 - [After your first loop](tutorial-first-loop-after-run.md) — inspect cost, replay transcripts, and choose the next reference.
 - [Tutorial first-loop troubleshooting](tutorial-first-loop-troubleshooting.md) — common setup gotchas.
 
@@ -37,6 +38,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Configuration](configuration.md) — environment variables, `Logging`, `Timeouts`.
 - [Sandbox providers](sandbox-providers.md) — provider matrix and local provider behavior.
 - [Container sandbox providers](container-sandbox-providers.md) — Docker and Podman details.
+- [Podman sandbox provider](podman-sandbox-provider.md) — rootless Podman behavior and host requirements.
 - [Cloud sandbox providers](cloud-sandbox-providers.md) — Daytona and Vercel details.
 - [MicroVM sandbox providers](microvm-sandbox-providers.md) — forkd details.
 - [Sandbox provider usage](sandbox-provider-usage.md) — selection flowchart and import examples.
