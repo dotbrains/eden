@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Protocol
 
 from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, status_porcelain
+from eden.worktree._handle_run import (
+    create_worktree_sandbox,
+    interactive_in_worktree,
+    run_in_worktree,
+)
 from eden.worktree._lock import _LockHandle
 from eden.worktree._worktree_ops import worktree_remove
 
@@ -82,11 +87,9 @@ class WorktreeHandle:
         only the provider handle. Call :meth:`close` on this worktree when the
         whole workflow is finished.
         """
-        from eden.sandboxes import create_sandbox
-
-        return create_sandbox(
+        return create_worktree_sandbox(
+            self,
             sandbox=sandbox,
-            worktree=self,
             cwd=cwd,
             env=env,
             mounts=mounts,
@@ -123,36 +126,31 @@ class WorktreeHandle:
         copy_to_worktree: list[str] | None = None,
     ) -> RunResult:
         """Run an agent in a short-lived sandbox backed by this worktree."""
-        with self.create_sandbox(
+        return run_in_worktree(
+            self,
+            agent=agent,
             sandbox=sandbox,
+            prompt=prompt,
+            prompt_file=prompt_file,
+            prompt_args=prompt_args,
             env=env,
             mounts=mounts,
+            max_iterations=max_iterations,
+            completion_signal=completion_signal,
+            idle_timeout=idle_timeout,
+            idle_warning_interval=idle_warning_interval,
+            completion_timeout=completion_timeout,
             name=name,
             hooks=hooks,
-            copy_to_worktree=copy_to_worktree,
             timeouts=timeouts,
-        ) as sb:
-            return sb.run(
-                agent=agent,
-                prompt=prompt,
-                prompt_file=prompt_file,
-                prompt_args=prompt_args,
-                env=env,
-                max_iterations=max_iterations,
-                completion_signal=completion_signal,
-                idle_timeout=idle_timeout,
-                idle_warning_interval=idle_warning_interval,
-                completion_timeout=completion_timeout,
-                name=name,
-                hooks=hooks,
-                timeouts=timeouts,
-                on_event=on_event,
-                logging=logging,
-                signal=signal,
-                output=output,
-                resume_session=resume_session,
-                fork_session=fork_session,
-            )
+            on_event=on_event,
+            logging=logging,
+            signal=signal,
+            output=output,
+            resume_session=resume_session,
+            fork_session=fork_session,
+            copy_to_worktree=copy_to_worktree,
+        )
 
     def interactive(
         self,
@@ -170,9 +168,8 @@ class WorktreeHandle:
         timeouts: Timeouts | None = None,
     ) -> InteractiveResult:
         """Run an interactive agent session in this worktree."""
-        from eden.orchestrator.interactive import interactive
-
-        return interactive(
+        return interactive_in_worktree(
+            self,
             agent=agent,
             sandbox=sandbox,
             prompt=prompt,
@@ -184,7 +181,6 @@ class WorktreeHandle:
             collect_args=collect_args,
             signal=signal,
             timeouts=timeouts,
-            _existing_worktree=self,
         )
 
     def close(self) -> CloseResult:

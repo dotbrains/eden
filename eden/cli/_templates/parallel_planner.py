@@ -23,153 +23,12 @@ from eden.cli._templates._common import (
     render_task_view_command,
 )
 from eden.cli._templates._env import render_env_example
+from eden.cli._templates._parallel_planner.main_py import MAIN_PY
 from eden.cli._templates._parallel_prompts import (
     PARALLEL_IMPLEMENT_PROMPT,
     PARALLEL_MERGE_PROMPT,
     PARALLEL_PLAN_PROMPT,
 )
-
-_MAIN_PY = """\
-\"\"\"Entry point for this Eden parallel-planner project.
-
-Run with: python .eden/main.py
-\"\"\"
-
-from __future__ import annotations
-
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import TypedDict
-
-from eden import (
-    BranchStrategy,
-    Output,
-    StructuredOutputError,
-    {agent_import},
-    run,
-)
-from eden.sandboxes import {sandbox} as sandbox_provider
-
-MAX_ITERATIONS = 10
-MAX_PARALLEL = 4
-
-
-class _Task(TypedDict):
-    id: str
-    title: str
-    branch: str
-
-
-class _Plan(TypedDict):
-    tasks: list[_Task]
-
-
-def _validate_plan(raw: object) -> _Plan:
-    assert isinstance(raw, dict), "plan must be a JSON object"
-    assert isinstance(raw.get("tasks"), list), "plan.tasks must be a list"
-    out: list[_Task] = []
-    for t in raw["tasks"]:
-        assert isinstance(t, dict), "each task must be an object"
-        assert isinstance(t.get("id"), str)
-        assert isinstance(t.get("title"), str)
-        assert isinstance(t.get("branch"), str)
-        out.append(_Task(id=t["id"], title=t["title"], branch=t["branch"]))
-    return _Plan(tasks=out)
-
-
-def _agent():
-    return {agent_call}
-
-
-def _sandbox():
-    return sandbox_provider.provider({image_arg})
-
-
-def _execute_one(task: _Task):
-    \"\"\"Run an implementer agent for one task, on its own branch.\"\"\"
-    return run(
-        name=f"impl-{{task['id']}}",
-        agent=_agent(),
-        sandbox=_sandbox(),
-        branch_strategy=BranchStrategy.named(task["branch"]),
-        prompt_file=".eden/implement-prompt.md",
-        prompt_args={{
-            "TASK_ID": task["id"],
-            "TASK_TITLE": task["title"],
-            "TASK_BRANCH": task["branch"],
-        }},
-        max_iterations=20,
-    )
-
-
-def main() -> None:
-    for i in range(1, MAX_ITERATIONS + 1):
-        print(f"\\n=== Iteration {{i}}/{{MAX_ITERATIONS}} ===\\n")
-
-        # Phase 1: plan
-        try:
-            plan_result = run(
-                name="planner",
-                agent=_agent(),
-                sandbox=_sandbox(),
-                prompt_file=".eden/plan-prompt.md",
-                max_iterations=1,
-                output=Output.object(tag="plan", schema=_validate_plan),
-            )
-        except StructuredOutputError as exc:
-            print(f"Planner failed: {{exc}}")
-            break
-        plan = plan_result.output
-        assert isinstance(plan, dict)
-        tasks: list[_Task] = plan["tasks"]  # type: ignore[index]
-        if not tasks:
-            print("No unblocked tasks. Exiting.")
-            break
-
-        print(f"Planning complete. {{len(tasks)}} task(s) to run in parallel.")
-        for t in tasks:
-            print(f"  {{t['id']}}: {{t['title']}} -> {{t['branch']}}")
-
-        # Phase 2: execute in parallel
-        completed: list[_Task] = []
-        with ThreadPoolExecutor(max_workers=MAX_PARALLEL) as pool:
-            futures = {{pool.submit(_execute_one, t): t for t in tasks}}
-            for fut in as_completed(futures):
-                t = futures[fut]
-                try:
-                    result = fut.result()
-                except Exception as exc:
-                    print(f"  X {{t['id']}} failed: {{exc}}")
-                    continue
-                if result.commits:
-                    completed.append(t)
-                else:
-                    print(f"  - {{t['id']}} produced no commits")
-
-        if not completed:
-            print("Nothing to merge.")
-            continue
-
-        print(f"\\nExecution complete. {{len(completed)}} branch(es) ready to merge.")
-
-        # Phase 3: merge
-        run(
-            name="merger",
-            agent=_agent(),
-            sandbox=_sandbox(),
-            prompt_file=".eden/merge-prompt.md",
-            prompt_args={{
-                "BRANCHES": "\\n".join(f"- {{t['branch']}}" for t in completed),
-                "TASKS": "\\n".join(f"- {{t['id']}}: {{t['title']}}" for t in completed),
-            }},
-            max_iterations=1,
-        )
-        print("Merge complete.")
-
-
-if __name__ == "__main__":
-    main()
-"""
 
 
 def render_parallel_planner(
@@ -200,7 +59,7 @@ def render_parallel_planner(
             close_task_command=backlog.close_task_command,
         ),
         "merge-prompt.md": PARALLEL_MERGE_PROMPT,
-        "main.py": _MAIN_PY.format(
+        "main.py": MAIN_PY.format(
             sandbox=sandbox,
             image_arg=image_arg,
             agent_import=agent_import,
