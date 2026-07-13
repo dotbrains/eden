@@ -62,20 +62,16 @@ jobs:
           - name: linux py3.12
             os: blacksmith-2vcpu-ubuntu-2404
             python: python3
-            shell: bash
           - name: macos py3.13
             os: blacksmith-6vcpu-macos-15
             python: python3
-            shell: bash
           - name: windows py3.13
             os: blacksmith-2vcpu-windows-2025
             python: python
-            shell: pwsh
     steps:
       - uses: actions/checkout@v5
 
       - name: pytest (unit)
-        shell: ${{ matrix.shell }}
         run: |
           ${{ matrix.python }} --version
           ${{ matrix.python }} -m pip install --upgrade pip
