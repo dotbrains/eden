@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-from eden._types import Iteration, Timeouts, Usage
+from eden._types import Iteration, Timeouts
 from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
 from eden.agents._flox import flox_wrap
@@ -20,8 +20,8 @@ from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._session_capture import capture_iteration_session
 from eden.orchestrator._setup import SetupResult
-from eden.orchestrator._summary import format_context_window_line
-from eden.prompt import render_prompt
+from eden.orchestrator.loop._iteration_events import emit_context_window
+from eden.orchestrator.loop._iteration_prompt import render_iteration_prompt
 from eden.providers._protocols import SandboxHandle
 from eden.session._protocol import SessionStorage
 from eden.streaming import StreamEvent
@@ -41,49 +41,6 @@ class LoopIterationResult:
 
 def _utcnow() -> datetime:
     return datetime.now(UTC)
-
-
-def _render_prompt(
-    *,
-    setup: SetupResult,
-    prompt_args: Mapping[str, str] | None,
-    source_branch: str,
-    target_branch: str,
-    handle: SandboxHandle,
-) -> str:
-    if setup.prompt_is_literal:
-        # Inline prompts (``prompt="..."``) are passed to the agent verbatim —
-        # no ``{{KEY}}`` substitution, no ``!`cmd``` shell expansion, no built-in branch injection.
-        return setup.prompt_text
-    return render_prompt(
-        text=setup.prompt_text,
-        args=prompt_args or {},
-        source_branch=source_branch,
-        target_branch=target_branch,
-        handle=handle,
-    )
-
-
-def _emit_context_window(
-    *,
-    agent_name: str,
-    iteration: int,
-    usage: Usage | None,
-    logger: LoopLogger,
-    on_event: Callable[[StreamEvent], None] | None,
-) -> None:
-    if usage is None:
-        return
-    ctx_ev = StreamEvent(
-        type="text",
-        agent_name=agent_name,
-        iteration=iteration,
-        timestamp=_utcnow(),
-        text=format_context_window_line(usage),
-    )
-    logger.write(ctx_ev)
-    if on_event is not None:
-        on_event(ctx_ev)
 
 
 def run_loop_iteration(
@@ -129,7 +86,7 @@ def run_loop_iteration(
         timeouts=timeouts,
     )
 
-    rendered_prompt = _render_prompt(
+    rendered_prompt = render_iteration_prompt(
         setup=setup,
         prompt_args=prompt_args,
         source_branch=worktree.branch,
@@ -203,7 +160,7 @@ def run_loop_iteration(
         sink=logger.sink,
     )
 
-    _emit_context_window(
+    emit_context_window(
         agent_name=agent.name,
         iteration=iteration_index,
         usage=agent_execution.usage,
