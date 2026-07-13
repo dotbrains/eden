@@ -23,7 +23,7 @@ class DirectoryBudget:
 
 
 FILE_BUDGETS = (
-    FileBudget("eden/**/*.py", 219),
+    FileBudget("eden/**/*.py", 218),
     FileBudget("tests/**/*.py", 231),
     FileBudget("docs/**/*.md", 188, excludes=("docs/superpowers/**",)),
 )
@@ -45,6 +45,17 @@ def _tracked_files() -> list[Path]:
 
 
 def _matches(path: Path, pattern: str) -> bool:
+    if "/**/*" in pattern:
+        root, suffix = pattern.split("/**/*", 1)
+        path_text = str(path)
+        return (
+            (path_text == root or path_text.startswith(f"{root}/"))
+            and path_text.endswith(suffix)
+        )
+    if pattern.endswith("/**"):
+        root = pattern[:-3]
+        path_text = str(path)
+        return path_text == root or path_text.startswith(f"{root}/")
     return path.match(pattern)
 
 

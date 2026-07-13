@@ -12,7 +12,6 @@ from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.orchestrator._logging import LoopLogger
-from eden.orchestrator._result import assemble_loop_result
 from eden.orchestrator._session_capture import resolve_session_storage
 from eden.orchestrator._setup import (
     SetupResult,
@@ -22,6 +21,7 @@ from eden.orchestrator.loop._loop_cleanup import close_loop_resources
 from eden.orchestrator.loop._loop_finalize import finalize_loop_sandbox
 from eden.orchestrator.loop._loop_iteration import run_loop_iteration
 from eden.orchestrator.loop._loop_resources import prepare_loop_worktree
+from eden.orchestrator.loop._loop_result import build_loop_result
 from eden.orchestrator.loop._loop_startup import start_loop_runtime
 from eden.orchestrator.loop._run_span import enter_run_span
 from eden.output import OutputDefinition
@@ -197,12 +197,11 @@ def _run_loop(
             stack=_stack,
         )
 
-    full_stdout = stdout_chunks.to_string()
-    return assemble_loop_result(
+    return build_loop_result(
         iterations=iterations,
-        completion_signal=completion_hit,
+        completion_hit=completion_hit,
         branch=wt.branch,
-        stdout=full_stdout,
+        stdout_chunks=stdout_chunks,
         worktree_path=wt.worktree_path,
         preserved_worktree_path=preserved,
         cwd=setup.cwd,
