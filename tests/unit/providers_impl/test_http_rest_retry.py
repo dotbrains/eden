@@ -7,8 +7,8 @@ from typing import Any
 import pytest
 
 from eden.errors import RestRateLimited
-from tests.unit.http_rest_helpers import client as make_client
-from tests.unit.http_rest_helpers import resp
+from tests.unit.providers_impl.http_rest_helpers import client as make_client
+from tests.unit.providers_impl.http_rest_helpers import resp
 
 pytestmark = pytest.mark.unit
 

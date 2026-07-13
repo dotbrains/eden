@@ -9,8 +9,8 @@ import requests
 
 from eden.errors import RestAuthError, RestError, RestNotFoundError, RestRateLimited
 from eden.providers._impl.http_rest import RestClient
-from tests.unit.http_rest_helpers import client as make_client
-from tests.unit.http_rest_helpers import resp
+from tests.unit.providers_impl.http_rest_helpers import client as make_client
+from tests.unit.providers_impl.http_rest_helpers import resp
 
 pytestmark = pytest.mark.unit
 
