@@ -35,7 +35,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [Entry points](python-api-entrypoints.md) — `run`, `interactive`, caller-managed `Sandbox`, and `create_worktree`.
 - [Types and streaming](python-api-types.md) — configuration dataclasses, result types, structured output, and `StreamEvent`.
 - [Agents and sessions](python-api-agents.md) — agent Protocols, built-in factories, transcript capture, and session helpers.
-- [Extensibility, errors, and tracing](python-api-extensibility.md) — hooks, cancellation, provider Protocols, display sinks, error formatting, tracing, and version metadata.
+- [Extensibility](python-api-extensibility.md) — hooks, cancellation, provider Protocols, and display sinks.
+- [Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
 
 ## Public Surface
 
@@ -127,33 +128,33 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 ### Errors
 
-- [`EdenError`](python-api-extensibility.md#errors)
-- [`AgentError`](python-api-extensibility.md#errors)
-- [`ConfigError`](python-api-extensibility.md#errors)
-- [`CopyToWorktreeError`](python-api-extensibility.md#errors)
-- [`CwdError`](python-api-extensibility.md#errors)
-- [`EdenTimeoutError`](python-api-extensibility.md#errors)
-- [`EnvMergeError`](python-api-extensibility.md#errors)
-- [`FloxEnvError`](python-api-extensibility.md#errors)
-- [`HookError`](python-api-extensibility.md#errors)
-- [`HookFailed`](python-api-extensibility.md#errors)
-- [`HookTimeout`](python-api-extensibility.md#errors)
-- [`IdleTimeout`](python-api-extensibility.md#errors)
-- [`InvalidOptions`](python-api-extensibility.md#errors)
-- [`PromptError`](python-api-extensibility.md#errors)
-- [`RestAuthError`](python-api-extensibility.md#errors)
-- [`RestError`](python-api-extensibility.md#errors)
-- [`RestNotFoundError`](python-api-extensibility.md#errors)
-- [`RestRateLimited`](python-api-extensibility.md#errors)
-- [`SessionCaptureFailed`](python-api-extensibility.md#errors)
-- [`SessionNotFound`](python-api-extensibility.md#errors)
-- [`StepTimeout`](python-api-extensibility.md#errors)
-- [`StructuredOutputError`](python-api-extensibility.md#structuredoutputerror)
-- [`format_error_message`](python-api-extensibility.md#format_error_messageerror)
+- [`EdenError`](python-api-errors-tracing.md#errors)
+- [`AgentError`](python-api-errors-tracing.md#errors)
+- [`ConfigError`](python-api-errors-tracing.md#errors)
+- [`CopyToWorktreeError`](python-api-errors-tracing.md#errors)
+- [`CwdError`](python-api-errors-tracing.md#errors)
+- [`EdenTimeoutError`](python-api-errors-tracing.md#errors)
+- [`EnvMergeError`](python-api-errors-tracing.md#errors)
+- [`FloxEnvError`](python-api-errors-tracing.md#errors)
+- [`HookError`](python-api-errors-tracing.md#errors)
+- [`HookFailed`](python-api-errors-tracing.md#errors)
+- [`HookTimeout`](python-api-errors-tracing.md#errors)
+- [`IdleTimeout`](python-api-errors-tracing.md#errors)
+- [`InvalidOptions`](python-api-errors-tracing.md#errors)
+- [`PromptError`](python-api-errors-tracing.md#errors)
+- [`RestAuthError`](python-api-errors-tracing.md#errors)
+- [`RestError`](python-api-errors-tracing.md#errors)
+- [`RestNotFoundError`](python-api-errors-tracing.md#errors)
+- [`RestRateLimited`](python-api-errors-tracing.md#errors)
+- [`SessionCaptureFailed`](python-api-errors-tracing.md#errors)
+- [`SessionNotFound`](python-api-errors-tracing.md#errors)
+- [`StepTimeout`](python-api-errors-tracing.md#errors)
+- [`StructuredOutputError`](python-api-errors-tracing.md#structuredoutputerror)
+- [`format_error_message`](python-api-errors-tracing.md#format_error_messageerror)
 
 ### Version
 
-- [`__version__`](python-api-extensibility.md#__version__)
+- [`__version__`](python-api-errors-tracing.md#__version__)
 
 ## Compatibility Anchors
 
@@ -177,6 +178,6 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>[Cancellation](python-api-extensibility.md#cancellation)
 - <a id="provider-protocol-re-exports"></a><a id="sandboxhandle"></a><a id="bindmountsandboxhandle"></a><a id="isolatedsandboxhandle"></a><a id="sandboxprovider"></a><a id="createoptions"></a><a id="execresult"></a><a id="make_bind_mount_provider"></a><a id="make_isolated_provider"></a>[Provider Protocol re-exports](python-api-extensibility.md#provider-protocol-re-exports)
 - <a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>[Display](python-api-extensibility.md#display)
-- <a id="errors"></a><a id="format_error_messageerror"></a><a id="structuredoutputerror"></a>[Errors](python-api-extensibility.md#errors)
-- <a id="tracing"></a>[Tracing](python-api-extensibility.md#tracing)
-- <a id="version"></a><a id="__version__"></a>[Version](python-api-extensibility.md#version)
+- <a id="errors"></a><a id="format_error_messageerror"></a><a id="structuredoutputerror"></a>[Errors](python-api-errors-tracing.md#errors)
+- <a id="tracing"></a>[Tracing](python-api-errors-tracing.md#tracing)
+- <a id="version"></a><a id="__version__"></a>[Version](python-api-errors-tracing.md#version)

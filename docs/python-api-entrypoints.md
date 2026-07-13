@@ -215,7 +215,7 @@ with eden.create_sandbox(sandbox=docker_provider(...), branch="eden/feature/x") 
         s.run(agent=eden.claude_code("..."), prompt_file="review.md", max_iterations=1)
 ```
 
-### `Sandbox.resume(...)` / `Sandbox.fork(...)`
+### <a id="sandboxresume-sandboxfork"></a>`Sandbox.resume(...)` / `Sandbox.fork(...)`
 
 ```python
 def resume(self, prompt: str, **overrides) -> RunResult: ...
