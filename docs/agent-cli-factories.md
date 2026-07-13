@@ -2,8 +2,6 @@
 
 Detailed reference for Eden's `cli_agent`-backed factories and generic CLI adapter. See [Agent factories](agent-factories.md) for `simulated_agent` and `claude_code`.
 
----
-
 ## `codex`
 
 ```python
@@ -28,11 +26,11 @@ def codex(
 ) -> Agent: ...
 ```
 
-Builds the invocation `codex exec [resume <id>] --json [--dangerously-bypass-approvals-and-sandbox] -m <model> [-c model_reasoning_effort="<level>"] [extra_args ...]` and delivers the prompt via stdin.
+Builds `codex exec [resume <id>] --json [--dangerously-bypass-approvals-and-sandbox] -m <model> [-c model_reasoning_effort="<level>"] [extra_args ...]` and delivers the prompt via stdin.
 
 ### Options
 
-- `effort` — optional reasoning-effort level. When set, threads `-c model_reasoning_effort="<level>"` into the invocation. One of `"low"`, `"medium"`, `"high"`, `"xhigh"`.
+- `effort` — optional reasoning level; threads `-c model_reasoning_effort="<level>"`. One of `"low"`, `"medium"`, `"high"`, `"xhigh"`.
 - `capture_sessions` — when `True` (default), the orchestrator post-processes each iteration's session JSONL into `.eden/sessions/` via [`CodexSessionStorage`](python-api.md#codexsessionstorage). Resume a captured session via the top-level `run(..., resume_session=<id>)` (requires `max_iterations=1`).
 - `dangerously_bypass_approvals_and_sandbox` — when `True` (default), appends `--dangerously-bypass-approvals-and-sandbox` so codex does not block on per-tool approval prompts. Safe inside an isolated sandbox; think twice before enabling for `no_sandbox()`. Superseded by `approvals_reviewer="auto_review"`.
 - `approvals_reviewer` — maps to codex's `approvals_reviewer` config key (`-c approvals_reviewer="<value>"`). When `"auto_review"`, swaps the bypass flag for an interactive approval policy plus codex's most permissive sandbox (`-a on-request -s danger-full-access`), so an AI reviewer mediates per-action approvals instead of skipping them outright — eden's sandbox provider still owns the outer filesystem boundary. `"user"` (and unset) keep the default bypass behaviour. An unrecognised value raises `InvalidOptions`.
@@ -136,7 +134,7 @@ Builds `agent --print --output-format stream-json --model <model> [--force] [ext
 
 ### Options
 
-- `force` — when `True`, appends `--force` so cursor does not block on per-tool permission prompts. Cursor's equivalent of Claude's `dangerously_skip_permissions`. Default `False`.
+- `force` — appends `--force` so cursor does not block on per-tool permission prompts. Default `False`.
 
 ### parse_stream
 
@@ -169,7 +167,7 @@ Builds `copilot -p <prompt> --output-format json --model <model> [--allow-all-to
 ### Options
 
 - `effort` — reasoning-effort level (`"low"`, `"medium"`, `"high"`). When set, threads `--effort <level>` into the invocation.
-- `allow_all_tools` — when `True`, appends `--allow-all-tools` so Copilot does not block on per-tool permission prompts. Copilot's equivalent of Claude's `dangerously_skip_permissions`. Default `False`.
+- `allow_all_tools` — appends `--allow-all-tools` so Copilot does not block on per-tool permission prompts. Default `False`.
 
 ### parse_stream
 

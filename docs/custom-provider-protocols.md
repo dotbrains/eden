@@ -7,14 +7,14 @@ providers. See [Custom providers](custom-providers.md) for when to write one and
 ## Protocol surface
 
 Eden defines four Protocols in `eden/providers/_protocols.py`: `SandboxProvider`
-creates a `SandboxHandle`; `BindMountSandboxHandle` and `IsolatedSandboxHandle`
-specialize that handle shape, with isolated handles adding `finalize(target)`.
+creates a `SandboxHandle`; bind-mount and isolated handles specialize it.
+Isolated handles add `finalize(target)`.
 
 ### `SandboxProvider`
 
-The factory side. Your `provider(...)` factory must return an instance
-satisfying this Protocol. Prefer [`make_bind_mount_provider`](#make_bind_mount_provider)
-or [`make_isolated_provider`](#make_isolated_provider) over a bespoke class.
+The factory side. Your `provider(...)` factory must return this Protocol. Prefer
+the [bind-mount](#make_bind_mount_provider) or [isolated](#make_isolated_provider)
+factory helper over a bespoke class.
 
 All Protocols, factories, and supporting types are re-exported from `eden`.
 Common imports include `SandboxProvider`, `SandboxHandle`,
@@ -74,7 +74,6 @@ class SandboxHandle(Protocol):
 - `close()` - release resources. Called in a `finally` block; should not raise.
 
 ### `BindMountSandboxHandle`
-
 A marker Protocol that adds no methods over `SandboxHandle`. It lets the
 orchestrator narrow types when it knows a handle is bind-mount.
 
@@ -102,7 +101,7 @@ depending on `eden.providers._protocols` directly. See
 
 ## Supporting types
 
-Read these from `eden/providers/_types.py`. All are frozen dataclasses.
+Supporting types live in `eden/providers/_types.py`; all are frozen dataclasses.
 
 ### `CreateOptions`
 
