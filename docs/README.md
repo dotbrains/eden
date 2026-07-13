@@ -28,7 +28,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, `cursor`, `copilot`, and `cli_agent`.
 - [Prompts](prompts.md) — `PromptSource`, args, shell blocks, built-ins.
 - [Templates](templates.md) — `blank`, `simple-loop`, `sequential-reviewer`, `parallel-planner`, `parallel-planner-with-review`, `plan-implement-review`, `github-agent-workflows`.
-- [Errors](errors.md) — the `EdenError` hierarchy.
+- [Errors](errors.md) — the `EdenError` hierarchy and top-level public errors.
+- [Sandbox and worktree errors](sandbox-worktree-errors.md) — provider and worktree error families.
 
 ## Concepts
 
