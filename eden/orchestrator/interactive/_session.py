@@ -9,26 +9,19 @@ from pathlib import Path
 from eden._types import Timeouts
 from eden.abort import AbortSignal
 from eden.agents._protocol import Agent
-from eden.env import load_eden_env, merge_env
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
-from eden.orchestrator._setup import resolve_target_branch
 from eden.orchestrator.interactive._interactive_cleanup import close_interactive_resources
-from eden.orchestrator.interactive._interactive_cwd import resolve_interactive_cwd
 from eden.orchestrator.interactive._interactive_exec import (
     build_interactive_argv,
     run_interactive_exec,
 )
 from eden.orchestrator.interactive._interactive_prompt import render_interactive_prompt
-from eden.orchestrator.interactive._interactive_setup import (
-    resolve_interactive_strategy,
-    validate_existing_worktree_options,
-)
-from eden.prompt._source import resolve_source
+from eden.orchestrator.interactive._interactive_resources import prepare_interactive_resources
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
-from eden.worktree._create import WorktreeHandle, create_worktree
+from eden.worktree._create import WorktreeHandle
 
 
 @dataclass(frozen=True)
@@ -90,76 +83,44 @@ def interactive(
     only when ``stdin`` is a TTY — CI runs hit the normal
     :class:`eden.errors.PromptError`. Pass ``True`` / ``False`` to force.
     """
-    if signal is not None:
-        signal.raise_if_aborted()
-
-    if sandbox is None:
-        from eden.sandboxes.no_sandbox import provider as no_sandbox
-
-        sandbox = no_sandbox()
-
-    validate_existing_worktree_options(
-        existing_worktree=_existing_worktree,
-        branch_strategy=branch_strategy,
-        base_branch=base_branch,
-        copy_to_worktree=copy_to_worktree,
-    )
-
-    cwd_path = resolve_interactive_cwd(existing_worktree=_existing_worktree, cwd=cwd)
-
-    prompt_text = ""
-    prompt_is_literal = False
-    if prompt is not None or prompt_file is not None:
-        source = resolve_source(prompt=prompt, prompt_file=prompt_file, prompt_args=prompt_args)
-        prompt_text = source.text
-        prompt_is_literal = source.is_literal
-
-    # .eden/.env values flow into the sandbox; explicit env= overrides them.
-    caller_env = {**load_eden_env(cwd_path), **(dict(env) if env else {})}
-    merged_env = merge_env({}, caller_env)
-
-    strategy = resolve_interactive_strategy(
+    resources = prepare_interactive_resources(
         sandbox=sandbox,
+        signal=signal,
         existing_worktree=_existing_worktree,
+        cwd=cwd,
+        prompt=prompt,
+        prompt_file=prompt_file,
+        prompt_args=prompt_args,
+        env=env,
         branch_strategy=branch_strategy,
         base_branch=base_branch,
         copy_to_worktree=copy_to_worktree,
+        name=name,
+        throw_on_duplicate_worktree=throw_on_duplicate_worktree,
+        timeouts=timeouts,
     )
-    target_branch = resolve_target_branch(host_repo_path=cwd_path)
-
-    timeouts_or_default = timeouts if timeouts is not None else Timeouts()
-    wt = (
-        _existing_worktree
-        if _existing_worktree is not None
-        else create_worktree(
-            host_repo_path=cwd_path,
-            strategy=strategy,
-            name_hint=name,
-            throw_on_duplicate_worktree=throw_on_duplicate_worktree,
-            git_timeout=timeouts_or_default.git_setup,
-        )
-    )
+    wt = resources.worktree
     handle = None
     hooks_or_default = hooks if hooks is not None else Hooks()
     try:
         apply_copy_to_worktree(
             paths=copy_to_worktree,
-            source_root=cwd_path,
+            source_root=resources.cwd_path,
             worktree_path=wt.worktree_path,
         )
         run_host_hooks(
             phase=HookPhase.OnWorktreeReady,
             hooks=hooks_or_default.host,
             worktree_path=wt.worktree_path,
-            env=merged_env,
-            timeouts=timeouts_or_default,
+            env=resources.merged_env,
+            timeouts=resources.timeouts,
         )
-        handle = sandbox.create(
+        handle = resources.sandbox.create(
             CreateOptions(
                 branch=wt.branch,
                 worktree_path=wt.worktree_path,
                 host_repo_path=wt.host_repo_path,
-                env=merged_env,
+                env=resources.merged_env,
                 mounts=(),
                 name_hint=name,
             )
@@ -168,17 +129,17 @@ def interactive(
             phase=HookPhase.OnSandboxReady,
             hooks=hooks_or_default.sandbox,
             handle=handle,
-            env=merged_env,
-            timeouts=timeouts_or_default,
+            env=resources.merged_env,
+            timeouts=resources.timeouts,
         )
 
         rendered = render_interactive_prompt(
-            prompt_text=prompt_text,
-            prompt_is_literal=prompt_is_literal,
+            prompt_text=resources.prompt_text,
+            prompt_is_literal=resources.prompt_is_literal,
             prompt_args=prompt_args,
             collect_args=collect_args,
             source_branch=wt.branch,
-            target_branch=target_branch,
+            target_branch=resources.target_branch,
             handle=handle,
         )
         argv = build_interactive_argv(
@@ -191,23 +152,23 @@ def interactive(
         )
         exit_code = run_interactive_exec(
             handle=handle,
-            sandbox_name=sandbox.name,
+            sandbox_name=resources.sandbox.name,
             argv=argv,
-            env=merged_env,
+            env=resources.merged_env,
             signal=signal,
         )
         return InteractiveResult(
             branch=wt.branch,
             exit_code=exit_code,
             worktree_path=wt.worktree_path,
-            cwd=cwd_path,
+            cwd=resources.cwd_path,
         )
     finally:
         close_interactive_resources(
             handle=handle,
             worktree=wt,
             hooks=hooks_or_default,
-            env=merged_env,
-            timeouts=timeouts_or_default,
+            env=resources.merged_env,
+            timeouts=resources.timeouts,
             close_worktree=_existing_worktree is None,
         )
