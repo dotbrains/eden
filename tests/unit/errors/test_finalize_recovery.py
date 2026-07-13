@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from eden.orchestrator._finalize_recovery import format_finalize_recovery
+from eden.orchestrator.finalize._finalize_recovery import format_finalize_recovery
 
 pytestmark = pytest.mark.unit
 

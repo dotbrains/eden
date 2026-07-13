@@ -8,8 +8,8 @@ from pathlib import Path
 
 from eden.logging._file import FileLogSink
 from eden.logging._stdout import StdoutLogSink
-from eden.orchestrator._finalize_recovery import format_finalize_recovery
 from eden.orchestrator._summary import format_finalize_line
+from eden.orchestrator.finalize._finalize_recovery import format_finalize_recovery
 from eden.providers._protocols import SandboxHandle
 from eden.streaming import StreamEvent
 

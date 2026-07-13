@@ -13,13 +13,15 @@ from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.orchestrator._loop import _run_loop
-from eden.orchestrator._run_output_retry import (
+from eden.orchestrator._setup import SetupResult, resolve_setup
+from eden.orchestrator._worktree_api import create_worktree
+from eden.orchestrator.run._run_output_retry import (
     corrective_output_prompt as _corrective_output_prompt,
 )
-from eden.orchestrator._run_output_retry import (
+from eden.orchestrator.run._run_output_retry import (
     run_with_output_retries,
 )
-from eden.orchestrator._run_preflight import (
+from eden.orchestrator.run._run_preflight import (
     maybe_seconds,
     precheck_resume_session,
     seconds,
@@ -27,8 +29,6 @@ from eden.orchestrator._run_preflight import (
     validate_output_options,
     validate_session_options,
 )
-from eden.orchestrator._setup import SetupResult, resolve_setup
-from eden.orchestrator._worktree_api import create_worktree
 from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy
