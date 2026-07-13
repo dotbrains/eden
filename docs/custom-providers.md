@@ -85,7 +85,6 @@ from typing import Protocol, runtime_checkable
 
 from eden import ExecResult
 
-
 @runtime_checkable
 class SandboxHandle(Protocol):
     worktree_path: Path
@@ -129,7 +128,6 @@ The handle Protocol for detached / patch-sync / cloud sandboxes. Adds one method
 
 ```python
 from eden import FinalizeResult
-
 
 @runtime_checkable
 class IsolatedSandboxHandle(SandboxHandle, Protocol):
@@ -214,7 +212,6 @@ from eden import (
 )
 from eden.providers import StrategyTag
 
-
 def make_bind_mount_provider(
     name: str,
     create: Callable[[CreateOptions], BindMountSandboxHandle],
@@ -231,7 +228,6 @@ Use for any provider where the host worktree is the sandbox (host == sandbox fil
 
 ```python
 from eden import IsolatedSandboxHandle, SandboxProvider, make_isolated_provider
-
 
 def make_isolated_provider(
     name: str,
