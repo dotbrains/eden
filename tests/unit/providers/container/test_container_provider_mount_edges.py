@@ -9,7 +9,7 @@ import pytest
 
 from eden.providers._impl.container import make_container_provider
 from eden.providers._types import Mount
-from tests.unit.container_provider_helpers import find_run, opts
+from tests.unit.providers.container.container_provider_helpers import find_run, opts
 
 pytestmark = pytest.mark.unit
 

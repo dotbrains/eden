@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from eden.providers._impl.container import make_container_provider
-from tests.unit.container_provider_helpers import find_run, opts
+from tests.unit.providers.container.container_provider_helpers import find_run, opts
 
 pytestmark = pytest.mark.unit
 
