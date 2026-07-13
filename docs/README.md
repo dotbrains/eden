@@ -49,6 +49,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [GitHub agent workflow template](github-agent-workflow-template.md) — label-driven GitHub Actions scaffold.
 - [Errors](errors.md) — the `EdenError` hierarchy and top-level public errors.
 - [Top-level errors](top-level-errors.md) — top-level `EdenError` subclasses.
+- [Configuration errors](config-errors.md) — `ConfigError` and setup-time failures.
 - [REST errors](rest-errors.md) — cloud-provider REST error subclasses.
 - [Error recovery](error-recovery.md) — handling strategies and catch-all examples.
 - [Sandbox and worktree errors](sandbox-worktree-errors.md) — provider and worktree error families.

@@ -84,12 +84,12 @@ Moved to [Top-level errors](top-level-errors.md).
 Compatibility anchors: <a id="edenerror"></a><a id="configerror"></a><a id="invalidoptions"></a><a id="prompterror"></a><a id="envmergeerror"></a><a id="cwderror"></a><a id="floxenverror"></a><a id="hookerror"></a><a id="hookfailed"></a><a id="hooktimeout"></a><a id="edentimeouterror"></a><a id="idletimeout"></a><a id="steptimeout"></a><a id="aborted"></a><a id="sessioncapturefailed"></a><a id="resterror"></a><a id="restautherror"></a><a id="restnotfounderror"></a><a id="restratelimited"></a>
 
 - [`EdenError`](top-level-errors.md#edenerror)
-- [`ConfigError`](top-level-errors.md#configerror)
-- [`InvalidOptions`](top-level-errors.md#invalidoptions)
-- [`PromptError`](top-level-errors.md#prompterror)
-- [`EnvMergeError`](top-level-errors.md#envmergeerror)
-- [`CwdError`](top-level-errors.md#cwderror)
-- [`FloxEnvError`](top-level-errors.md#floxenverror)
+- [`ConfigError`](config-errors.md#configerror)
+- [`InvalidOptions`](config-errors.md#invalidoptions)
+- [`PromptError`](config-errors.md#prompterror)
+- [`EnvMergeError`](config-errors.md#envmergeerror)
+- [`CwdError`](config-errors.md#cwderror)
+- [`FloxEnvError`](config-errors.md#floxenverror)
 - [`HookError`](top-level-errors.md#hookerror)
 - [`HookFailed`](top-level-errors.md#hookfailed)
 - [`HookTimeout`](top-level-errors.md#hooktimeout)
@@ -139,6 +139,7 @@ Compatibility anchors: <a id="worktreeerror"></a><a id="worktreelocked"></a><a i
 
 - [Python API: Errors](python-api.md#errors) — public error classes by name.
 - [Top-level errors](top-level-errors.md) — top-level public error classes.
+- [Configuration errors](config-errors.md) — setup-time configuration failures.
 - [Python API: Cancellation](python-api.md#cancellation) — `AbortController` / `AbortSignal` / `Aborted`.
 - [Error recovery](error-recovery.md) — handling strategies and catch-all examples.
 - [Sandbox and worktree errors](sandbox-worktree-errors.md) — provider and worktree error families.
