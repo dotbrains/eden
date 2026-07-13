@@ -7,34 +7,18 @@ import subprocess
 import threading
 import time
 from collections.abc import Callable, Generator, Mapping
-from dataclasses import dataclass
 from pathlib import Path
 from queue import Empty, Queue
-from typing import IO, Any
+from typing import Any
 
 from eden.abort import AbortSignal
 from eden.orchestrator._idle import IdleWatchdog
+from eden.orchestrator.runner._stdio import SENTINEL, DrainResult
+from eden.orchestrator.runner._stdio import drain_stream as _drain
+from eden.orchestrator.runner._stdio import write_and_close as _write_and_close
 
-_SENTINEL: Any = object()
+_SENTINEL: Any = SENTINEL
 _GRACE_SECONDS = 5.0
-
-
-@dataclass(frozen=True)
-class DrainResult:
-    """Outcome of :meth:`_AgentRunner.drain_remaining`."""
-
-    lines: list[str]
-    """Trailing lines accumulated before the drain exited."""
-    timed_out: bool
-    """``True`` iff the drain exited because ``total_timeout`` elapsed."""
-
-
-def _drain(stream: IO[str], queue: Queue[Any]) -> None:
-    try:
-        for line in iter(stream.readline, ""):
-            queue.put(line)
-    finally:
-        queue.put(_SENTINEL)
 
 
 class _AgentRunner:
@@ -87,19 +71,12 @@ class _AgentRunner:
         ).start()
         if self._stdin is not None:
             stdin_stream = self._proc.stdin
-            stdin_payload = self._stdin
             assert stdin_stream is not None
-
-            def _write_stdin() -> None:
-                try:
-                    stdin_stream.write(stdin_payload)
-                finally:
-                    try:
-                        stdin_stream.close()
-                    except Exception:
-                        pass
-
-            threading.Thread(target=_write_stdin, daemon=True).start()
+            threading.Thread(
+                target=_write_and_close,
+                args=(stdin_stream, self._stdin),
+                daemon=True,
+            ).start()
         return self
 
     def __exit__(self, *exc: object) -> None:

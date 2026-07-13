@@ -211,6 +211,3 @@ def interactive(
             timeouts=timeouts_or_default,
             close_worktree=_existing_worktree is None,
         )
-
-
-__all__ = ["InteractiveResult", "interactive"]

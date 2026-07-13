@@ -18,9 +18,7 @@ from eden.cli._init_dependencies import (
 from eden.cli._init_dependencies import (
     has_host_dependency as _has_host_dependency,
 )
-from eden.cli._init_templates import (
-    TEMPLATE_METADATA as _TEMPLATE_METADATA,
-)
+from eden.cli._init_scaffold import scaffold_init_files as _scaffold_init_files
 from eden.cli._init_templates import (
     TEMPLATES_REQUIRING_BACKLOG as _TEMPLATES_REQUIRING_BACKLOG,
 )
@@ -179,38 +177,11 @@ def init_command(
         backlog=backlog,
     )
     repo = Path.cwd().resolve()
-    outputs: list[tuple[Path, str]] = []
-    for name, contents in files.items():
-        out = (target / name).resolve()
-        if not out.is_relative_to(repo):
-            console.print(f"[red]refusing to write outside repo: {out}[/red]")
-            raise typer.Exit(code=1)
-        if out.exists():
-            console.print(f"[red]refusing to overwrite existing {out}[/red]")
-            raise typer.Exit(code=1)
-        outputs.append((out, contents))
-
-    target.mkdir(parents=True)
-    for out, contents in outputs:
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(contents, encoding="utf-8")
-
-    typer.secho(f"✓ scaffolded {target}", fg="green")
-    meta = _TEMPLATE_METADATA[template]
-    typer.echo(f"Template: {meta.name} - {meta.description}")
-    typer.echo("Next steps:")
-    typer.echo("  1. cp .eden/.env.example .env  # then fill in your API keys")
-    step = 2
-    dependencies = tuple(dep for dep in meta.dependencies if not _has_host_dependency(repo, dep))
-    if dependencies:
-        package_manager = _detect_package_manager(repo)
-        for dependency in dependencies:
-            typer.echo(f"  {step}. {_add_dependency_command(package_manager, dependency)}")
-            step += 1
-    typer.echo(
-        f"  {step}. {sandbox} build "
-        f"--build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) "
-        f"-t {image_name} -f .eden/Dockerfile ."
+    _scaffold_init_files(
+        target=target,
+        repo=repo,
+        files=files,
+        template=template,
+        sandbox=sandbox,
+        image_name=image_name,
     )
-    step += 1
-    typer.echo(f"  {step}. python .eden/main.py")
