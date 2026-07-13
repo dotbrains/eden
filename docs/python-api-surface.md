@@ -7,8 +7,8 @@ for the canonical index and compatibility anchors.
 
 - [`run`](python-api-entrypoints.md#run)
 - [Async API](python-api-async.md)
-- [`interactive`](python-api-entrypoints.md#interactive)
-- [`InteractiveResult`](python-api-entrypoints.md#interactiveresult)
+- [`interactive`](python-api-interactive.md#interactive)
+- [`InteractiveResult`](python-api-interactive.md#interactiveresult)
 - [`create_sandbox`](python-api-sandboxes.md#create_sandbox)
 - [`create_worktree`](python-api-sandboxes.md#create_worktree)
 - [`Sandbox`](python-api-sandboxes.md#sandboxexec)

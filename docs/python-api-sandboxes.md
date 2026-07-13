@@ -129,6 +129,6 @@ with eden.create_worktree(branch="eden/issue-42") as wt:
 
 `wt.run(...)` creates a short-lived sandbox backed by the worktree, runs one agent loop through [`Sandbox.run(...)`](#sandboxrun), closes only the sandbox handle, and leaves the worktree open for more work. It accepts the same options as `Sandbox.run(...)` plus `sandbox=`, provider `mounts=`, `copy_to_worktree=`, and sandbox-creation `hooks=`.
 
-`wt.interactive(...)` launches an interactive session in the existing worktree without carving or closing another worktree. It accepts the same prompt/env/name/hook/signal/timeout options as top-level [`interactive(...)`](python-api-entrypoints.md#interactive).
+`wt.interactive(...)` launches an interactive session in the existing worktree without carving or closing another worktree. It accepts the same prompt/env/name/hook/signal/timeout options as top-level [`interactive(...)`](python-api-interactive.md#interactive).
 
 `wt.create_sandbox(...)` is equivalent to [`create_sandbox(worktree=wt, ...)`](#create_sandbox): each returned `Sandbox.close()` removes only its provider handle; the worktree lives until `wt.close()`.
