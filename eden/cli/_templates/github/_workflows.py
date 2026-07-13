@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from eden.cli._templates._github_review_workflow import REVIEW_WORKFLOW
+from eden.cli._templates.github._review_workflow import REVIEW_WORKFLOW
 
 IMPLEMENT_WORKFLOW = r"""\
 name: Eden Agent Implement

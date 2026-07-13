@@ -67,7 +67,7 @@ It writes `$REVIEW_REPLIES` as an array of replies to existing review comments:
 
 With `--backlog custom`, the Dockerfile, `.env.example`, and factory script intentionally contain `<TODO: ...>` markers. Replace them with commands that list tasks as JSON, view one task, and close a task after commits land.
 
-Read source: `eden/cli/_templates/github_agent_workflows.py`.
+Read source: `eden/cli/_templates/github/agent_workflows.py`.
 
 ## See also
 

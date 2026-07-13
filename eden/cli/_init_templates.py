@@ -14,7 +14,7 @@ from eden.cli._templates._backlog import (
     list_backlog_managers,
 )
 from eden.cli._templates.blank import render_blank
-from eden.cli._templates.github_agent_workflows import render_github_agent_workflows
+from eden.cli._templates.github import render_github_agent_workflows
 from eden.cli._templates.parallel_planner import render_parallel_planner
 from eden.cli._templates.parallel_planner_with_review import (
     render_parallel_planner_with_review,

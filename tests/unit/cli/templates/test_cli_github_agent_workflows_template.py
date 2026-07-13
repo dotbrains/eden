@@ -7,7 +7,7 @@ from hashlib import sha256
 import pytest
 
 from eden.cli._templates._backlog import get_backlog_manager
-from eden.cli._templates.github_agent_workflows import render_github_agent_workflows
+from eden.cli._templates.github import render_github_agent_workflows
 
 pytestmark = pytest.mark.unit
 
