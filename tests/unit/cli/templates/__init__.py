@@ -1,0 +1,1 @@
+"""CLI template unit tests."""
