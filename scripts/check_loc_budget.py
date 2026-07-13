@@ -23,9 +23,9 @@ class DirectoryBudget:
 
 
 FILE_BUDGETS = (
-    FileBudget("eden/**/*.py", 300),
-    FileBudget("tests/**/*.py", 400),
-    FileBudget("docs/**/*.md", 1500, excludes=("docs/superpowers/plans/**",)),
+    FileBudget("eden/**/*.py", 250),
+    FileBudget("tests/**/*.py", 250),
+    FileBudget("docs/**/*.md", 1400, excludes=("docs/superpowers/plans/**",)),
 )
 
 DIRECTORY_BUDGETS = (
@@ -77,7 +77,7 @@ def _directory_budget_errors(files: list[Path]) -> list[str]:
     for budget in DIRECTORY_BUDGETS:
         counts: Counter[Path] = Counter()
         for path in files:
-            if not path.match(f"{budget.root}/**") or not path.is_file():
+            if not path.parts or path.parts[0] != budget.root or not path.is_file():
                 continue
             counts[path.parent] += 1
         for directory, count in sorted(counts.items(), key=lambda item: (-item[1], str(item[0]))):
