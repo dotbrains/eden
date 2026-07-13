@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,11 @@ from eden.sandboxes import Sandbox, create_sandbox
 from tests.unit.create_sandbox_helpers import StubHandle, StubProvider
 
 pytestmark = pytest.mark.unit
+
+
+def _write_text_hook(path: str | Path, text: str) -> Hook:
+    code = f"from pathlib import Path; Path({str(path)!r}).write_text({text!r})"
+    return Hook(f'{sys.executable} -c "{code}"')
 
 
 def test_sandbox_exec_supports_sudo(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -132,8 +138,8 @@ def test_create_sandbox_runs_creation_and_close_hooks(
     close_marker = tmp_git_repo / "host-closed.txt"
     hooks = Hooks(
         host=HostHooks(
-            on_worktree_ready=(Hook("printf ready > host-ready.txt"),),
-            on_close=(Hook(f"printf closed > {str(close_marker)!r}"),),
+            on_worktree_ready=(_write_text_hook("host-ready.txt", "ready"),),
+            on_close=(_write_text_hook(close_marker, "closed"),),
         ),
         sandbox=SandboxHooks(
             on_sandbox_ready=(Hook("sandbox-ready"),),
