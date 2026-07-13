@@ -20,44 +20,11 @@ Each provider's `kind` (`"none"`, `"bind_mount"`, or `"isolated"`) controls how 
 
 ## Choosing a provider
 
-```mermaid
-flowchart TD
-    Start{Trust the agent's edits?} -->|yes| ns[no_sandbox<br/>fastest, runs in your shell]
-    Start -->|no| Where{Where should it run?}
-    Where -->|local| Local{Need real-time host writes?}
-    Where -->|remote / burstable| Cloud{Which cloud?}
-    Local -->|yes — bind mount| docker[docker / podman<br/>container, host filesystem visible]
-    Local -->|no — strong isolation| isolated[isolated<br/>copy in, patch-sync on finalize]
-    Cloud -->|managed VMs| daytona[daytona]
-    Cloud -->|Vercel sandboxes| vercel[vercel]
-```
+Moved to [Sandbox provider usage](sandbox-provider-usage.md#choosing-a-provider).
 
 ## Importing
 
-Every provider lives at `eden.sandboxes.<name>` and exposes a single public name: `provider`. The conventional import alias gives readable call sites:
-
-```python
-from eden.sandboxes.no_sandbox import provider as no_sandbox
-from eden.sandboxes.docker import provider as docker_provider
-from eden.sandboxes.podman import provider as podman_provider
-from eden.sandboxes.isolated import provider as isolated_provider
-from eden.sandboxes.daytona import provider as daytona_provider
-from eden.sandboxes.vercel import provider as vercel_provider
-from eden.sandboxes.forkd import provider as forkd_provider
-```
-
-`run(sandbox=...)` takes a `SandboxProvider` *instance* — call the factory:
-
-```python
-from eden import run, simulated_agent
-from eden.sandboxes.docker import provider as docker_provider
-
-result = run(
-    agent=simulated_agent(),
-    sandbox=docker_provider(image="my-image:latest"),
-    prompt="say hi",
-)
-```
+Moved to [Sandbox provider usage](sandbox-provider-usage.md#importing).
 
 ## `no_sandbox`
 
@@ -370,6 +337,7 @@ See [ADR 0001 — Finalizing vs. direct handles](adr/0001-finalizing-vs-direct-h
 ## See also
 
 - [Custom providers](custom-providers.md) — implementing your own `SandboxProvider` and `IsolatedSandboxHandle`.
+- [Sandbox provider usage](sandbox-provider-usage.md) — provider selection flowchart and import examples.
 - [Configuration](configuration.md) — the env vars each cloud provider falls back to.
 - [Python API: `Mount`, `BranchStrategy`, `FinalizeResult`](python-api.md#configuration-types) — provider-agnostic types.
 - [How it works](how-it-works.md) — when `finalize()` runs and how the orchestrator detects bind-mount vs isolated handles.
