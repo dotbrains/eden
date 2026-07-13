@@ -15,13 +15,7 @@ Formatted message shape: `[<code>] <message>` followed by `\nhint: <hint>` when 
 
 `EdenTimeoutError` additionally subclasses the built-in `TimeoutError`, so `except TimeoutError:` catches Eden's idle/step timeouts alongside any other code's `TimeoutError`s.
 
-The errors below are split into three groups:
-
-1. **Top-level `EdenError` subclasses** — re-exported from `eden`. These are the ones you import and catch in user code.
-2. **`SandboxError` family** — raised by sandbox providers in `eden.sandboxes`. Importable from `eden.sandboxes.errors`.
-3. **`WorktreeError` family** — raised by `eden.worktree`. Importable from `eden.worktree.errors`.
-
-All three families share `EdenError` as a common ancestor.
+The errors below are split into three groups: top-level `EdenError` subclasses re-exported from `eden`, `SandboxError` subclasses from `eden.sandboxes.errors`, and `WorktreeError` subclasses from `eden.worktree.errors`. All three families share `EdenError` as a common ancestor.
 
 ## Hierarchy
 

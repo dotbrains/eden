@@ -33,6 +33,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, `cursor`, `copilot`, and `cli_agent`.
 - [Prompts](prompts.md) — `PromptSource`, args, shell blocks, built-ins.
 - [Templates](templates.md) — local `eden init` template reference.
+- [Blank template](template-blank.md) — minimal scaffold files and customization.
 - [GitHub agent workflow template](github-agent-workflow-template.md) — label-driven GitHub Actions scaffold.
 - [Errors](errors.md) — the `EdenError` hierarchy and top-level public errors.
 - [Error recovery](error-recovery.md) — handling strategies and catch-all examples.
