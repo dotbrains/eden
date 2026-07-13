@@ -6,21 +6,20 @@ from collections.abc import Callable, Mapping
 from contextlib import ExitStack
 from pathlib import Path
 
-from eden._types import Commit, Iteration, RunResult, Timeouts
+from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
-from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._session_capture import resolve_session_storage
-from eden.orchestrator._setup import (
-    SetupResult,
-    resolve_target_branch,
-)
+from eden.orchestrator._setup import SetupResult
 from eden.orchestrator.loop._loop_cleanup import close_loop_resources
 from eden.orchestrator.loop._loop_finalize import finalize_loop_sandbox
 from eden.orchestrator.loop._loop_iteration import run_loop_iteration
-from eden.orchestrator.loop._loop_resources import prepare_loop_worktree
+from eden.orchestrator.loop._loop_resources import (
+    prepare_loop_run_resources,
+    prepare_loop_worktree,
+)
 from eden.orchestrator.loop._loop_result import build_loop_result
 from eden.orchestrator.loop._loop_startup import start_loop_runtime
 from eden.orchestrator.loop._run_span import enter_run_span
@@ -28,9 +27,7 @@ from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, Mount
 from eden.streaming import StreamEvent
-from eden.streaming._bounded_tail import BoundedTail
 from eden.worktree._create import WorktreeHandle
-from eden.worktree._git import head_sha
 
 
 def _run_loop(
@@ -76,24 +73,13 @@ def _run_loop(
         existing_handle=existing_handle,
     )
 
-    target_branch = resolve_target_branch(host_repo_path=setup.cwd)
-
-    # Snapshot the branch tip before the agent runs so the post-run
-    # ``git rev-list base..HEAD`` census attributes only this run's commits
-    # (a caller-managed worktree may already carry commits from earlier
-    # agents in the same sandbox). Best-effort: "" disables the census.
-    commit_base_sha = head_sha(repo_path=wt.worktree_path, timeout=timeouts.git_setup)
-    collected_commits: list[Commit] = []
-
-    logger: LoopLogger | None = None
-    handle: SandboxHandle | None = existing_handle if caller_managed else None
-    iterations: list[Iteration] = []
-    # Bounded rolling tail — capped to keep memory finite on long agent
-    # runs. The three consumers (parse_stdout_error, Output extraction,
-    # final RunResult.stdout) all care about the tail, not the head.
-    stdout_chunks = BoundedTail()
-    completion_hit: str | None = None
-    rendered_prompt = ""
+    resources = prepare_loop_run_resources(
+        setup=setup,
+        worktree=wt,
+        caller_managed=caller_managed,
+        existing_handle=existing_handle,
+        git_timeout=timeouts.git_setup,
+    )
     log_path: Path | None = None
     preserved: Path | None = None
     unregister_shutdown: Callable[[], None] | None = None
@@ -123,22 +109,22 @@ def _run_loop(
             setup=setup,
             worktree=wt,
             caller_managed=caller_managed,
-            existing_handle=handle,
+            existing_handle=resources.handle,
             copy_to_worktree=copy_to_worktree,
             hooks=hooks,
             timeouts=timeouts,
             extra_mounts=extra_mounts,
             name=name,
-            target_branch=target_branch,
+            target_branch=resources.target_branch,
             logging_cfg=logging_cfg,
             signal=signal,
         )
-        handle = runtime.handle
+        resources.handle = runtime.handle
         unregister_shutdown = runtime.unregister_shutdown
-        logger = runtime.logger
+        resources.logger = runtime.logger
         log_path = runtime.log_path
         flox_env_dir = runtime.flox_env_dir
-        assert logger is not None
+        assert resources.logger is not None
 
         for i in range(max_iterations):
             iteration_result = run_loop_iteration(
@@ -146,8 +132,8 @@ def _run_loop(
                 agent=agent,
                 setup=setup,
                 worktree=wt,
-                target_branch=target_branch,
-                handle=handle,
+                target_branch=resources.target_branch,
+                handle=resources.handle,
                 hooks=hooks,
                 timeouts=timeouts,
                 name=name,
@@ -159,56 +145,56 @@ def _run_loop(
                 idle_warning_interval=idle_warning_interval,
                 completion_signal=completion_signal,
                 completion_timeout=completion_timeout,
-                logger=logger,
+                logger=resources.logger,
                 on_event=on_event,
                 signal=signal,
-                stdout_chunks=stdout_chunks,
+                stdout_chunks=resources.stdout_chunks,
                 session_storage=session_storage,
                 log_path=log_path,
             )
-            rendered_prompt = iteration_result.rendered_prompt
-            iterations.append(iteration_result.iteration)
+            resources.rendered_prompt = iteration_result.rendered_prompt
+            resources.iterations.append(iteration_result.iteration)
             if iteration_result.completion is not None:
-                completion_hit = iteration_result.completion
+                resources.completion_hit = iteration_result.completion
                 break
 
         finalize_loop_sandbox(
-            handle=handle,
+            handle=resources.handle,
             worktree=wt,
             agent_name=agent.name,
-            iteration_count=len(iterations),
-            logger=logger,
+            iteration_count=len(resources.iterations),
+            logger=resources.logger,
         )
 
     finally:
-        collected_commits, preserved = close_loop_resources(
+        resources.collected_commits, preserved = close_loop_resources(
             unregister_shutdown=unregister_shutdown,
-            handle=handle,
+            handle=resources.handle,
             caller_managed=caller_managed,
             hooks=hooks,
             worktree=wt,
             env=setup.merged_env,
             timeouts=timeouts,
-            logger=logger,
-            commit_base_sha=commit_base_sha,
-            completion_hit=completion_hit,
-            iteration_count=len(iterations),
+            logger=resources.logger,
+            commit_base_sha=resources.commit_base_sha,
+            completion_hit=resources.completion_hit,
+            iteration_count=len(resources.iterations),
             run_span=run_span,
             stack=_stack,
         )
 
     return build_loop_result(
-        iterations=iterations,
-        completion_hit=completion_hit,
+        iterations=resources.iterations,
+        completion_hit=resources.completion_hit,
         branch=wt.branch,
-        stdout_chunks=stdout_chunks,
+        stdout_chunks=resources.stdout_chunks,
         worktree_path=wt.worktree_path,
         preserved_worktree_path=preserved,
         cwd=setup.cwd,
-        prompt=rendered_prompt,
+        prompt=resources.rendered_prompt,
         env=setup.merged_env,
         log_file_path=log_path,
-        commits=collected_commits,
+        commits=resources.collected_commits,
         output=output,
         agent=agent,
         sandbox=sandbox,
