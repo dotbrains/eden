@@ -65,16 +65,25 @@ jobs:
             os: blacksmith-2vcpu-ubuntu-2404
             python: python3
             venv-python: .venv/bin/python
+            python-version: ""
           - name: macos py3.13
             os: blacksmith-6vcpu-macos-15
             python: python3
             venv-python: .venv/bin/python
+            python-version: ""
           - name: windows py3.13
             os: blacksmith-2vcpu-windows-2025
             python: python
             venv-python: .\.venv\Scripts\python.exe
+            python-version: "3.13"
     steps:
       - uses: actions/checkout@v5
+
+      - name: Set up Python
+        if: matrix.python-version != ''
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: pytest (unit)
         run: |
