@@ -197,17 +197,9 @@ class FinalizeResult:
 
 ---
 
-## Structured output
+## <a id="structured-output"></a><a id="output"></a><a id="outputdefinition"></a>Structured output
 
 Moved to [Python API: Structured output](python-api-output.md#structured-output).
-
-### `Output`
-
-Moved to [Python API: Structured output](python-api-output.md#output).
-
-### `OutputDefinition`
-
-Moved to [Python API: Structured output](python-api-output.md#outputdefinition).
 
 ---
 
