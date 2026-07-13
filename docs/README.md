@@ -9,6 +9,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [What is Eden?](what-is-eden.md) — positioning, feature matrix, when to use it.
 - [Quick start](quick-start.md) — `eden init` to first run in five minutes.
 - [Tutorial: build your first agent loop](tutorial-first-loop.md) — 10-minute walkthrough that ends with a real agent fixing a real bug.
+- [After your first loop](tutorial-first-loop-after-run.md) — inspect cost, replay transcripts, and choose the next reference.
 - [Tutorial first-loop troubleshooting](tutorial-first-loop-troubleshooting.md) — common setup gotchas.
 
 ## Reference
