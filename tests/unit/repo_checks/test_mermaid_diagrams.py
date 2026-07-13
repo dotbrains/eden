@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.unit.repo_checks._paths import repo_root
+
 pytestmark = pytest.mark.unit
 
 
@@ -173,16 +175,16 @@ def _markdown_files(repo_root: Path) -> Iterable[Path]:
 
 
 def test_all_mermaid_diagrams_parse_structurally() -> None:
-    repo_root = Path(__file__).resolve().parents[2]
+    root = repo_root()
     failures: list[str] = []
     block_count = 0
-    for md in _markdown_files(repo_root):
+    for md in _markdown_files(root):
         if not md.exists():
             continue
         for block in _iter_blocks(md):
             block_count += 1
             for err in _validate(block):
-                failures.append(f"{block.file.relative_to(repo_root)}:{block.start_line}: {err}")
+                failures.append(f"{block.file.relative_to(root)}:{block.start_line}: {err}")
 
     assert block_count > 0, "no mermaid blocks discovered — fix the discovery logic"
     assert failures == [], "mermaid diagram lint failures:\n" + "\n".join(failures)

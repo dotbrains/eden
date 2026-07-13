@@ -12,12 +12,13 @@ from pathlib import Path
 
 import pytest
 
+from tests.unit.repo_checks._paths import repo_root
+
 pytestmark = pytest.mark.unit
 
 
 def _action_path() -> Path:
-    # tests/unit -> tests -> repo root.
-    return Path(__file__).resolve().parents[2] / "action.yml"
+    return repo_root() / "action.yml"
 
 
 def _load_action() -> dict[str, object]:

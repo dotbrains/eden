@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 import pytest
 
 import eden
+from tests.unit.repo_checks._paths import repo_root
 
 pytestmark = pytest.mark.unit
 
 
 def test_docs_python_api_covers_all_public_exports() -> None:
-    docs_dir = Path(__file__).resolve().parents[2] / "docs"
+    docs_dir = repo_root() / "docs"
     api_docs = sorted(docs_dir.glob("python-api*.md"))
     assert docs_dir / "python-api.md" in api_docs
 
