@@ -21,7 +21,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [CLI](cli.md) — `eden init`, `eden run`, `eden cost`, `eden clean`, `eden replay`, `eden version`.
 - [GitHub Action](github-action.md) — run an eden iteration loop in any GitHub workflow.
 - [Configuration](configuration.md) — environment variables, `Logging`, `Timeouts`.
-- [Sandbox providers](sandbox-providers.md) — provider matrix and per-provider behavior.
+- [Sandbox providers](sandbox-providers.md) — provider matrix and local provider behavior.
+- [Cloud sandbox providers](cloud-sandbox-providers.md) — Daytona, Vercel, and forkd details.
 - [Sandbox provider usage](sandbox-provider-usage.md) — selection flowchart and import examples.
 - [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
 - [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code`.

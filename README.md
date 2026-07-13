@@ -95,7 +95,7 @@ Full documentation lives in [`docs/`](docs/README.md):
 - [Tutorial: build your first agent loop](docs/tutorial-first-loop.md) — 10-minute walkthrough that ends with a real agent fixing a real bug
 - [Python API reference](docs/python-api.md) — every name importable from `eden`
 - [How it works](docs/how-it-works.md) — branch strategies, sandbox lifecycle, iteration loop
-- [Sandbox providers](docs/sandbox-providers.md) — seven provider catalog
+- [Sandbox providers](docs/sandbox-providers.md) — provider matrix and local provider catalog
 - [Agents](docs/agents.md) — six agent factories
 
 ## License
