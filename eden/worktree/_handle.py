@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, status_porcelain
+from eden.worktree._handle_close import close_worktree_handle
 from eden.worktree._handle_protocols import StatusPorcelain, WorktreeRemove
 from eden.worktree._handle_run import (
     create_worktree_sandbox,
@@ -171,26 +172,14 @@ class WorktreeHandle:
         )
 
     def close(self) -> CloseResult:
-        if self._closed[0]:
-            return CloseResult(action="released_only", reason="already-closed")
-        self._closed[0] = True
-        try:
-            if not self.managed:
-                return CloseResult(action="released_only")
-            dirty = bool(
-                self._status_porcelain(
-                    repo_path=self.worktree_path,
-                    timeout=self._git_timeout,
-                ).strip()
-            )
-            if dirty:
-                print(f"eden: leaving dirty worktree on disk at {self.worktree_path}")
-                return CloseResult(action="preserved", reason="dirty")
-            self._worktree_remove(
-                repo_path=self.host_repo_path,
-                worktree_path=self.worktree_path,
-                timeout=self._git_timeout,
-            )
-            return CloseResult(action="removed")
-        finally:
-            self._lock_handle.release()
+        action, reason = close_worktree_handle(
+            closed=self._closed,
+            managed=self.managed,
+            worktree_path=self.worktree_path,
+            host_repo_path=self.host_repo_path,
+            lock_handle=self._lock_handle,
+            git_timeout=self._git_timeout,
+            status_porcelain=self._status_porcelain,
+            worktree_remove=self._worktree_remove,
+        )
+        return CloseResult(action=action, reason=reason)

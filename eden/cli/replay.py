@@ -25,6 +25,8 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 
+from eden.cli._replay_format import format_assistant, format_user, short_input
+
 console = Console()
 
 
@@ -69,67 +71,6 @@ def _resolve_session_path(target: str, *, repo: Path) -> Path:
     return matches[0].resolve()
 
 
-def _format_user(obj: dict[str, Any]) -> str | None:
-    msg = obj.get("message")
-    if not isinstance(msg, dict):
-        return None
-    content = msg.get("content")
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for block in content:
-            if isinstance(block, dict):
-                if block.get("type") == "text":
-                    text = block.get("text")
-                    if isinstance(text, str):
-                        parts.append(text)
-                elif block.get("type") == "tool_result":
-                    raw = block.get("content")
-                    if isinstance(raw, str):
-                        parts.append(f"[tool result] {raw}")
-        if parts:
-            return "\n".join(parts)
-    return None
-
-
-def _format_assistant(obj: dict[str, Any]) -> tuple[list[str], list[tuple[str, dict[str, Any]]]]:
-    """Return (text-blocks, [(tool_name, tool_input), ...]) from an assistant entry."""
-    msg = obj.get("message")
-    text_blocks: list[str] = []
-    tool_uses: list[tuple[str, dict[str, Any]]] = []
-    if not isinstance(msg, dict):
-        return text_blocks, tool_uses
-    content = msg.get("content")
-    if not isinstance(content, list):
-        return text_blocks, tool_uses
-    for block in content:
-        if not isinstance(block, dict):
-            continue
-        btype = block.get("type")
-        if btype == "text":
-            text = block.get("text")
-            if isinstance(text, str):
-                text_blocks.append(text)
-        elif btype == "tool_use":
-            name = block.get("name")
-            tool_input = block.get("input") or {}
-            if isinstance(name, str) and isinstance(tool_input, dict):
-                tool_uses.append((name, tool_input))
-    return text_blocks, tool_uses
-
-
-def _short_input(tool_input: dict[str, Any]) -> str:
-    """Return a one-line summary of a tool_use's input args."""
-    parts = []
-    for k, v in tool_input.items():
-        v_str = str(v)
-        if len(v_str) > 80:
-            v_str = v_str[:77] + "..."
-        parts.append(f"{k}={v_str}")
-    return ", ".join(parts)
-
-
 def replay_command(
     target: str = typer.Argument(..., help="Session path, <branch>/<iter>, or session-id"),
     cwd: Path | None = typer.Option(None, "--cwd", help="Repo containing .eden/sessions"),  # noqa: B008
@@ -165,11 +106,11 @@ def replay_command(
                 if isinstance(model, str):
                     console.print(f"[dim]system: model={model}[/dim]")
             elif entry_type == "user":
-                text = _format_user(obj)
+                text = format_user(obj)
                 if text:
                     console.print(Panel(text, title="user", border_style="cyan", expand=False))
             elif entry_type == "assistant":
-                text_blocks, tool_uses = _format_assistant(obj)
+                text_blocks, tool_uses = format_assistant(obj)
                 for text in text_blocks:
                     console.print(
                         Panel(Markdown(text), title="assistant", border_style="green", expand=False)
@@ -177,7 +118,7 @@ def replay_command(
                 if show_tools:
                     for name, tool_input in tool_uses:
                         console.print(
-                            f"[yellow]→ {name}[/yellow]([dim]{_short_input(tool_input)}[/dim])"
+                            f"[yellow]→ {name}[/yellow]([dim]{short_input(tool_input)}[/dim])"
                         )
             elif entry_type == "result":
                 usage = obj.get("usage")
