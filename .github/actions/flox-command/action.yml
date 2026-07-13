@@ -19,4 +19,10 @@ runs:
       shell: bash
       env:
         EDEN_PYTHON: ${{ inputs.eden-python }}
-      run: flox activate -- ${{ inputs.command }}
+      run: |
+        command_file="${RUNNER_TEMP}/flox-command.sh"
+        cat > "$command_file" <<'EOF'
+        set -euo pipefail
+        ${{ inputs.command }}
+        EOF
+        flox activate -- bash "$command_file"

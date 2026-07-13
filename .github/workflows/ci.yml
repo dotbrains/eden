@@ -28,9 +28,9 @@ jobs:
       - name: pre-commit + pytest (unit + e2e, coverage)
         uses: ./.github/actions/flox-command
         with:
-          command: >-
-            bash -lc 'pre-commit run --all-files --show-diff-on-failure &&
-            pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70'
+          command: |
+            pre-commit run --all-files --show-diff-on-failure
+            pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
 
   # Package build is checked once so release packaging failures are caught
   # before tag publish.
