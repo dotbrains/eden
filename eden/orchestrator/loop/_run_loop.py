@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from contextlib import ExitStack
-from datetime import UTC, datetime
 from pathlib import Path
 
 from eden._types import Commit, Iteration, RunResult, Timeouts
@@ -19,8 +18,8 @@ from eden.orchestrator._setup import (
     SetupResult,
     resolve_target_branch,
 )
-from eden.orchestrator.finalize._finalize import finalize_sandbox
 from eden.orchestrator.loop._loop_cleanup import close_loop_resources
+from eden.orchestrator.loop._loop_finalize import finalize_loop_sandbox
 from eden.orchestrator.loop._loop_iteration import run_loop_iteration
 from eden.orchestrator.loop._loop_resources import prepare_loop_worktree
 from eden.orchestrator.loop._loop_startup import start_loop_runtime
@@ -32,10 +31,6 @@ from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
 from eden.worktree._create import WorktreeHandle
 from eden.worktree._git import head_sha
-
-
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
 
 
 def _run_loop(
@@ -177,15 +172,13 @@ def _run_loop(
                 completion_hit = iteration_result.completion
                 break
 
-        if handle is not None:
-            finalize_sandbox(
-                handle=handle,
-                target_path=wt.host_repo_path,
-                agent_name=agent.name,
-                iteration=len(iterations),
-                timestamp=_utcnow,
-                sink=logger.sink if logger is not None else None,
-            )
+        finalize_loop_sandbox(
+            handle=handle,
+            worktree=wt,
+            agent_name=agent.name,
+            iteration_count=len(iterations),
+            logger=logger,
+        )
 
     finally:
         collected_commits, preserved = close_loop_resources(
