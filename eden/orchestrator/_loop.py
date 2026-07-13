@@ -14,16 +14,16 @@ from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.orchestrator._finalize import finalize_sandbox
 from eden.orchestrator._logging import LoopLogger
-from eden.orchestrator._loop_cleanup import close_loop_resources
-from eden.orchestrator._loop_iteration import run_loop_iteration
-from eden.orchestrator._loop_resources import prepare_loop_worktree
-from eden.orchestrator._loop_startup import start_loop_runtime
 from eden.orchestrator._result import assemble_loop_result
 from eden.orchestrator._session_capture import resolve_session_storage
 from eden.orchestrator._setup import (
     SetupResult,
     resolve_target_branch,
 )
+from eden.orchestrator.loop._loop_cleanup import close_loop_resources
+from eden.orchestrator.loop._loop_iteration import run_loop_iteration
+from eden.orchestrator.loop._loop_resources import prepare_loop_worktree
+from eden.orchestrator.loop._loop_startup import start_loop_runtime
 from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, Mount

@@ -29,7 +29,7 @@ FILE_BUDGETS = (
 )
 
 DIRECTORY_BUDGETS = (
-    DirectoryBudget("eden", 25),
+    DirectoryBudget("eden", 21),
     DirectoryBudget("tests", 12),
 )
 

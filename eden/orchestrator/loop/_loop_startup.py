@@ -15,8 +15,8 @@ from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.logging._config import Logging
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._logging import LoopLogger
-from eden.orchestrator._loop_resources import register_loop_emergency_cleanup
 from eden.orchestrator._setup import SetupResult
+from eden.orchestrator.loop._loop_resources import register_loop_emergency_cleanup
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, Mount
 from eden.tracing import span
