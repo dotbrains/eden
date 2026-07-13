@@ -19,7 +19,9 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import (
     InMemorySpanExporter,
 )
 
-import eden
+from eden.agents import simulated_agent
+from eden.lifecycle import Hook, Hooks, HostHooks
+from eden.orchestrator import run
 from eden.sandboxes.no_sandbox import provider as no_sandbox
 
 pytestmark = pytest.mark.e2e
@@ -71,8 +73,8 @@ def captured_spans() -> Iterator[InMemorySpanExporter]:
 
 
 def test_run_emits_run_span(e2e_git_repo: Path, captured_spans: InMemorySpanExporter) -> None:
-    eden.run(
-        agent=eden.simulated_agent(output="hi\n<promise>COMPLETE</promise>\n"),
+    run(
+        agent=simulated_agent(output="hi\n<promise>COMPLETE</promise>\n"),
         sandbox=no_sandbox(),
         prompt="x",
         max_iterations=1,
@@ -95,8 +97,8 @@ def test_run_emits_run_span(e2e_git_repo: Path, captured_spans: InMemorySpanExpo
 def test_run_emits_sandbox_create_and_agent_exec_spans(
     e2e_git_repo: Path, captured_spans: InMemorySpanExporter
 ) -> None:
-    eden.run(
-        agent=eden.simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
+    run(
+        agent=simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
         sandbox=no_sandbox(),
         prompt="x",
         max_iterations=1,
@@ -110,8 +112,8 @@ def test_run_emits_sandbox_create_and_agent_exec_spans(
 def test_agent_exec_span_carries_iteration_index(
     e2e_git_repo: Path, captured_spans: InMemorySpanExporter
 ) -> None:
-    eden.run(
-        agent=eden.simulated_agent(output="x\n"),  # no completion → 2 iterations
+    run(
+        agent=simulated_agent(output="x\n"),  # no completion → 2 iterations
         sandbox=no_sandbox(),
         prompt="x",
         max_iterations=2,
@@ -127,11 +129,11 @@ def test_agent_exec_span_carries_iteration_index(
 def test_hook_emits_eden_hook_span(
     e2e_git_repo: Path, captured_spans: InMemorySpanExporter
 ) -> None:
-    hooks = eden.Hooks(
-        host=eden.HostHooks(on_worktree_ready=(eden.Hook(cmd="true"),)),
+    hooks = Hooks(
+        host=HostHooks(on_worktree_ready=(Hook(cmd="true"),)),
     )
-    eden.run(
-        agent=eden.simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
+    run(
+        agent=simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
         sandbox=no_sandbox(),
         prompt="x",
         max_iterations=1,
@@ -186,8 +188,8 @@ def test_rest_client_emits_request_span(
 def test_run_span_records_completion_signal_attribute(
     e2e_git_repo: Path, captured_spans: InMemorySpanExporter
 ) -> None:
-    eden.run(
-        agent=eden.simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
+    run(
+        agent=simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
         sandbox=no_sandbox(),
         prompt="x",
         max_iterations=3,

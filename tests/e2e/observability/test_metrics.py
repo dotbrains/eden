@@ -18,7 +18,8 @@ from opentelemetry.sdk.metrics.export import (
     InMemoryMetricReader,
 )
 
-import eden
+from eden.agents import simulated_agent
+from eden.orchestrator import run
 from eden.sandboxes.no_sandbox import provider as no_sandbox
 
 pytestmark = pytest.mark.e2e
@@ -79,8 +80,8 @@ def _names(reader: InMemoryMetricReader) -> list[str]:
 def test_run_emits_run_count_and_duration(
     e2e_git_repo: Path, captured_metrics: InMemoryMetricReader
 ) -> None:
-    eden.run(
-        agent=eden.simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
+    run(
+        agent=simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
         sandbox=no_sandbox(),
         prompt="x",
         max_iterations=1,
@@ -94,8 +95,8 @@ def test_run_emits_run_count_and_duration(
 def test_agent_exec_metric_names(
     e2e_git_repo: Path, captured_metrics: InMemoryMetricReader
 ) -> None:
-    eden.run(
-        agent=eden.simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
+    run(
+        agent=simulated_agent(output="x\n<promise>COMPLETE</promise>\n"),
         sandbox=no_sandbox(),
         prompt="x",
         max_iterations=1,
