@@ -71,4 +71,4 @@ Decodes Copilot JSONL events: `assistant.message_delta` → `text`, `tool.execut
 
 - [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, and `pi`.
 - [Agent CLI adapter](agent-cli-adapter.md) — generic `cli_agent` reference.
-- [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
+- [Agents](agents.md) — factory matrix and authentication.

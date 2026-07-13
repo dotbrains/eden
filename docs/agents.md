@@ -87,42 +87,7 @@ Moved to [`cli_agent`](agent-factories.md#cli_agent).
 
 ## Per-agent Flox runtime
 
-Every CLI-backed factory (`claude_code`, `codex`, `opencode`, `pi`, `cursor`, `copilot`, `cli_agent`) accepts an optional `flox_env`:
-
-```python
-import eden
-
-agent = eden.claude_code(
-    model="claude-opus-4-8",
-    flox_env="envs/claude",  # a dir containing .flox/env/manifest.toml
-)
-```
-
-When `flox_env` is set, the orchestrator runs that agent's CLI inside the declared environment by wrapping its argv:
-
-```
-flox activate -d <flox_env> -- <agent argv...>
-```
-
-so each agent **type** gets its own declared, lockfile-pinned toolchain instead of inheriting whatever happens to be on the host. This mirrors [blacksmith's per-identity Flox env](https://github.com/dotbrains/blacksmith/pull/2): an agent's runtime is part of its definition, not an ambient property of the machine.
-
-Create one with Flox:
-
-```bash
-mkdir -p envs/claude && cd envs/claude && flox init
-flox install nodejs   # whatever the agent CLI needs
-```
-
-**Enforced when present.** Declaring a `flox_env` is opt-in, but once declared it is enforced — Eden validates it once, before the first iteration, and fails fast with [`FloxEnvError`](errors.md#floxenverror) when:
-
-- the directory has no `.flox/env/manifest.toml` (a dangling reference), or
-- the `flox` binary is not on `PATH`.
-
-Agents that don't set `flox_env` are completely unchanged — no wrapping, no validation.
-
-**Escape hatch.** Set `EDEN_ALLOW_NO_FLOX=1` to skip activation when `flox` is unavailable (Windows, or CI legs without Flox). The agent then runs with the host toolchain, as if no `flox_env` were declared. A missing manifest still fails — the escape hatch only covers a missing `flox` binary.
-
-**Sandbox interaction.** For batch runs (`eden.run()`) and `no_sandbox`, the wrap runs on the host. In **interactive** sessions against container providers (`docker`/`podman`), the wrapped argv runs *inside* the container via `interactive_exec`, so `flox` and the env directory must exist in the image. Validation always runs against the host path.
+Moved to [Agent Flox runtime](agent-flox-runtime.md).
 
 ## Authentication
 
@@ -134,6 +99,7 @@ Each agent reads its own credentials from environment variables, per its own doc
 - [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code` arguments and behavior.
 - [Agent CLI factories](agent-cli-factories.md) — CLI adapter arguments, argv shapes, and stream parsers.
 - [Agent CLI editor factories](agent-cli-editor-factories.md) — Cursor and Copilot factory options.
+- [Agent Flox runtime](agent-flox-runtime.md) — per-agent toolchain activation.
 - [Custom providers](custom-providers.md) — for sandbox-side provider authoring (the agent side stays unchanged).
 - [How it works](how-it-works.md) — where `build_command(ctx)` and `parse_stream(line)` plug into the iteration loop.
 - [ADR 0003 — One agent per file](adr/0003-one-agent-per-file.md) — the rationale behind the per-agent subpackage layout.

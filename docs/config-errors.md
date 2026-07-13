@@ -47,7 +47,7 @@ An agent declared a `flox_env` that cannot be activated: the directory has no
 `.flox/env/manifest.toml`, or the `flox` binary is not on `PATH`. Raised before
 the first iteration so a dangling reference surfaces immediately rather than
 mid-run. Default `code="config.flox_env"`. See
-[agents.md](agents.md#per-agent-flox-runtime).
+[Agent Flox runtime](agent-flox-runtime.md).
 
 **Recovery:** point `flox_env` at a directory containing
 `.flox/env/manifest.toml`, install Flox so the env can be activated, or set

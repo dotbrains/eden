@@ -49,7 +49,7 @@ Every CLI-backed factory (`claude_code`, `codex`, `opencode`, `pi`, `cursor`,
 Eden runs that agent's CLI via `flox activate -d <dir> -- <argv>`. A missing
 manifest or `flox` binary raises [`FloxEnvError`](#errors); set
 `EDEN_ALLOW_NO_FLOX=1` to skip activation where Flox is unavailable. See
-[agents.md](agents.md#per-agent-flox-runtime) and ADR-0014.
+[Agent Flox runtime](agent-flox-runtime.md) and ADR-0014.
 
 #### `simulated_agent(...)`
 

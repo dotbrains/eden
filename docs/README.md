@@ -42,7 +42,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Cloud sandbox providers](cloud-sandbox-providers.md) — Daytona and Vercel details.
 - [MicroVM sandbox providers](microvm-sandbox-providers.md) — forkd details.
 - [Sandbox provider usage](sandbox-provider-usage.md) — selection flowchart and import examples.
-- [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
+- [Agents](agents.md) — factory matrix and authentication.
+- [Agent Flox runtime](agent-flox-runtime.md) — per-agent toolchain activation.
 - [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code`.
 - [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, and `cli_agent`.
 - [Agent CLI editor factories](agent-cli-editor-factories.md) — `cursor` and `copilot`.

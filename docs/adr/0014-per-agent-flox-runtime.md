@@ -34,7 +34,7 @@ Design choices:
 
 ## See also
 
-- [`docs/agents.md` — Per-agent Flox runtime](../agents.md#per-agent-flox-runtime) — user-facing reference.
+- [`docs/agent-flox-runtime.md`](../agent-flox-runtime.md) — user-facing reference.
 - [`docs/errors.md` — `FloxEnvError`](../errors.md#floxenverror).
 - `eden/agents/_flox.py` — `flox_wrap` / `validate_flox_env`.
 - Blacksmith PR #2 (the upstream design this mirrors) — https://github.com/dotbrains/blacksmith/pull/2

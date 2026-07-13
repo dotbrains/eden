@@ -132,5 +132,5 @@ Compatibility anchors: <a id="cli_agent"></a>
 - [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code`.
 - [Agent CLI editor factories](agent-cli-editor-factories.md) — `cursor` and `copilot`.
 - [Agent CLI adapter](agent-cli-adapter.md) — generic `cli_agent` reference.
-- [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
+- [Agents](agents.md) — factory matrix and authentication.
 - [Python API: Agents](python-api-agents.md) — public Protocol and session helper reference.
