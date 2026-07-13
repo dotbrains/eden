@@ -1,4 +1,4 @@
-"""Tests for the Display abstraction."""
+"""Tests for ``FileDisplay``."""
 
 from __future__ import annotations
 
@@ -6,84 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from eden import Display, FileDisplay, SilentDisplay
-from eden.display._types import (
-    IntroEntry,
-    SpinnerEntry,
-    StatusEntry,
-    SummaryEntry,
-    TaskLogEntry,
-    TextChunkEntry,
-    TextEntry,
-    ToolCallEntry,
-)
+from eden import FileDisplay
 
 pytestmark = pytest.mark.unit
-
-
-# ---------------------------------------------------------------------------
-# SilentDisplay
-# ---------------------------------------------------------------------------
-
-
-def test_silent_satisfies_protocol() -> None:
-    sink: Display = SilentDisplay()
-    assert sink is not None
-
-
-def test_silent_records_intro_and_status() -> None:
-    s = SilentDisplay()
-    s.intro("Run xyz")
-    s.status("starting", severity="info")
-    s.status("oops", severity="error")
-    assert s.entries == [
-        IntroEntry(title="Run xyz"),
-        StatusEntry(message="starting", severity="info"),
-        StatusEntry(message="oops", severity="error"),
-    ]
-
-
-def test_silent_records_text_tool_call_summary() -> None:
-    s = SilentDisplay()
-    s.text("hello")
-    s.text_chunk(" streamed")
-    s.tool_call("Bash", "ls -la")
-    s.summary("Run done", {"branch": "main", "duration": "5s"})
-    assert isinstance(s.entries[0], TextEntry)
-    assert isinstance(s.entries[1], TextChunkEntry)
-    assert isinstance(s.entries[2], ToolCallEntry)
-    summary = s.entries[3]
-    assert isinstance(summary, SummaryEntry)
-    assert summary.title == "Run done"
-    assert summary.rows == {"branch": "main", "duration": "5s"}
-
-
-def test_silent_spinner_records_entry() -> None:
-    s = SilentDisplay()
-    with s.spinner("loading"):
-        pass
-    assert s.entries == [SpinnerEntry(message="loading")]
-
-
-def test_silent_task_log_collects_messages() -> None:
-    s = SilentDisplay()
-    with s.task_log("compile") as msg:
-        msg("step 1")
-        msg("step 2")
-    assert s.entries == [TaskLogEntry(title="compile", messages=("step 1", "step 2"))]
-
-
-def test_silent_reset_clears_entries() -> None:
-    s = SilentDisplay()
-    s.text("a")
-    s.text("b")
-    s.reset()
-    assert s.entries == []
-
-
-# ---------------------------------------------------------------------------
-# FileDisplay
-# ---------------------------------------------------------------------------
 
 
 def test_file_display_appends_text(tmp_path: Path) -> None:
@@ -94,7 +19,7 @@ def test_file_display_appends_text(tmp_path: Path) -> None:
     content = log.read_text()
     assert "hello" in content
     assert "world" in content
-    assert "Run started" in content  # delimiter
+    assert "Run started" in content
 
 
 def test_file_display_appends_text_chunks_without_newlines(tmp_path: Path) -> None:
@@ -198,18 +123,3 @@ def test_file_display_intro_is_noop(tmp_path: Path) -> None:
     sink.intro("Hello")
     size_after = log.stat().st_size
     assert size_after == size_before
-
-
-# ---------------------------------------------------------------------------
-# Public surface
-# ---------------------------------------------------------------------------
-
-
-def test_top_level_display_exports() -> None:
-    """All three sinks plus the Display protocol are top-level imports."""
-    from eden import Display, FileDisplay, RichDisplay, SilentDisplay
-
-    assert Display is not None
-    assert SilentDisplay is not None
-    assert FileDisplay is not None
-    assert RichDisplay is not None
