@@ -85,9 +85,7 @@ def _run_loop(
     unregister_shutdown: Callable[[], None] | None = None
 
     session_storage = resolve_session_storage(agent)
-    extra_mounts: tuple[Mount, ...] = (
-        session_storage.extra_mounts() if session_storage is not None else ()
-    )
+    extra_mounts: tuple[Mount, ...] = session_storage.extra_mounts() if session_storage else ()
 
     # ExitStack closes the outer ``eden.run`` span in the cleanup block below.
     _stack = ExitStack()

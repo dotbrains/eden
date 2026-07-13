@@ -13,14 +13,17 @@ from eden.abort import AbortSignal
 from eden.agents._context import IterationContext
 from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
-from eden.lifecycle import HookPhase, Hooks
-from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
+from eden.lifecycle import Hooks
 from eden.orchestrator._agent_exec import execute_agent_iteration
 from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._session_capture import capture_iteration_session
 from eden.orchestrator._setup import SetupResult
 from eden.orchestrator.loop._iteration_events import emit_context_window
+from eden.orchestrator.loop._iteration_hooks import (
+    run_iteration_end_hooks,
+    run_iteration_start_hooks,
+)
 from eden.orchestrator.loop._iteration_prompt import render_iteration_prompt
 from eden.providers._protocols import SandboxHandle
 from eden.session._protocol import SessionStorage
@@ -71,17 +74,10 @@ def run_loop_iteration(
 ) -> LoopIterationResult:
     signal.raise_if_aborted()
 
-    run_host_hooks(
-        phase=HookPhase.OnIterationStart,
-        hooks=hooks.host,
-        worktree_path=worktree.worktree_path,
-        env=setup.merged_env,
-        timeouts=timeouts,
-    )
-    run_sandbox_hooks(
-        phase=HookPhase.OnIterationStart,
-        hooks=hooks.sandbox,
+    run_iteration_start_hooks(
+        hooks=hooks,
         handle=handle,
+        worktree=worktree,
         env=setup.merged_env,
         timeouts=timeouts,
     )
@@ -168,17 +164,10 @@ def run_loop_iteration(
         on_event=on_event,
     )
 
-    run_sandbox_hooks(
-        phase=HookPhase.OnIterationEnd,
-        hooks=hooks.sandbox,
+    run_iteration_end_hooks(
+        hooks=hooks,
         handle=handle,
-        env=setup.merged_env,
-        timeouts=timeouts,
-    )
-    run_host_hooks(
-        phase=HookPhase.OnIterationEnd,
-        hooks=hooks.host,
-        worktree_path=worktree.worktree_path,
+        worktree=worktree,
         env=setup.merged_env,
         timeouts=timeouts,
     )
