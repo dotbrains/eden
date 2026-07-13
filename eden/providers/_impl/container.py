@@ -87,9 +87,8 @@ def make_container_provider(
     ``network`` accepts a single runtime network name or a tuple of names. A
     tuple emits one ``--network`` flag per entry.
 
-    ``devices`` is a tuple of ``--device`` specs (e.g. ``("/dev/kvm",)`` or
-    ``("/dev/dri:/dev/dri:rwm",)``) that exposes host devices into the
-    sandbox — common ask for GPU workloads or KVM nesting.
+    ``devices`` exposes host device specs such as ``"/dev/kvm"`` or
+    ``"/dev/dri:/dev/dri:rwm"`` for GPU workloads or KVM nesting.
 
     ``cpus`` bounds the container's CPU usage (passed as ``--cpus <value>``,
     e.g. ``1.5``). Useful when several sandboxes share a host or when a
