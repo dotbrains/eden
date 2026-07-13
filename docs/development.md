@@ -71,10 +71,11 @@ the important coverage:
 The same `pre-commit` config (`.pre-commit-config.yaml`) gates every local
 commit, so format/lint/type errors fail before push instead of after CI. It
 also runs `scripts/check_loc_budget.py`: active source files under `eden/` stay
-at or below 300 lines, test files stay at or below 400 lines, active docs stay
-at or below 1500 lines, source directories stay at or below 30 tracked files,
+at or below 250 lines, test files stay at or below 250 lines, active docs stay
+at or below 500 lines, source directories stay at or below 30 tracked files,
 and test directories stay at or below 150 tracked files. Historical
-`docs/superpowers/plans/` archives are exempt from the active-doc line budget.
+`docs/superpowers/` planning archives are exempt from the active-doc line
+budget.
 
 The `integration` marker runs separately because those tests touch real
 provider services and are capability-gated by the runner environment.
