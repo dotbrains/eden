@@ -20,7 +20,7 @@ jobs:
   # repeated across every Python/platform leg.
   check:
     name: check (py3.11, quality + coverage)
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
@@ -37,7 +37,7 @@ jobs:
   build:
     name: build (py3.11)
     needs: check
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
@@ -59,15 +59,15 @@ jobs:
       matrix:
         include:
           - name: linux py3.12
-            os: blacksmith-2vcpu-ubuntu-2404
+            os: ubuntu-24.04
             eden-python: python3.12
             setup: flox
           - name: macos py3.13
-            os: blacksmith-6vcpu-macos-latest
+            os: macos-15
             eden-python: python3.13
             setup: flox
           - name: windows py3.13
-            os: blacksmith-2vcpu-windows-2025
+            os: windows-2025
             python-version: "3.13"
             setup: pip
     steps:
@@ -103,7 +103,7 @@ jobs:
   integration:
     name: integration (py3.13)
     needs: check
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
