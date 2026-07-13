@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -20,6 +19,7 @@ from eden.sandboxes._remote_exec import (
     snapshot_via_rest_exec,
     upload_tree_via_rest_exec,
 )
+from eden.sandboxes.daytona._exec_payload import build_exec_payload
 from eden.sandboxes.errors import ProviderUnavailable
 
 _DEFAULT_BASE_URL = "https://api.daytona.io"
@@ -135,20 +135,13 @@ class _DaytonaHandle:
         timeout: float | None = None,
         stdin: str | None = None,
     ) -> ExecResult:
-        # REST shell doesn't natively forward stdin. Encode the payload as
-        # base64 and wrap the command so the remote shell decodes and pipes
-        # it on our behalf. This survives JSON transport without escaping
-        # issues and avoids any extra round-trip for a tempfile.
-        if stdin is not None:
-            b64 = base64.b64encode(stdin.encode("utf-8")).decode("ascii")
-            cmd = f"printf '%s' {b64} | base64 -d | ({cmd})"
-        payload: dict[str, object] = {"command": cmd}
-        if cwd is not None:
-            payload["cwd"] = cwd.as_posix()
-        if env:
-            payload["env"] = dict(env)
-        if timeout is not None:
-            payload["timeout"] = timeout
+        payload = build_exec_payload(
+            cmd,
+            cwd=cwd,
+            env=env,
+            timeout=timeout,
+            stdin=stdin,
+        )
         try:
             resp = self.client.post(
                 f"/toolbox/{self.sandbox_id}/process/execute",
