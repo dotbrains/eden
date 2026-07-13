@@ -30,7 +30,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Python API: Extensibility](python-api-extensibility.md) — provider Protocols.
 - [Python API: Display](python-api-display.md) — display sinks and display entries.
 - [Python API: Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
-- [CLI](cli.md) — `eden init`, `eden run`, `eden cost`, `eden clean`, `eden replay`, `eden version`.
+- [CLI](cli.md) — scaffold projects, run templates, and print the installed version.
+- [CLI session tools](cli-session-tools.md) — inspect costs, replay transcripts, and clean runtime artifacts.
 - [GitHub Action](github-action.md) — run an eden iteration loop in any GitHub workflow.
 - [Configuration](configuration.md) — environment variables, `Logging`, `Timeouts`.
 - [Sandbox providers](sandbox-providers.md) — provider matrix and local provider behavior.
