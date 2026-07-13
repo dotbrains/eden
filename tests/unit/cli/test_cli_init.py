@@ -10,10 +10,10 @@ from typer.testing import CliRunner
 
 from eden.cli import init as init_mod
 from eden.cli.main import app
-from tests.unit.cli_init_helpers import strip_ansi
+from tests.unit.cli.cli_init_helpers import strip_ansi
 
 pytestmark = pytest.mark.unit
-pytest_plugins = ["tests.unit.cli_init_fixtures"]
+pytest_plugins = ["tests.unit.cli.cli_init_fixtures"]
 
 
 def test_init_writes_5_files_with_yes_defaults(runner: CliRunner, repo_dir: Path) -> None:

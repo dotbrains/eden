@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 from eden.cli.main import app
 
 pytestmark = pytest.mark.unit
-pytest_plugins = ["tests.unit.cli_init_fixtures"]
+pytest_plugins = ["tests.unit.cli.cli_init_fixtures"]
 
 
 def test_init_simple_loop_template_writes_files(runner: CliRunner, repo_dir: Path) -> None:
