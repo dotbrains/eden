@@ -16,6 +16,7 @@ from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import ExecResult
+from eden.sandboxes._duration import maybe_seconds, seconds
 from eden.sandboxes._sandbox_lifecycle import close_sandbox
 from eden.sandboxes._sandbox_run import validate_sandbox_run_options
 from eden.streaming import StreamEvent
@@ -24,18 +25,6 @@ from eden.worktree._create import CloseResult, WorktreeHandle
 if TYPE_CHECKING:
     from eden.agents._protocol import Agent
     from eden.output import OutputDefinition
-
-
-def _seconds(value: float | timedelta) -> float:
-    if isinstance(value, timedelta):
-        return value.total_seconds()
-    return float(value)
-
-
-def _maybe_seconds(value: float | timedelta | None) -> float | None:
-    if value is None:
-        return None
-    return _seconds(value)
 
 
 @dataclass
@@ -87,7 +76,7 @@ class Sandbox:
             on_line=on_line,
             cwd=cwd if cwd is not None else self.cwd or self.worktree.worktree_path,
             env=env,
-            timeout=_maybe_seconds(timeout),
+            timeout=maybe_seconds(timeout),
             stdin=stdin,
         )
 
@@ -144,9 +133,9 @@ class Sandbox:
             branch_strategy=None,
             max_iterations=max_iterations,
             completion_signal=completion_signal,
-            idle_timeout=_seconds(idle_timeout),
-            idle_warning_interval=_maybe_seconds(idle_warning_interval),
-            completion_timeout=_maybe_seconds(completion_timeout),
+            idle_timeout=seconds(idle_timeout),
+            idle_warning_interval=maybe_seconds(idle_warning_interval),
+            completion_timeout=maybe_seconds(completion_timeout),
             name=name,
             hooks=hooks if hooks is not None else Hooks(),
             timeouts=timeouts if timeouts is not None else Timeouts(),

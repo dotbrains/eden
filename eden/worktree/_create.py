@@ -11,12 +11,11 @@ from eden.providers._types import BranchStrategy
 from eden.worktree._git import (
     _DEFAULT_GIT_TIMEOUT,
     branch_exists,
-    list_worktrees,
-    refresh_from_origin,
     status_porcelain,
 )
 from eden.worktree._handle import CloseResult, WorktreeHandle
 from eden.worktree._lock import acquire_lock
+from eden.worktree._reuse import find_reusable_worktree
 from eden.worktree._worktree_ops import worktree_add, worktree_remove
 from eden.worktree.errors import BranchExists, DirtyHostBlocked
 
@@ -135,34 +134,14 @@ def create_worktree(
             if throw_on_duplicate_worktree:
                 raise BranchExists(branch=branch)
             # Reuse path: find the existing worktree for this branch.
-            for record in list_worktrees(repo_path=host_repo_path, timeout=git_timeout):
-                if record.branch == branch:
-                    lock = acquire_lock(_lock_path_for(host_repo_path, branch))
-                    # Refresh a clean reused worktree from origin so the agent
-                    # never runs against stale code; a dirty tree is reused
-                    # untouched. All refresh failures fall back to plain reuse.
-                    has_changes = bool(
-                        status_porcelain(repo_path=record.path, timeout=git_timeout).strip()
-                    )
-                    if has_changes:
-                        print(
-                            f"eden: reusing worktree at {record.path} "
-                            f"(branch {branch!r}) — worktree has uncommitted changes"
-                        )
-                    else:
-                        refresh_from_origin(
-                            worktree_path=record.path, branch=branch, timeout=git_timeout
-                        )
-                    return WorktreeHandle(
-                        branch=branch,
-                        worktree_path=record.path,
-                        host_repo_path=host_repo_path,
-                        managed=False,
-                        _lock_handle=lock,
-                        _git_timeout=git_timeout,
-                        _status_porcelain=status_porcelain,
-                        _worktree_remove=worktree_remove,
-                    )
+            reusable = find_reusable_worktree(
+                host_repo_path=host_repo_path,
+                branch=branch,
+                lock_path=_lock_path_for(host_repo_path, branch),
+                git_timeout=git_timeout,
+            )
+            if reusable is not None:
+                return reusable
             # Branch exists but isn't checked out by any worktree — we have
             # no on-disk worktree to reuse. Fall through to BranchExists so
             # the caller knows their state is unexpected.
