@@ -125,10 +125,11 @@ Moved to [Agent CLI factories](agent-cli-factories.md#copilot).
 
 ## `cli_agent`
 
-Moved to [Agent CLI factories](agent-cli-factories.md#cli_agent).
+Moved to [Agent CLI adapter](agent-cli-adapter.md#cli_agent).
 
 ## See also
 
-- [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, `cursor`, `copilot`, and `cli_agent`.
+- [Agent CLI factories](agent-cli-factories.md) — `codex`, `opencode`, `pi`, `cursor`, and `copilot`.
+- [Agent CLI adapter](agent-cli-adapter.md) — generic `cli_agent` reference.
 - [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
 - [Python API: Agents](python-api-agents.md) — public Protocol and session helper reference.

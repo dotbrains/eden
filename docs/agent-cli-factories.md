@@ -177,56 +177,13 @@ Decodes Copilot JSONL events: `assistant.message_delta` → `text`, `tool.execut
 
 ## `cli_agent`
 
-```python
-from eden import cli_agent
+Moved to [Agent CLI adapter](agent-cli-adapter.md#cli_agent).
 
-agent = cli_agent(
-    name="my-tool",
-    model="some-model",
-    binary="my-tool",
-    extra_args=("--quiet",),
-)
-```
-
-### Signature
-
-```python
-def cli_agent(
-    *,
-    name: str,
-    model: str,
-    binary: str,
-    build_argv: Callable[[IterationContext], list[str]] | None = None,
-    parse_stream: Callable[[str], StreamEvent | None] | None = None,
-    captures_sessions: bool = False,
-    env: Mapping[str, str] | None = None,
-    extra_args: tuple[str, ...] = (),
-) -> Agent: ...
-```
-
-All arguments are keyword-only.
-
-- `name` — agent identifier (used in `StreamEvent.agent_name`). Required.
-- `model` — informational model identifier. Required (no default).
-- `binary` — executable name resolved through `$PATH` at subprocess-spawn time. Required.
-- `build_argv` — override the default argv; receives the [`IterationContext`](python-api.md#iterationcontext). Default produces `[binary, *extra_args, ctx.prompt]`.
-- `parse_stream` — override the default line-to-`StreamEvent` parser. Default returns `None` (orchestrator falls back to emitting a `text` event per line).
-- `captures_sessions` — opt-in to the session post-processing the orchestrator runs for `claude_code`. Default `False`.
-- `env` — per-agent environment additions. Merged by the orchestrator.
-- `extra_args` — inserted between the binary and the prompt by the default `build_argv`.
-
-### What binary it wraps
-
-Whatever you pass as `binary`. The codex/opencode/pi factories are 5-line wrappers over `cli_agent` that fix `binary=` and a default `model=`.
-
-### When to use
-
-- Any line-streaming CLI agent Eden doesn't ship a dedicated factory for.
-- Integrating internal or experimental agents — wire them up via `cli_agent` first; promote to a dedicated factory once they stabilise.
-- Custom argv shapes or stream parsers (pass `build_argv=` and `parse_stream=`).
+Compatibility anchors: <a id="cli_agent"></a>
 
 ## See also
 
 - [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code`.
+- [Agent CLI adapter](agent-cli-adapter.md) — generic `cli_agent` reference.
 - [Agents](agents.md) — factory matrix, Flox runtimes, and authentication.
 - [Python API: Agents](python-api-agents.md) — public Protocol and session helper reference.
