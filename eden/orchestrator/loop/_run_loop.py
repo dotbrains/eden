@@ -89,9 +89,7 @@ def _run_loop(
         session_storage.extra_mounts() if session_storage is not None else ()
     )
 
-    # Push the outer ``eden.run`` span via ExitStack so we don't have to
-    # re-indent the entire loop body. The span is closed as part of the
-    # try/finally cleanup below.
+    # ExitStack closes the outer ``eden.run`` span in the cleanup block below.
     _stack = ExitStack()
     run_span = enter_run_span(
         _stack,

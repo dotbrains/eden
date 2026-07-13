@@ -12,6 +12,7 @@ from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
+from eden.sandboxes._factory_validation import raise_copy_to_head_worktree_error
 from eden.sandboxes._sandbox import Sandbox
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.worktree._create import WorktreeHandle, create_worktree
@@ -82,19 +83,7 @@ def create_sandbox(
         wt = worktree
         host_repo_path = wt.host_repo_path
         if copy_to_worktree and wt.worktree_path == wt.host_repo_path:
-            from eden.errors import InvalidOptions
-
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(
-                    "copy_to_worktree= is incompatible with a head-style worktree; "
-                    "the worktree IS the host repo, so copying would overwrite it"
-                ),
-                hint=(
-                    "drop copy_to_worktree or carve the worktree with a strategy "
-                    "that uses a separate directory (merge_to_head or named)"
-                ),
-            )
+            raise_copy_to_head_worktree_error(branch_strategy="a head-style worktree")
     else:
         owns_worktree = True
         base = base_branch or "main"
@@ -111,19 +100,7 @@ def create_sandbox(
             raise UnsupportedStrategy(provider=sandbox.name, strategy=strategy.tag)
 
         if copy_to_worktree and strategy.tag == "head":
-            from eden.errors import InvalidOptions
-
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(
-                    "copy_to_worktree= is incompatible with branch_strategy 'head'; "
-                    "the worktree IS the host repo, so copying would overwrite it"
-                ),
-                hint=(
-                    "drop copy_to_worktree or pick a branch strategy that carves "
-                    "a separate worktree (merge_to_head or named)"
-                ),
-            )
+            raise_copy_to_head_worktree_error(branch_strategy="branch_strategy 'head'")
 
         host_repo_path = Path.cwd()
         wt = create_worktree(
