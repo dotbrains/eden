@@ -18,8 +18,8 @@ def test_user_flag_defaults_to_host_uid(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr("eden.providers._impl.container.shutil.which", lambda _b: "/usr/bin/fake")
-    monkeypatch.setattr("eden.providers._impl.container._host_uid", lambda: 1234)
-    monkeypatch.setattr("eden.providers._impl.container._host_gid", lambda: 5678)
+    monkeypatch.setattr("eden.providers._impl.container.host_uid", lambda: 1234)
+    monkeypatch.setattr("eden.providers._impl.container.host_gid", lambda: 5678)
     captured: list[list[str]] = []
 
     def _run(cmd: list[str], *args: object, **kwargs: object) -> MagicMock:

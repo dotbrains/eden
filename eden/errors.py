@@ -44,12 +44,8 @@ class InvalidOptions(ConfigError):
 class FloxEnvError(ConfigError):
     """Raised when an agent declares a ``flox_env`` that cannot be activated.
 
-    Enforced-when-present: an agent that declares a ``flox_env`` must point at a
-    directory containing ``.flox/env/manifest.toml``, and the ``flox`` binary
-    must be on ``PATH``. A dangling reference or a missing ``flox`` binary fails
-    loudly here rather than silently dropping the agent's declared runtime.
-    Set ``EDEN_ALLOW_NO_FLOX=1`` to skip activation when ``flox`` is unavailable
-    (escape hatch for Windows / CI smoke tests).
+    The declared env must contain ``.flox/env/manifest.toml`` and activation
+    requires ``flox`` on ``PATH`` unless ``EDEN_ALLOW_NO_FLOX=1`` is set.
     """
 
     def __init__(
@@ -70,11 +66,7 @@ class FloxEnvError(ConfigError):
 class PromptError(ConfigError):
     """Prompt resolution or expansion failed.
 
-    ``exit_code`` carries the subprocess exit code when the failure was a
-    non-zero exit from a ``!`command`` shell-block expansion, so a caller
-    can branch on it programmatically (e.g. retry only on transient
-    codes) without parsing the message string. ``None`` for non-exec
-    failures like missing files or unknown placeholders.
+    ``exit_code`` is set for non-zero ``!command`` shell-block expansions.
     """
 
     def __init__(

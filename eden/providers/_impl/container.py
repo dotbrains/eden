@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import shutil
 import subprocess
 from collections.abc import Mapping
@@ -11,6 +10,7 @@ from typing import Literal
 
 from eden.providers._helpers import make_bind_mount_provider
 from eden.providers._impl.container_handle import ContainerHandle
+from eden.providers._impl.container_identity import host_gid, host_uid
 from eden.providers._impl.container_image import check_image_uid
 from eden.providers._impl.container_mounts import (
     SANDBOX_HOMEDIR,
@@ -35,18 +35,6 @@ from eden.sandboxes.errors import (
     ProviderUnavailable,
 )
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
-
-
-def _host_uid() -> int:
-    """Return the host's UID, or 1000 on platforms without ``getuid``."""
-    getuid = getattr(os, "getuid", None)
-    return getuid() if getuid is not None else 1000
-
-
-def _host_gid() -> int:
-    """Return the host's GID, or 1000 on platforms without ``getgid``."""
-    getgid = getattr(os, "getgid", None)
-    return getgid() if getgid is not None else 1000
 
 
 def make_container_provider(
@@ -113,8 +101,8 @@ def make_container_provider(
     provider_networks: tuple[str, ...] = (
         () if network is None else (network,) if isinstance(network, str) else network
     )
-    effective_uid: int = container_uid if container_uid is not None else _host_uid()
-    effective_gid: int = container_gid if container_gid is not None else _host_gid()
+    effective_uid: int = container_uid if container_uid is not None else host_uid()
+    effective_gid: int = container_gid if container_gid is not None else host_gid()
 
     def _create(opts: CreateOptions) -> BindMountSandboxHandle:
         if not shutil.which(binary):
