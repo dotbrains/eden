@@ -15,7 +15,7 @@ from eden.orchestrator._session_capture import resolve_session_storage
 from eden.orchestrator._setup import SetupResult
 from eden.orchestrator.loop._loop_cleanup import close_loop_resources
 from eden.orchestrator.loop._loop_finalize import finalize_loop_sandbox
-from eden.orchestrator.loop._loop_iteration import run_loop_iteration
+from eden.orchestrator.loop._loop_iterations import run_loop_iterations
 from eden.orchestrator.loop._loop_resources import (
     prepare_loop_run_resources,
     prepare_loop_worktree,
@@ -122,37 +122,29 @@ def _run_loop(
         flox_env_dir = runtime.flox_env_dir
         assert resources.logger is not None
 
-        for i in range(max_iterations):
-            iteration_result = run_loop_iteration(
-                iteration_index=i,
-                agent=agent,
-                setup=setup,
-                worktree=wt,
-                target_branch=resources.target_branch,
-                handle=resources.handle,
-                hooks=hooks,
-                timeouts=timeouts,
-                name=name,
-                prompt_args=prompt_args,
-                resume_session=resume_session,
-                fork_session=fork_session,
-                flox_env_dir=flox_env_dir,
-                idle_timeout=idle_timeout,
-                idle_warning_interval=idle_warning_interval,
-                completion_signal=completion_signal,
-                completion_timeout=completion_timeout,
-                logger=resources.logger,
-                on_event=on_event,
-                signal=signal,
-                stdout_chunks=resources.stdout_chunks,
-                session_storage=session_storage,
-                log_path=log_path,
-            )
-            resources.rendered_prompt = iteration_result.rendered_prompt
-            resources.iterations.append(iteration_result.iteration)
-            if iteration_result.completion is not None:
-                resources.completion_hit = iteration_result.completion
-                break
+        run_loop_iterations(
+            max_iterations=max_iterations,
+            agent=agent,
+            setup=setup,
+            worktree=wt,
+            resources=resources,
+            hooks=hooks,
+            timeouts=timeouts,
+            name=name,
+            prompt_args=prompt_args,
+            resume_session=resume_session,
+            fork_session=fork_session,
+            flox_env_dir=flox_env_dir,
+            idle_timeout=idle_timeout,
+            idle_warning_interval=idle_warning_interval,
+            completion_signal=completion_signal,
+            completion_timeout=completion_timeout,
+            logger=resources.logger,
+            on_event=on_event,
+            signal=signal,
+            session_storage=session_storage,
+            log_path=log_path,
+        )
 
         finalize_loop_sandbox(
             handle=resources.handle,

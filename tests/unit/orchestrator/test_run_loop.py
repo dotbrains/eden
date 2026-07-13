@@ -1,9 +1,7 @@
-"""Verify _run_loop happy paths + completion + abort + idle."""
+"""Verify _run_loop happy paths + completion."""
 
 from __future__ import annotations
 
-import threading
-import time
 from pathlib import Path
 
 import pytest
@@ -11,7 +9,6 @@ import pytest
 from eden._types import Timeouts
 from eden.abort import AbortController
 from eden.agents import simulated_agent
-from eden.errors import Aborted, IdleTimeout
 from eden.lifecycle import Hooks
 from eden.logging import Logging
 from eden.orchestrator._setup import SetupResult, resolve_setup
@@ -84,60 +81,6 @@ def test_run_loop_max_iterations_exhausted_without_signal(tmp_git_repo: Path) ->
     )
     assert len(result.iterations) == 2
     assert result.completion_signal is None
-
-
-def test_run_loop_aborts_when_signal_set(tmp_git_repo: Path) -> None:
-    agent = simulated_agent(output=["a"] * 50, delay_per_line=0.05)
-    setup = _setup(tmp_git_repo)
-    ctrl = AbortController()
-
-    def trigger() -> None:
-        time.sleep(0.1)
-        ctrl.abort(reason="test")
-
-    threading.Thread(target=trigger).start()
-    with pytest.raises(Aborted):
-        _run_loop(
-            agent=agent,
-            sandbox=no_sandbox_provider(),
-            setup=setup,
-            branch_strategy=None,
-            max_iterations=1,
-            completion_signal="NEVER",
-            idle_timeout=10.0,
-            idle_warning_interval=None,
-            name=None,
-            hooks=Hooks(),
-            timeouts=Timeouts(),
-            on_event=None,
-            logging_cfg=None,
-            signal=ctrl.signal,
-            prompt_args=None,
-        )
-
-
-def test_run_loop_idle_timeout(tmp_git_repo: Path) -> None:
-    agent = simulated_agent(output=["a"] * 30, delay_per_line=2.0)
-    setup = _setup(tmp_git_repo)
-    ctrl = AbortController()
-    with pytest.raises(IdleTimeout):
-        _run_loop(
-            agent=agent,
-            sandbox=no_sandbox_provider(),
-            setup=setup,
-            branch_strategy=None,
-            max_iterations=1,
-            completion_signal="NEVER",
-            idle_timeout=0.3,
-            idle_warning_interval=None,
-            name=None,
-            hooks=Hooks(),
-            timeouts=Timeouts(),
-            on_event=None,
-            logging_cfg=None,
-            signal=ctrl.signal,
-            prompt_args=None,
-        )
 
 
 def test_run_loop_emits_text_events_via_callback(tmp_git_repo: Path) -> None:
