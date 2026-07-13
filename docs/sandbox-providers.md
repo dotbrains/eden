@@ -2,8 +2,6 @@
 
 Eden ships seven sandbox providers covering local, isolated, cloud, and microVM execution. Each is a `provider()` factory that returns a `SandboxProvider` instance to pass into [`run(sandbox=...)`](python-api.md#run).
 
----
-
 ## Provider matrix
 
 | Provider | Kind | Mounts host? | Network? | Side effects on host? | When to use |
@@ -23,7 +21,6 @@ Each provider's `kind` (`"none"`, `"bind_mount"`, or `"isolated"`) controls how 
 Moved to [Sandbox provider usage](sandbox-provider-usage.md#choosing-a-provider).
 
 ## Importing
-
 Moved to [Sandbox provider usage](sandbox-provider-usage.md#importing).
 
 ## `no_sandbox`
