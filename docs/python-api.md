@@ -15,7 +15,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 ## Detailed Reference
 
 - [Surface](python-api-surface.md) — top-level public export list.
-- [Entry points](python-api-entrypoints.md) — `run`, `interactive`, and async wrappers.
+- [Entry points](python-api-entrypoints.md) — `run` and `interactive`.
+- [Async API](python-api-async.md) — `eden.aio` wrappers for async callers.
 - [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
 - [Types](python-api-types.md) — configuration dataclasses.
 - [Results](python-api-results.md) — result dataclasses.
@@ -38,7 +39,7 @@ See [Python API surface](python-api-surface.md) for the full top-level export li
 Existing deep links to this file land on the anchors below. Follow each link for the full reference.
 
 - <a id="entry-points"></a><a id="run"></a>[`run(...)`](python-api-entrypoints.md#run)
-- <a id="async-api"></a>[Async API](python-api-entrypoints.md#async-api)
+- <a id="async-api"></a>[Async API](python-api-async.md)
 - <a id="interactive"></a>[`interactive(...)`](python-api-entrypoints.md#interactive)
 - <a id="interactiveresult"></a>[`InteractiveResult`](python-api-entrypoints.md#interactiveresult)
 - <a id="create_sandbox"></a>[`create_sandbox(...)`](python-api-sandboxes.md#create_sandbox)

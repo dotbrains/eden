@@ -15,7 +15,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 
 - [Python API](python-api.md) — canonical index for every name importable from `eden`.
 - [Python API: Surface](python-api-surface.md) — top-level public export list.
-- [Python API: Entry points](python-api-entrypoints.md) — `run`, `interactive`, and async wrappers.
+- [Python API: Entry points](python-api-entrypoints.md) — `run` and `interactive`.
+- [Python API: Async](python-api-async.md) — `eden.aio` wrappers for async callers.
 - [Python API: Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
 - [Python API: Types](python-api-types.md) — configuration dataclasses.
 - [Python API: Results](python-api-results.md) — result dataclasses.
@@ -43,6 +44,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Prompts](prompts.md) — `PromptSource`, args, shell blocks, built-ins.
 - [Templates](templates.md) — local `eden init` template reference.
 - [Blank template](template-blank.md) — minimal scaffold files and customization.
+- [Plan/implement/review template](template-plan-implement-review.md) — planner, implementer, reviewer scaffold.
 - [GitHub agent workflow template](github-agent-workflow-template.md) — label-driven GitHub Actions scaffold.
 - [Errors](errors.md) — the `EdenError` hierarchy and top-level public errors.
 - [Top-level errors](top-level-errors.md) — top-level `EdenError` subclasses.

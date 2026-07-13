@@ -6,6 +6,7 @@ for the canonical index and compatibility anchors.
 ## Entry Points
 
 - [`run`](python-api-entrypoints.md#run)
+- [Async API](python-api-async.md)
 - [`interactive`](python-api-entrypoints.md#interactive)
 - [`InteractiveResult`](python-api-entrypoints.md#interactiveresult)
 - [`create_sandbox`](python-api-sandboxes.md#create_sandbox)
