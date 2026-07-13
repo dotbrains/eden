@@ -33,7 +33,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 ## Detailed Reference
 
 - [Entry points](python-api-entrypoints.md) — `run`, `interactive`, caller-managed `Sandbox`, and `create_worktree`.
-- [Types and streaming](python-api-types.md) — configuration dataclasses, result types, structured output, and `StreamEvent`.
+- [Types and streaming](python-api-types.md) — configuration dataclasses, result types, and `StreamEvent`.
+- [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
 - [Agents and sessions](python-api-agents.md) — agent Protocols, built-in factories, transcript capture, and session helpers.
 - [Extensibility](python-api-extensibility.md) — hooks, cancellation, provider Protocols, and display sinks.
 - [Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
@@ -67,8 +68,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 ### Structured Output and Streaming
 
-- [`Output`](python-api-types.md#output)
-- [`OutputDefinition`](python-api-types.md#outputdefinition)
+- [`Output`](python-api-output.md#output)
+- [`OutputDefinition`](python-api-output.md#outputdefinition)
 - [`StreamEvent`](python-api-types.md#streamevent)
 
 ### Agents and Sessions
@@ -171,7 +172,7 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="create_worktree"></a>[`create_worktree(...)`](python-api-entrypoints.md#create_worktree)
 - <a id="configuration-types"></a><a id="timeouts"></a><a id="logging"></a><a id="mount"></a><a id="branchstrategy"></a>[Configuration types](python-api-types.md#configuration-types)
 - <a id="result-types"></a><a id="closeresult"></a><a id="runresult"></a><a id="iteration"></a><a id="commit"></a><a id="usage"></a><a id="finalizeresult"></a>[Result types](python-api-types.md#result-types)
-- <a id="structured-output"></a><a id="output"></a><a id="outputdefinition"></a>[Structured output](python-api-types.md#structured-output)
+- <a id="structured-output"></a><a id="output"></a><a id="outputdefinition"></a>[Structured output](python-api-output.md#structured-output)
 - <a id="streaming"></a><a id="streamevent"></a>[Streaming](python-api-types.md#streaming)
 - <a id="agents"></a><a id="agent-protocol"></a><a id="iterationcontext"></a><a id="factories"></a><a id="session-storage"></a><a id="claudesessionstorage"></a><a id="codexsessionstorage"></a><a id="pisessionstorage"></a><a id="session-lookup-helpers"></a><a id="transfer_session"></a>[Agents and sessions](python-api-agents.md#agents)
 - <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a>[Lifecycle hooks](python-api-extensibility.md#lifecycle-hooks)

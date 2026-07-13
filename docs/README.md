@@ -14,7 +14,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 
 - [Python API](python-api.md) — canonical index for every name importable from `eden`.
 - [Python API: Entry points](python-api-entrypoints.md) — `run`, `interactive`, caller-managed `Sandbox`, and worktree creation.
-- [Python API: Types and streaming](python-api-types.md) — configuration, results, structured output, and stream events.
+- [Python API: Types and streaming](python-api-types.md) — configuration, results, and stream events.
+- [Python API: Structured output](python-api-output.md) — `Output`, schema validation, and retries.
 - [Python API: Agents and sessions](python-api-agents.md) — agent factories, Protocols, and transcript helpers.
 - [Python API: Extensibility](python-api-extensibility.md) — hooks, cancellation, provider Protocols, and display.
 - [Python API: Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
