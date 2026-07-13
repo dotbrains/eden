@@ -18,24 +18,11 @@ satisfying this Protocol. Prefer [`make_bind_mount_provider`](#make_bind_mount_p
 or [`make_isolated_provider`](#make_isolated_provider) over a bespoke class.
 
 All four Protocols, both factories, and every supporting type are re-exported
-from the top-level `eden` package, so out-of-tree providers can import them
-without depending on `eden.providers._protocols` directly:
-
-```python
-from eden import (
-    BindMountSandboxHandle,
-    BranchStrategy,
-    CreateOptions,
-    ExecResult,
-    FinalizeResult,
-    IsolatedSandboxHandle,
-    Mount,
-    SandboxHandle,
-    SandboxProvider,
-    make_bind_mount_provider,
-    make_isolated_provider,
-)
-```
+from `eden`, so out-of-tree providers can avoid private imports. The commonly
+used names are `SandboxProvider`, `SandboxHandle`, `BindMountSandboxHandle`,
+`IsolatedSandboxHandle`, `CreateOptions`, `ExecResult`, `FinalizeResult`,
+`Mount`, `BranchStrategy`, `make_bind_mount_provider`, and
+`make_isolated_provider`.
 
 `kind` controls the orchestrator's behavior:
 
