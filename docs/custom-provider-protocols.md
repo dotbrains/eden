@@ -6,38 +6,10 @@ providers. See [Custom providers](custom-providers.md) for when to write one and
 
 ## Protocol surface
 
-Eden defines four Protocols in `eden/providers/_protocols.py`. Three are
-runtime-checkable; the fourth (`SandboxProvider`) is the factory contract.
-
-```mermaid
-classDiagram
-    class SandboxProvider {
-        <<Protocol>>
-        +name: str
-        +kind: bind_mount|isolated|none
-        +supports_strategy(strategy) bool
-        +create(opts) SandboxHandle
-    }
-    class SandboxHandle {
-        <<Protocol>>
-        +worktree_path: Path
-        +exec(cmd, on_line, ...) ExecResult
-        +copy_file_in(src, dst)
-        +copy_file_out(src, dst)
-        +close()
-    }
-    class BindMountSandboxHandle {
-        <<Protocol>>
-    }
-    class IsolatedSandboxHandle {
-        <<Protocol>>
-        +finalize(target) FinalizeResult
-    }
-
-    SandboxHandle <|-- BindMountSandboxHandle
-    SandboxHandle <|-- IsolatedSandboxHandle
-    SandboxProvider ..> SandboxHandle : create&#40;&#41; returns
-```
+Eden defines four Protocols in `eden/providers/_protocols.py`:
+`SandboxProvider` creates a `SandboxHandle`; `BindMountSandboxHandle` and
+`IsolatedSandboxHandle` specialize that handle shape, with isolated handles
+adding `finalize(target)`.
 
 ### `SandboxProvider`
 
