@@ -1,7 +1,8 @@
 # Python API: Types
 
 Detailed reference for configuration and result dataclasses. See
-[Python API: Streaming](python-api-streaming.md) for `StreamEvent` and
+[Python API: Logging](python-api-logging.md) for `Logging`,
+[Python API: Streaming](python-api-streaming.md) for `StreamEvent`, and
 [Python API](python-api.md) for the canonical public API index.
 
 ---
@@ -30,38 +31,9 @@ class Timeouts:
 
 ### `Logging`
 
-Log sink for `StreamEvent`s — a file (default) or the host process's stdout. For the file sink, each call to `run()` opens the file in append mode and prepends a `--- Run started: <UTC ISO ts> ---` delimiter so a shared log file remains readable.
+Moved to [Python API: Logging](python-api-logging.md#logging).
 
-```python
-@dataclass(frozen=True)
-class Logging:
-    type: Literal["file", "stdout"]
-    path: Path | None = None
-    level: Literal["debug", "info", "warn", "error"] = "info"
-    on_agent_stream_event: Callable[[StreamEvent], None] | None = None
-    verbose: bool = False
-
-    @staticmethod
-    def file(
-        path: str | Path,
-        level: ... = "info",
-        on_agent_stream_event: Callable[[StreamEvent], None] | None = None,
-        verbose: bool = False,
-    ) -> Logging: ...
-
-    @staticmethod
-    def stdout(
-        level: ... = "info",
-        on_agent_stream_event: Callable[[StreamEvent], None] | None = None,
-        verbose: bool = False,
-    ) -> Logging: ...
-```
-
-Use `Logging.file("run.log")` to capture every event the orchestrator emits. Use `Logging.stdout()` to write the same formatted, redacted lines to the host process's stdout instead — useful in CI, where the job log is the natural destination; `RunResult.log_file_path` is `None` for stdout-logged runs. Constructing `Logging(type="file")` without a `path` (or `type="stdout"` with one) raises `InvalidOptions`.
-
-`on_agent_stream_event` (optional) is invoked for every agent-derived event (`text`, `tool_call`, `usage`, `session_id`, and — when `verbose` — `raw`) in addition to sink output. Intended for forwarding the agent's stream to external observability. Idle warnings and orchestrator-internal text are NOT forwarded — use the top-level `on_event` argument to `run()` for those. Errors raised by the callback are swallowed so a broken forwarder cannot kill the run.
-
-`verbose` (optional, default `False`) additionally surfaces each literal, unparsed agent stdout line as a `StreamEvent(type="raw")` — written to the log alongside the human-readable events and forwarded through `on_agent_stream_event`. Lets external observability see the bytes a parser discards (e.g. the JSON envelope behind a `claude --output-format stream-json` line).
+Compatibility anchor: <a id="logging"></a>
 
 ### `Mount`
 
