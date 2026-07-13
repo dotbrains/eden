@@ -28,10 +28,7 @@ from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
 from eden.worktree._create import WorktreeHandle
 
-# Slack subtracted from an iteration's start time before scoping the subagent
-# transcript sweep, to tolerate second-granularity mtime truncation on some
-# filesystems (a file written at start+0.4s can report an mtime floored below
-# the fractional start instant).
+# Slack for mtime truncation when scoping subagent transcript capture.
 _SIDECHAIN_MTIME_SLACK = 2.0
 
 
