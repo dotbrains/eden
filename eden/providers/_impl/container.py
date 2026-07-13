@@ -11,6 +11,7 @@ from typing import Literal
 
 from eden.providers._helpers import make_bind_mount_provider
 from eden.providers._impl.container_handle import ContainerHandle
+from eden.providers._impl.container_image import check_image_uid
 from eden.providers._impl.container_mounts import (
     SANDBOX_HOMEDIR,
     SelinuxLabel,
@@ -31,42 +32,11 @@ from eden.providers._types import CreateOptions, Mount
 from eden.sandboxes.errors import (
     ContainerStartFailed,
     ImageNotFound,
-    ImageUidMismatch,
     ProviderUnavailable,
 )
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
 _ContainerHandle = ContainerHandle
-
-
-def _check_image_uid(*, binary: str, image: str, expected_uid: int) -> None:
-    """Verify the image's USER UID matches the expected one.
-
-    Skips silently when the image has no USER directive or a non-numeric one
-    (e.g. ``USER agent``) — in those cases UID is set at runtime via ``--user``.
-    Raises ``ImageUidMismatch`` for a numeric mismatch.
-    """
-    proc = subprocess.run(
-        [binary, "image", "inspect", image, "--format", "{{.Config.User}}"],
-        capture_output=True,
-        text=True,
-    )
-    if proc.returncode != 0:
-        return  # ImageNotFound is raised by the caller's earlier inspect
-    raw = (proc.stdout or "").strip()
-    if not raw:
-        return
-    uid_part = raw.split(":", 1)[0]
-    try:
-        image_uid = int(uid_part)
-    except ValueError:
-        return
-    if image_uid != expected_uid:
-        raise ImageUidMismatch(
-            image=image,
-            image_uid=image_uid,
-            expected_uid=expected_uid,
-        )
 
 
 def _host_uid() -> int:
@@ -162,7 +132,12 @@ def make_container_provider(
         if inspect.returncode != 0:
             raise ImageNotFound(image=resolved_image, stderr=inspect.stderr)
 
-        _check_image_uid(binary=binary, image=resolved_image, expected_uid=effective_uid)
+        check_image_uid(
+            binary=binary,
+            image=resolved_image,
+            expected_uid=effective_uid,
+            run=subprocess.run,
+        )
 
         mount_map = build_mount_map(
             worktree_path=opts.worktree_path,
