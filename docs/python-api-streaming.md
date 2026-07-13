@@ -1,7 +1,8 @@
 # Python API: Streaming
 
 Detailed reference for stream events surfaced by callbacks and logs. See
-[Python API: Types](python-api-types.md) for configuration and result dataclasses.
+[Python API: Types](python-api-types.md) for configuration dataclasses and
+[Python API: Results](python-api-results.md) for result dataclasses.
 
 ## Streaming
 

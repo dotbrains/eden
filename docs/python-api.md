@@ -16,7 +16,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 - [Entry points](python-api-entrypoints.md) — `run`, `interactive`, and async wrappers.
 - [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
-- [Types](python-api-types.md) — configuration and result dataclasses.
+- [Types](python-api-types.md) — configuration dataclasses.
+- [Results](python-api-results.md) — result dataclasses.
 - [Logging](python-api-logging.md) — stream-event sink configuration.
 - [Streaming](python-api-streaming.md) — `StreamEvent` callbacks and log events.
 - [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
@@ -47,12 +48,12 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 ### Results
 
-- [`CloseResult`](python-api-types.md#closeresult)
-- [`RunResult`](python-api-types.md#runresult)
-- [`Iteration`](python-api-types.md#iteration)
-- [`Commit`](python-api-types.md#commit)
-- [`Usage`](python-api-types.md#usage)
-- [`FinalizeResult`](python-api-types.md#finalizeresult)
+- [`CloseResult`](python-api-results.md#closeresult)
+- [`RunResult`](python-api-results.md#runresult)
+- [`Iteration`](python-api-results.md#iteration)
+- [`Commit`](python-api-results.md#commit)
+- [`Usage`](python-api-results.md#usage)
+- [`FinalizeResult`](python-api-results.md#finalizeresult)
 
 ### Structured Output and Streaming
 
@@ -160,7 +161,7 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="create_worktree"></a>[`create_worktree(...)`](python-api-sandboxes.md#create_worktree)
 - <a id="configuration-types"></a><a id="timeouts"></a><a id="mount"></a><a id="branchstrategy"></a>[Configuration types](python-api-types.md#configuration-types)
 - <a id="logging"></a>[Logging](python-api-logging.md#logging)
-- <a id="result-types"></a><a id="closeresult"></a><a id="runresult"></a><a id="iteration"></a><a id="commit"></a><a id="usage"></a><a id="finalizeresult"></a>[Result types](python-api-types.md#result-types)
+- <a id="result-types"></a><a id="closeresult"></a><a id="runresult"></a><a id="iteration"></a><a id="commit"></a><a id="usage"></a><a id="finalizeresult"></a>[Result types](python-api-results.md#result-types)
 - <a id="structured-output"></a><a id="output"></a><a id="outputdefinition"></a>[Structured output](python-api-output.md#structured-output)
 - <a id="streaming"></a><a id="streamevent"></a>[Streaming](python-api-streaming.md#streaming)
 - <a id="agents"></a><a id="agent-protocol"></a><a id="iterationcontext"></a><a id="factories"></a>[Agents](python-api-agents.md#agents)

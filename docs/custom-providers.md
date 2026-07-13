@@ -22,12 +22,12 @@ Compatibility anchors: <a id="sandboxprovider"></a><a id="sandboxhandle"></a><a 
 - [`SandboxHandle`](custom-provider-protocols.md#sandboxhandle)
 - [`BindMountSandboxHandle`](custom-provider-protocols.md#bindmountsandboxhandle)
 - [`IsolatedSandboxHandle`](custom-provider-protocols.md#isolatedsandboxhandle)
-- [`CreateOptions`](custom-provider-protocols.md#createoptions)
-- [`ExecResult`](custom-provider-protocols.md#execresult)
-- [`FinalizeResult`](custom-provider-protocols.md#finalizeresult)
-- [`Mount`, `BranchStrategy`](custom-provider-protocols.md#mount-branchstrategy)
-- [`make_bind_mount_provider`](custom-provider-protocols.md#make_bind_mount_provider)
-- [`make_isolated_provider`](custom-provider-protocols.md#make_isolated_provider)
+- [`CreateOptions`](custom-provider-reference.md#createoptions)
+- [`ExecResult`](custom-provider-reference.md#execresult)
+- [`FinalizeResult`](custom-provider-reference.md#finalizeresult)
+- [`Mount`, `BranchStrategy`](custom-provider-reference.md#mount-branchstrategy)
+- [`make_bind_mount_provider`](custom-provider-reference.md#make_bind_mount_provider)
+- [`make_isolated_provider`](custom-provider-reference.md#make_isolated_provider)
 
 ## Skeleton: a custom isolated provider
 
@@ -44,7 +44,8 @@ Compatibility anchors:
 ## See also
 
 - [Python API: `IsolatedSandboxHandle`](python-api.md#isolatedsandboxhandle) — public re-export consumers can import from the top-level package.
-- [Custom provider protocols](custom-provider-protocols.md) — Protocol, type, and factory reference.
+- [Custom provider protocols](custom-provider-protocols.md) — Protocol reference.
+- [Custom provider reference](custom-provider-reference.md) — supporting types and factory helpers.
 - [Custom provider guide](custom-provider-guide.md) — skeleton implementation, in-tree examples, and provider conventions.
 - [Sandbox providers](sandbox-providers.md) — the in-tree provider catalog and matrix.
 - [How it works](how-it-works.md) — where `create()`, `exec()`, and `finalize()` plug into the iteration loop.

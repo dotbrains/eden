@@ -15,7 +15,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Python API](python-api.md) — canonical index for every name importable from `eden`.
 - [Python API: Entry points](python-api-entrypoints.md) — `run`, `interactive`, and async wrappers.
 - [Python API: Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
-- [Python API: Types](python-api-types.md) — configuration and result dataclasses.
+- [Python API: Types](python-api-types.md) — configuration dataclasses.
+- [Python API: Results](python-api-results.md) — result dataclasses.
 - [Python API: Logging](python-api-logging.md) — stream-event sink configuration.
 - [Python API: Streaming](python-api-streaming.md) — stream events and callbacks.
 - [Python API: Structured output](python-api-output.md) — `Output`, schema validation, and retries.
@@ -49,7 +50,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 
 - [How it works](how-it-works.md) — branch strategies, worktrees, sandbox lifecycle, iteration loop.
 - [Custom providers](custom-providers.md) — `SandboxProvider` and handle Protocol reference.
-- [Custom provider protocols](custom-provider-protocols.md) — Protocol, type, and factory reference.
+- [Custom provider protocols](custom-provider-protocols.md) — Protocol reference.
+- [Custom provider reference](custom-provider-reference.md) — provider types and factory helpers.
 - [Custom provider guide](custom-provider-guide.md) — skeleton implementation, in-tree examples, and conventions.
 - [Development](development.md) — repo layout, test markers, lint and type gates, contributing.
 

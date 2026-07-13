@@ -44,7 +44,7 @@ with eden.create_worktree(branch="eden/feature/x") as wt:
 
 `timeouts` caps the one-time carve's git plumbing via `Timeouts.git_setup` (reused by `Sandbox.close()` for the teardown `git worktree remove`). Per-run deadlines like `iteration_step` are passed separately to each [`Sandbox.run(timeouts=...)`](#sandboxrun).
 
-The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus `.exec(...)` / `.run(...)` / `.resume(...)` / `.fork(...)` methods. `Sandbox.close()` returns a [`CloseResult`](python-api-types.md#closeresult): managed sandboxes report whether their worktree was removed or preserved; caller-owned worktree sandboxes report `released_only`. It also doubles as a context manager: `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
+The returned `Sandbox` is a dataclass with `.worktree`, `.handle`, `.sandbox_provider`, `.cwd`, `.owns_worktree`, plus `.exec(...)` / `.run(...)` / `.resume(...)` / `.fork(...)` methods. `Sandbox.close()` returns a [`CloseResult`](python-api-results.md#closeresult): managed sandboxes report whether their worktree was removed or preserved; caller-owned worktree sandboxes report `released_only`. It also doubles as a context manager: `with create_sandbox(...) as s:` closes the handle, and the worktree too when the sandbox carved it itself (`owns_worktree=True`; `False` for caller-provided worktrees).
 
 ## `Sandbox.exec(...)`
 
