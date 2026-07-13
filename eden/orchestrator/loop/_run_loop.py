@@ -24,12 +24,12 @@ from eden.orchestrator.loop._loop_cleanup import close_loop_resources
 from eden.orchestrator.loop._loop_iteration import run_loop_iteration
 from eden.orchestrator.loop._loop_resources import prepare_loop_worktree
 from eden.orchestrator.loop._loop_startup import start_loop_runtime
+from eden.orchestrator.loop._run_span import enter_run_span
 from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import BranchStrategy, Mount
 from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
-from eden.tracing import span
 from eden.worktree._create import WorktreeHandle
 from eden.worktree._git import head_sha
 
@@ -112,19 +112,13 @@ def _run_loop(
     # re-indent the entire loop body. The span is closed as part of the
     # try/finally cleanup below.
     _stack = ExitStack()
-    run_span = _stack.enter_context(
-        span(
-            "eden.run",
-            attributes={
-                "agent.name": agent.name,
-                "agent.model": getattr(agent, "model", None),
-                "sandbox.name": sandbox.name,
-                "sandbox.kind": sandbox.kind,
-                "branch": wt.branch,
-                "max_iterations": max_iterations,
-                "caller_managed": caller_managed,
-            },
-        )
+    run_span = enter_run_span(
+        _stack,
+        agent=agent,
+        sandbox=sandbox,
+        worktree=wt,
+        max_iterations=max_iterations,
+        caller_managed=caller_managed,
     )
 
     try:

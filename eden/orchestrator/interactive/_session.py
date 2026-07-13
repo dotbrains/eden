@@ -15,6 +15,7 @@ from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.orchestrator._setup import resolve_target_branch
 from eden.orchestrator.interactive._interactive_cleanup import close_interactive_resources
+from eden.orchestrator.interactive._interactive_cwd import resolve_interactive_cwd
 from eden.orchestrator.interactive._interactive_exec import (
     build_interactive_argv,
     run_interactive_exec,
@@ -104,24 +105,7 @@ def interactive(
         copy_to_worktree=copy_to_worktree,
     )
 
-    cwd_path = (
-        _existing_worktree.host_repo_path
-        if _existing_worktree is not None
-        else Path(cwd)
-        if cwd is not None
-        else Path.cwd()
-    )
-    if not cwd_path.exists() or not cwd_path.is_dir():
-        from eden.errors import CwdError
-
-        raise CwdError(message=f"cwd does not exist or is not a directory: {cwd_path}")
-    if not (cwd_path / ".git").exists():
-        from eden.errors import CwdError
-
-        raise CwdError(
-            message=f"cwd is not a git repository: {cwd_path}",
-            hint="run `git init` or pass a different cwd",
-        )
+    cwd_path = resolve_interactive_cwd(existing_worktree=_existing_worktree, cwd=cwd)
 
     prompt_text = ""
     prompt_is_literal = False
