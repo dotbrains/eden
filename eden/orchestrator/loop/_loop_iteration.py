@@ -10,7 +10,6 @@ from pathlib import Path
 
 from eden._types import Iteration, Timeouts
 from eden.abort import AbortSignal
-from eden.agents._context import IterationContext
 from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
@@ -19,6 +18,7 @@ from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._session_capture import capture_iteration_session
 from eden.orchestrator._setup import SetupResult
+from eden.orchestrator.loop._agent_stream import build_agent_command
 from eden.orchestrator.loop._iteration_events import emit_context_window
 from eden.orchestrator.loop._iteration_hooks import (
     run_iteration_end_hooks,
@@ -89,17 +89,16 @@ def run_loop_iteration(
         target_branch=target_branch,
         handle=handle,
     )
-    argv = agent.build_command(
-        IterationContext(
-            iteration=iteration_index,
-            prompt=rendered_prompt,
-            sandbox_handle=handle,
-            worktree_path=worktree.worktree_path,
-            branch=worktree.branch,
-            name=name,
-            resume_session=resume_session,
-            fork_session=fork_session,
-        )
+    argv = build_agent_command(
+        agent=agent,
+        iteration=iteration_index,
+        rendered_prompt=rendered_prompt,
+        handle=handle,
+        worktree_path=worktree.worktree_path,
+        branch=worktree.branch,
+        name=name,
+        resume_session=resume_session,
+        fork_session=fork_session,
     )
     argv = flox_wrap(argv, flox_env=flox_env_dir)
 

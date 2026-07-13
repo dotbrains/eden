@@ -14,6 +14,32 @@ from eden.providers._protocols import SandboxHandle
 from eden.streaming import StreamEvent
 
 
+def build_agent_command(
+    *,
+    agent: Agent,
+    iteration: int,
+    rendered_prompt: str,
+    handle: SandboxHandle,
+    worktree_path: Path,
+    branch: str,
+    name: str | None,
+    resume_session: str | None,
+    fork_session: bool,
+) -> list[str]:
+    return agent.build_command(
+        IterationContext(
+            iteration=iteration,
+            prompt=rendered_prompt,
+            sandbox_handle=handle,
+            worktree_path=worktree_path,
+            branch=branch,
+            name=name,
+            resume_session=resume_session,
+            fork_session=fork_session,
+        )
+    )
+
+
 def stdin_payload(
     *,
     agent: Agent,
@@ -63,4 +89,4 @@ def parse_event(
     )
 
 
-__all__ = ["parse_event", "stdin_payload"]
+__all__ = ["build_agent_command", "parse_event", "stdin_payload"]
