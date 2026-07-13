@@ -6,9 +6,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Protocol
+from typing import TYPE_CHECKING, Literal
 
 from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, status_porcelain
+from eden.worktree._handle_protocols import StatusPorcelain, WorktreeRemove
 from eden.worktree._handle_run import (
     create_worktree_sandbox,
     interactive_in_worktree,
@@ -31,20 +32,6 @@ if TYPE_CHECKING:
     from eden.streaming import StreamEvent
 
 
-class _StatusPorcelain(Protocol):
-    def __call__(self, *, repo_path: Path, timeout: float = _DEFAULT_GIT_TIMEOUT) -> str: ...
-
-
-class _WorktreeRemove(Protocol):
-    def __call__(
-        self,
-        *,
-        repo_path: Path,
-        worktree_path: Path,
-        timeout: float = _DEFAULT_GIT_TIMEOUT,
-    ) -> None: ...
-
-
 @dataclass(frozen=True)
 class CloseResult:
     action: Literal["removed", "preserved", "released_only"]
@@ -60,8 +47,8 @@ class WorktreeHandle:
     _lock_handle: _LockHandle = field(repr=False)
     _closed: list[bool] = field(default_factory=lambda: [False], repr=False)
     _git_timeout: float = field(default=_DEFAULT_GIT_TIMEOUT, repr=False)
-    _status_porcelain: _StatusPorcelain = field(default=status_porcelain, repr=False)
-    _worktree_remove: _WorktreeRemove = field(default=worktree_remove, repr=False)
+    _status_porcelain: StatusPorcelain = field(default=status_porcelain, repr=False)
+    _worktree_remove: WorktreeRemove = field(default=worktree_remove, repr=False)
 
     def __enter__(self) -> WorktreeHandle:
         return self
