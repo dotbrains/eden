@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from contextlib import ExitStack
 from pathlib import Path
 
 from eden._types import RunResult, Timeouts
@@ -11,7 +10,6 @@ from eden.abort import AbortSignal
 from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
-from eden.orchestrator._session_capture import resolve_session_storage
 from eden.orchestrator._setup import SetupResult
 from eden.orchestrator.loop._loop_cleanup import close_loop_resources
 from eden.orchestrator.loop._loop_finalize import finalize_loop_sandbox
@@ -21,11 +19,11 @@ from eden.orchestrator.loop._loop_resources import (
     prepare_loop_worktree,
 )
 from eden.orchestrator.loop._loop_result import build_loop_result
+from eden.orchestrator.loop._loop_session import prepare_loop_session_context
 from eden.orchestrator.loop._loop_startup import start_loop_runtime
-from eden.orchestrator.loop._run_span import enter_run_span
 from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxHandle, SandboxProvider
-from eden.providers._types import BranchStrategy, Mount
+from eden.providers._types import BranchStrategy
 from eden.streaming import StreamEvent
 from eden.worktree._create import WorktreeHandle
 
@@ -84,13 +82,7 @@ def _run_loop(
     preserved: Path | None = None
     unregister_shutdown: Callable[[], None] | None = None
 
-    session_storage = resolve_session_storage(agent)
-    extra_mounts: tuple[Mount, ...] = session_storage.extra_mounts() if session_storage else ()
-
-    # ExitStack closes the outer ``eden.run`` span in the cleanup block below.
-    _stack = ExitStack()
-    run_span = enter_run_span(
-        _stack,
+    session_context = prepare_loop_session_context(
         agent=agent,
         sandbox=sandbox,
         worktree=wt,
@@ -109,7 +101,7 @@ def _run_loop(
             copy_to_worktree=copy_to_worktree,
             hooks=hooks,
             timeouts=timeouts,
-            extra_mounts=extra_mounts,
+            extra_mounts=session_context.extra_mounts,
             name=name,
             target_branch=resources.target_branch,
             logging_cfg=logging_cfg,
@@ -142,7 +134,7 @@ def _run_loop(
             logger=resources.logger,
             on_event=on_event,
             signal=signal,
-            session_storage=session_storage,
+            session_storage=session_context.storage,
             log_path=log_path,
         )
 
@@ -167,8 +159,8 @@ def _run_loop(
             commit_base_sha=resources.commit_base_sha,
             completion_hit=resources.completion_hit,
             iteration_count=len(resources.iterations),
-            run_span=run_span,
-            stack=_stack,
+            run_span=session_context.run_span,
+            stack=session_context.stack,
         )
 
     return build_loop_result(
