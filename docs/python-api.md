@@ -38,7 +38,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
 - [Agents](python-api-agents.md) — agent Protocols and built-in factories.
 - [Sessions](python-api-sessions.md) — transcript capture, storage, and session helpers.
-- [Extensibility](python-api-extensibility.md) — hooks, cancellation, and provider Protocols.
+- [Lifecycle](python-api-lifecycle.md) — hooks, cancellation, and shutdown callbacks.
+- [Extensibility](python-api-extensibility.md) — provider Protocols.
 - [Display](python-api-display.md) — display sinks and display entries.
 - [Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
 
@@ -100,16 +101,16 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 ### Lifecycle and Cancellation
 
-- [`Hook`](python-api-extensibility.md#hook)
-- [`HookPhase`](python-api-extensibility.md#hookphase)
-- [`HostHooks`](python-api-extensibility.md#hosthooks)
-- [`SandboxHooks`](python-api-extensibility.md#sandboxhooks)
-- [`Hooks`](python-api-extensibility.md#hooks)
-- [`AbortController`](python-api-extensibility.md#abortcontroller)
-- [`AbortSignal`](python-api-extensibility.md#abortsignal)
-- [`Aborted`](python-api-extensibility.md#aborted)
-- [`register_shutdown`](python-api-extensibility.md#register_shutdowncallback)
-- [`ShutdownCallback`](python-api-extensibility.md#shutdowncallback)
+- [`Hook`](python-api-lifecycle.md#hook)
+- [`HookPhase`](python-api-lifecycle.md#hookphase)
+- [`HostHooks`](python-api-lifecycle.md#hosthooks)
+- [`SandboxHooks`](python-api-lifecycle.md#sandboxhooks)
+- [`Hooks`](python-api-lifecycle.md#hooks)
+- [`AbortController`](python-api-lifecycle.md#abortcontroller)
+- [`AbortSignal`](python-api-lifecycle.md#abortsignal)
+- [`Aborted`](python-api-lifecycle.md#aborted)
+- [`register_shutdown`](python-api-lifecycle.md#register_shutdowncallback)
+- [`ShutdownCallback`](python-api-lifecycle.md#shutdowncallback)
 
 ### Provider Protocols
 
@@ -179,8 +180,8 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="streaming"></a><a id="streamevent"></a>[Streaming](python-api-types.md#streaming)
 - <a id="agents"></a><a id="agent-protocol"></a><a id="iterationcontext"></a><a id="factories"></a>[Agents](python-api-agents.md#agents)
 - <a id="session-storage"></a><a id="claudesessionstorage"></a><a id="codexsessionstorage"></a><a id="pisessionstorage"></a><a id="session-lookup-helpers"></a><a id="transfer_session"></a>[Sessions](python-api-sessions.md#session-storage)
-- <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a>[Lifecycle hooks](python-api-extensibility.md#lifecycle-hooks)
-- <a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>[Cancellation](python-api-extensibility.md#cancellation)
+- <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a>[Lifecycle hooks](python-api-lifecycle.md#lifecycle-hooks)
+- <a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>[Cancellation](python-api-lifecycle.md#cancellation)
 - <a id="provider-protocol-re-exports"></a><a id="sandboxhandle"></a><a id="bindmountsandboxhandle"></a><a id="isolatedsandboxhandle"></a><a id="sandboxprovider"></a><a id="createoptions"></a><a id="execresult"></a><a id="make_bind_mount_provider"></a><a id="make_isolated_provider"></a>[Provider Protocol re-exports](python-api-extensibility.md#provider-protocol-re-exports)
 - <a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>[Display](python-api-display.md#display)
 - <a id="errors"></a><a id="format_error_messageerror"></a><a id="structuredoutputerror"></a>[Errors](python-api-errors-tracing.md#errors)
