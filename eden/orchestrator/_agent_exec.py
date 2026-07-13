@@ -6,16 +6,15 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
-from typing import cast
 
 from eden._types import Usage
 from eden.abort import AbortSignal
-from eden.agents._context import IterationContext
 from eden.agents._protocol import Agent
 from eden.orchestrator._completion import match
 from eden.orchestrator._idle import IdleWatchdog
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._runner import _AgentRunner
+from eden.orchestrator.loop._agent_stream import parse_event, stdin_payload
 from eden.providers._protocols import SandboxHandle
 from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
@@ -65,7 +64,7 @@ def execute_agent_iteration(
         agent_exit_code: int | None = None
         agent_stderr = ""
         agent_cwd = handle.worktree_path if handle.worktree_path.exists() else None
-        stdin_payload = _stdin_payload(
+        agent_stdin = stdin_payload(
             agent=agent,
             iteration=iteration,
             rendered_prompt=rendered_prompt,
@@ -91,7 +90,7 @@ def execute_agent_iteration(
                 env=env,
                 watchdog=wd,
                 cwd=agent_cwd,
-                stdin=stdin_payload,
+                stdin=agent_stdin,
             ) as runner,
         ):
 
@@ -127,7 +126,7 @@ def execute_agent_iteration(
             for line in runner.iter_lines(signal=signal, on_warning=_emit_warning):
                 stdout_chunks.push(line + "\n")
                 _emit_raw(line)
-                ev = _parse_event(agent=agent, line=line, iteration=iteration, timestamp=timestamp)
+                ev = parse_event(agent=agent, line=line, iteration=iteration, timestamp=timestamp)
                 _handle_event(ev)
                 hit = match(line, completion_signal)
                 if hit is not None:
@@ -173,55 +172,6 @@ def execute_agent_iteration(
         )
     finally:
         wd.stop()
-
-
-def _stdin_payload(
-    *,
-    agent: Agent,
-    iteration: int,
-    rendered_prompt: str,
-    handle: SandboxHandle,
-    worktree_path: Path,
-    branch: str,
-    name: str | None,
-    resume_session: str | None,
-) -> str | None:
-    stdin_fn = getattr(agent, "stdin_content", None)
-    if not callable(stdin_fn):
-        return None
-    return cast(
-        str | None,
-        stdin_fn(
-            IterationContext(
-                iteration=iteration,
-                prompt=rendered_prompt,
-                sandbox_handle=handle,
-                worktree_path=worktree_path,
-                branch=branch,
-                name=name,
-                resume_session=resume_session,
-            )
-        ),
-    )
-
-
-def _parse_event(
-    *,
-    agent: Agent,
-    line: str,
-    iteration: int,
-    timestamp: Callable[[], datetime],
-) -> StreamEvent:
-    parsed = agent.parse_stream(line)
-    if parsed is not None:
-        return replace(parsed, iteration=iteration, agent_name=agent.name)
-    return StreamEvent(
-        type="text",
-        agent_name=agent.name,
-        iteration=iteration,
-        timestamp=timestamp(),
-        text=line,
-    )
 
 
 __all__ = ["AgentExecution", "execute_agent_iteration"]
