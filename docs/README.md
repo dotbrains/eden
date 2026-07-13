@@ -46,9 +46,11 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Prompts](prompts.md) — `PromptSource`, args, shell blocks, built-ins.
 - [Templates](templates.md) — local `eden init` template reference.
 - [Blank template](template-blank.md) — minimal scaffold files and customization.
+- [Simple-loop template](template-simple-loop.md) — backlog-backed worker scaffold.
 - [Plan/implement/review template](template-plan-implement-review.md) — planner, implementer, reviewer scaffold.
 - [GitHub agent workflow template](github-agent-workflow-template.md) — label-driven GitHub Actions scaffold.
 - [Errors](errors.md) — the `EdenError` hierarchy and top-level public errors.
+- [Error hierarchy](error-hierarchy.md) — Mermaid inheritance diagram.
 - [Top-level errors](top-level-errors.md) — top-level `EdenError` subclasses.
 - [Configuration errors](config-errors.md) — `ConfigError` and setup-time failures.
 - [REST errors](rest-errors.md) — cloud-provider REST error subclasses.

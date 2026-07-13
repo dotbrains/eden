@@ -19,61 +19,11 @@ The errors below are split into three groups: top-level `EdenError` subclasses r
 
 ## Hierarchy
 
-```mermaid
-classDiagram
-    class EdenError
-    class TimeoutError {
-        <<builtin>>
-    }
+Moved to [Error hierarchy](error-hierarchy.md#hierarchy).
 
-    class ConfigError
-    class HookError
-    class EdenTimeoutError
-    class Aborted
-    class SessionCaptureFailed
-    class RestError
-    class SandboxError
-    class WorktreeError
+Compatibility anchor:
 
-    EdenError <|-- ConfigError
-    EdenError <|-- HookError
-    EdenError <|-- EdenTimeoutError
-    EdenError <|-- Aborted
-    EdenError <|-- SessionCaptureFailed
-    EdenError <|-- RestError
-    EdenError <|-- SandboxError
-    EdenError <|-- WorktreeError
-    TimeoutError <|-- EdenTimeoutError
-
-    ConfigError <|-- InvalidOptions
-    ConfigError <|-- PromptError
-    ConfigError <|-- EnvMergeError
-    ConfigError <|-- CwdError
-    ConfigError <|-- FloxEnvError
-
-    HookError <|-- HookFailed
-    HookError <|-- HookTimeout
-
-    EdenTimeoutError <|-- IdleTimeout
-    EdenTimeoutError <|-- StepTimeout
-
-    RestError <|-- RestAuthError
-    RestError <|-- RestNotFoundError
-    RestError <|-- RestRateLimited
-
-    SandboxError <|-- ProviderUnavailable
-    SandboxError <|-- ImageNotFound
-    SandboxError <|-- ContainerStartFailed
-    SandboxError <|-- ExecFailed
-    SandboxError <|-- ExecTimeout
-    SandboxError <|-- MountConfigError
-    SandboxError <|-- UnsupportedStrategy
-
-    WorktreeError <|-- WorktreeLocked
-    WorktreeError <|-- DirtyHostBlocked
-    WorktreeError <|-- BranchExists
-    WorktreeError <|-- GitCommandFailed
-```
+<a id="hierarchy"></a>
 
 Module locations: top-level errors live in `eden/errors.py`, sandbox errors in `eden/sandboxes/errors.py`, and worktree errors in `eden/worktree/errors.py`.
 
@@ -138,6 +88,7 @@ Compatibility anchors: <a id="worktreeerror"></a><a id="worktreelocked"></a><a i
 ## See also
 
 - [Python API: Errors](python-api.md#errors) — public error classes by name.
+- [Error hierarchy](error-hierarchy.md) — Mermaid inheritance diagram.
 - [Top-level errors](top-level-errors.md) — top-level public error classes.
 - [Configuration errors](config-errors.md) — setup-time configuration failures.
 - [Python API: Cancellation](python-api.md#cancellation) — `AbortController` / `AbortSignal` / `Aborted`.
