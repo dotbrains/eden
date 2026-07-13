@@ -1,9 +1,7 @@
-"""Base + Phase 3a runtime errors for the eden package.
+"""Runtime errors for the eden package.
 
-Convention: every concrete error accepts a ``cause`` keyword argument that
-stores the originating exception as a named attribute. ``cause`` does NOT
-set ``__cause__``; callers who want chained tracebacks must use
-``raise XError(..., cause=e) from e``.
+Concrete errors store ``cause`` without setting ``__cause__``. Callers who
+want chained tracebacks must use ``raise XError(..., cause=e) from e``.
 """
 
 from __future__ import annotations

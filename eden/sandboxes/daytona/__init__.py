@@ -1,9 +1,4 @@
-"""Daytona cloud sandbox provider: REST-driven isolated/finalizing sandbox.
-
-Phase 4b: factory + create flow + handle methods (exec, copy_file_in/out, close).
-Phase 4b Task 4 adds: finalize (using patch_sync.diff/apply over snapshot dicts
-produced via _snapshot_remote — same shape as patch_sync.snapshot).
-"""
+"""Daytona cloud sandbox provider: REST-driven isolated/finalizing sandbox."""
 
 from __future__ import annotations
 

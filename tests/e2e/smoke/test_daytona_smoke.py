@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
 import eden
+from eden.orchestrator import run as eden_run
+from eden.providers._protocols import SandboxProvider
 from eden.sandboxes import daytona as daytona_sandbox
 from tests._fake_daytona import start_fake_daytona
 
 pytestmark = pytest.mark.e2e
+daytona_provider: Callable[[], SandboxProvider] = daytona_sandbox.provider
 
 
 @pytest.mark.skipif(
@@ -40,9 +44,9 @@ def test_daytona_finalize_writes_sandbox_changes_to_host(
         sandbox=eden.SandboxHooks(on_iteration_start=(sandbox_hook,)),
     )
 
-    result = eden.run(
+    result = eden_run(
         agent=eden.simulated_agent(output="working\n<promise>COMPLETE</promise>\n"),
-        sandbox=daytona_sandbox.provider(),  # api_key from env (set by fake)
+        sandbox=daytona_provider(),  # api_key from env (set by fake)
         prompt="x",
         max_iterations=1,
         completion_signal="<promise>COMPLETE</promise>",
@@ -84,9 +88,9 @@ def test_daytona_finalize_propagates_deletes(
         sandbox=eden.SandboxHooks(on_iteration_start=(sandbox_hook,)),
     )
 
-    result = eden.run(
+    result = eden_run(
         agent=eden.simulated_agent(output="<promise>COMPLETE</promise>\n"),
-        sandbox=daytona_sandbox.provider(),
+        sandbox=daytona_provider(),
         prompt="x",
         max_iterations=1,
         completion_signal="<promise>COMPLETE</promise>",
