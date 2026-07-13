@@ -6,27 +6,9 @@ Canonical index for everything importable from the top-level `eden` package. Det
 
 ## Importing
 
-Eden's surface is a single module. Import what you need from `eden`; nothing private is part of the contract.
-
-```python
-from eden import (
-    AbortController, AbortSignal, Aborted, Agent, AgentError, BindMountSandboxHandle,
-    BranchStrategy, ClaudeSessionStorage, CloseResult, CodexSessionStorage, Commit, ConfigError,
-    CopyToWorktreeError, CreateOptions, CwdError, Display, DisplayEntry, EdenError,
-    EdenTimeoutError, EnvMergeError, ExecResult, FileDisplay, FinalizeResult, FloxEnvError,
-    Hook, HookError, HookFailed, HookPhase, HookTimeout, Hooks,
-    HostHooks, IdleTimeout, InteractiveResult, InvalidOptions, IsolatedSandboxHandle, Iteration,
-    IterationContext, Logging, Mount, Output, OutputDefinition, PiSessionStorage,
-    PromptError, RestAuthError, RestError, RestNotFoundError, RestRateLimited, RichDisplay,
-    RunResult, Sandbox, SandboxHandle, SandboxHooks, SandboxProvider, SessionCaptureFailed,
-    SessionNotFound, SessionStorage, ShutdownCallback, SilentDisplay, StepTimeout, StreamEvent,
-    StructuredOutputError, Timeouts, Usage, __version__, claude_code, claude_host_session_path,
-    claude_sandbox_session_path, cli_agent, codex, copilot, create_sandbox, create_worktree,
-    cursor, encode_project_path, find_claude_session_on_host, find_codex_session_on_host, format_error_message, interactive,
-    make_bind_mount_provider, make_isolated_provider, opencode, pi, register_shutdown, run,
-    simulated_agent, transfer_session,
-)
-```
+Eden's surface is a single module. Import what you need from `eden`; nothing
+private is part of the contract. The public names are indexed below and covered
+by `tests/unit/test_docs_consistency.py`.
 
 Sandbox providers live alongside the public surface but are imported from `eden.providers` (see [sandbox-providers.md](sandbox-providers.md)) and passed into `run(sandbox=...)`.
 

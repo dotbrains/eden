@@ -6,10 +6,9 @@ providers. See [Custom providers](custom-providers.md) for when to write one and
 
 ## Protocol surface
 
-Eden defines four Protocols in `eden/providers/_protocols.py`:
-`SandboxProvider` creates a `SandboxHandle`; `BindMountSandboxHandle` and
-`IsolatedSandboxHandle` specialize that handle shape, with isolated handles
-adding `finalize(target)`.
+Eden defines four Protocols in `eden/providers/_protocols.py`: `SandboxProvider`
+creates a `SandboxHandle`; `BindMountSandboxHandle` and `IsolatedSandboxHandle`
+specialize that handle shape, with isolated handles adding `finalize(target)`.
 
 ### `SandboxProvider`
 
@@ -17,12 +16,10 @@ The factory side. Your `provider(...)` factory must return an instance
 satisfying this Protocol. Prefer [`make_bind_mount_provider`](#make_bind_mount_provider)
 or [`make_isolated_provider`](#make_isolated_provider) over a bespoke class.
 
-All four Protocols, both factories, and every supporting type are re-exported
-from `eden`, so out-of-tree providers can avoid private imports. The commonly
-used names are `SandboxProvider`, `SandboxHandle`, `BindMountSandboxHandle`,
-`IsolatedSandboxHandle`, `CreateOptions`, `ExecResult`, `FinalizeResult`,
-`Mount`, `BranchStrategy`, `make_bind_mount_provider`, and
-`make_isolated_provider`.
+All Protocols, factories, and supporting types are re-exported from `eden`.
+Common imports include `SandboxProvider`, `SandboxHandle`,
+`BindMountSandboxHandle`, `IsolatedSandboxHandle`, `CreateOptions`,
+`ExecResult`, `FinalizeResult`, `Mount`, `BranchStrategy`, both factory helpers.
 
 `kind` controls the orchestrator's behavior:
 
