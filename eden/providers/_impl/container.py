@@ -36,8 +36,6 @@ from eden.sandboxes.errors import (
 )
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
-_ContainerHandle = ContainerHandle
-
 
 def _host_uid() -> int:
     """Return the host's UID, or 1000 on platforms without ``getuid``."""
