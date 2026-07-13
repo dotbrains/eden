@@ -8,7 +8,9 @@ from pathlib import Path
 import pytest
 
 import eden
-from eden.sandboxes import vercel as vercel_sandbox
+from eden.agents.simulated import simulated_agent
+from eden.orchestrator import run
+from eden.sandboxes.vercel import provider as vercel_provider
 from tests._fake_vercel import start_fake_vercel
 
 pytestmark = pytest.mark.e2e
@@ -36,9 +38,9 @@ def test_vercel_finalize_writes_sandbox_changes_to_host(
         sandbox=eden.SandboxHooks(on_iteration_start=(sandbox_hook,)),
     )
 
-    result = eden.run(
-        agent=eden.simulated_agent(output="working\n<promise>COMPLETE</promise>\n"),
-        sandbox=vercel_sandbox.provider(),  # token from env (set by fake)
+    result = run(
+        agent=simulated_agent(output="working\n<promise>COMPLETE</promise>\n"),
+        sandbox=vercel_provider(),  # token from env (set by fake)
         prompt="x",
         max_iterations=1,
         completion_signal="<promise>COMPLETE</promise>",
@@ -79,9 +81,9 @@ def test_vercel_finalize_propagates_deletes(
         sandbox=eden.SandboxHooks(on_iteration_start=(sandbox_hook,)),
     )
 
-    result = eden.run(
-        agent=eden.simulated_agent(output="<promise>COMPLETE</promise>\n"),
-        sandbox=vercel_sandbox.provider(),
+    result = run(
+        agent=simulated_agent(output="<promise>COMPLETE</promise>\n"),
+        sandbox=vercel_provider(),
         prompt="x",
         max_iterations=1,
         completion_signal="<promise>COMPLETE</promise>",
