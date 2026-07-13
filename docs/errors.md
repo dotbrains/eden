@@ -238,13 +238,10 @@ Compatibility anchors:
 - [`BranchExists`](sandbox-worktree-errors.md#branchexists)
 - [`GitCommandFailed`](sandbox-worktree-errors.md#gitcommandfailed)
 
-## Recovery patterns at a glance
+## <a id="recovery-patterns-at-a-glance"></a><a id="catching-everything"></a>Recovery examples
 
-Moved to [Error recovery](error-recovery.md#recovery-patterns-at-a-glance).
-
-## Catching everything
-
-Moved to [Error recovery](error-recovery.md#catching-everything).
+- [Recovery patterns at a glance](error-recovery.md#recovery-patterns-at-a-glance)
+- [Catching everything](error-recovery.md#catching-everything)
 
 ## See also
 

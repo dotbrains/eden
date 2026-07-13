@@ -236,25 +236,15 @@ Same idea, but the returned handle must expose `finalize(target) -> FinalizeResu
 
 Moved to [Python API: Display](python-api-display.md#display).
 
-### `Display`
+Compatibility anchors:
 
-Moved to [Python API: Display](python-api-display.md#display).
+<a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>
 
-### `DisplayEntry`
-
-Moved to [Python API: Display](python-api-display.md#displayentry).
-
-### `SilentDisplay`
-
-Moved to [Python API: Display](python-api-display.md#silentdisplay).
-
-### `FileDisplay`
-
-Moved to [Python API: Display](python-api-display.md#filedisplay).
-
-### `RichDisplay`
-
-Moved to [Python API: Display](python-api-display.md#richdisplay).
+- [`Display`](python-api-display.md#display)
+- [`DisplayEntry`](python-api-display.md#displayentry)
+- [`SilentDisplay`](python-api-display.md#silentdisplay)
+- [`FileDisplay`](python-api-display.md#filedisplay)
+- [`RichDisplay`](python-api-display.md#richdisplay)
 
 ## Compatibility anchors
 

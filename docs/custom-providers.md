@@ -203,40 +203,15 @@ Eden ships two factories that wrap a `create` callable into a `SandboxProvider` 
 ### `make_bind_mount_provider`
 
 ```python
-from collections.abc import Callable
-from eden import (
-    BindMountSandboxHandle,
-    CreateOptions,
-    SandboxProvider,
-    make_bind_mount_provider,
-)
-from eden.providers import StrategyTag
-
-def make_bind_mount_provider(
-    name: str,
-    create: Callable[[CreateOptions], BindMountSandboxHandle],
-    *,
-    supported_strategies: frozenset[StrategyTag] = frozenset(
-        {"head", "merge_to_head", "named"}
-    ),
-) -> SandboxProvider: ...
+provider = make_bind_mount_provider(name="my-provider", create=my_create_fn)
 ```
 
-Use for any provider where the host worktree is the sandbox (host == sandbox filesystem). The orchestrator will not call `finalize()` on the returned handle.
+Use for any provider where the host worktree is the sandbox (host == sandbox filesystem). The orchestrator will not call `finalize()` on the returned handle. Pass `supported_strategies=` to restrict the default set (`head`, `merge_to_head`, `named`).
 
 ### `make_isolated_provider`
 
 ```python
-from eden import IsolatedSandboxHandle, SandboxProvider, make_isolated_provider
-
-def make_isolated_provider(
-    name: str,
-    create: Callable[[CreateOptions], IsolatedSandboxHandle],
-    *,
-    supported_strategies: frozenset[StrategyTag] = frozenset(
-        {"head", "merge_to_head", "named"}
-    ),
-) -> SandboxProvider: ...
+provider = make_isolated_provider(name="my-provider", create=my_create_fn)
 ```
 
 Use for detached, patch-sync, or cloud providers. The handle returned by `create` MUST expose `finalize(target) -> FinalizeResult`.
