@@ -232,19 +232,9 @@ Same idea, but the returned handle must expose `finalize(target) -> FinalizeResu
 
 ---
 
-## Display
+## <a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>Display
 
 Moved to [Python API: Display](python-api-display.md#display).
-
-Compatibility anchors:
-
-<a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>
-
-- [`Display`](python-api-display.md#display)
-- [`DisplayEntry`](python-api-display.md#displayentry)
-- [`SilentDisplay`](python-api-display.md#silentdisplay)
-- [`FileDisplay`](python-api-display.md#filedisplay)
-- [`RichDisplay`](python-api-display.md#richdisplay)
 
 ## Compatibility anchors
 

@@ -45,10 +45,6 @@ Decodes codex JSONL events: `thread.started` → `session_id`, `item.completed`/
 
 The `codex` CLI from OpenAI. Must be on `$PATH`. The `"gpt-5"` default is illustrative — supply whatever model identifier your installed `codex` accepts.
 
-### When to use
-
-- Codex-driven workflows with or without session capture/resume.
-
 ## `opencode`
 
 ```python
@@ -90,10 +86,6 @@ Decodes opencode JSONL events: `step_start` → `session_id`, `text`/`part.type=
 
 The `opencode` CLI from `sst/opencode`. Must be on `$PATH`. opencode supports multiple model providers; the default `model="claude-opus-4"` is illustrative — pass whatever identifier opencode expects.
 
-### When to use
-
-- Multi-provider routing workflows (opencode lets you swap LLM backends without changing the calling code).
-
 ## `pi`
 
 ```python
@@ -118,10 +110,6 @@ Thin wrapper over [`cli_agent`](#cli_agent) with `binary="pi"` and `name="pi"`. 
 ### What binary it wraps
 
 The `pi` CLI from Inflection. Must be on `$PATH`.
-
-### When to use
-
-- pi-backed workflows.
 
 ## `cursor`
 
@@ -153,10 +141,6 @@ Builds `agent --print --output-format stream-json --model <model> [--force] [ext
 ### parse_stream
 
 Decodes cursor's `tool_call` events and delegates Claude-compatible `assistant`/`result` event shapes to Claude's parser.
-
-### When to use
-
-- Cursor-driven workflows where session capture isn't required.
 
 ## `copilot`
 
@@ -190,10 +174,6 @@ Builds `copilot -p <prompt> --output-format json --model <model> [--allow-all-to
 ### parse_stream
 
 Decodes Copilot JSONL events: `assistant.message_delta` → `text`, `tool.execution_start` → `tool_call` (normalises lowercase `"bash"` → `"Bash"` for parity with the other agents), `result` → `session_id`, `error`/`agent_error` → `text`.
-
-### When to use
-
-- GitHub-Copilot-driven workflows; the only first-party big-vendor CLI Eden ships outside of Claude.
 
 ## `cli_agent`
 
