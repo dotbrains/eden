@@ -30,7 +30,7 @@ jobs:
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install -e ".[dev]"
-          pre-commit run --all-files --show-diff-on-failure
+          .venv/bin/pre-commit run --all-files --show-diff-on-failure
           .venv/bin/pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
 
   # Package build is checked once so release packaging failures are caught
