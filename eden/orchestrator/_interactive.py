@@ -13,6 +13,7 @@ from eden.env import load_eden_env, merge_env
 from eden.lifecycle import HookPhase, Hooks
 from eden.lifecycle._runner import run_host_hooks, run_sandbox_hooks
 from eden.orchestrator._copy_files import apply_copy_to_worktree
+from eden.orchestrator._interactive_cleanup import close_interactive_resources
 from eden.orchestrator._interactive_exec import build_interactive_argv, run_interactive_exec
 from eden.orchestrator._interactive_prompt import render_interactive_prompt
 from eden.orchestrator._interactive_setup import (
@@ -215,34 +216,14 @@ def interactive(
             cwd=cwd_path,
         )
     finally:
-        if handle is not None:
-            try:
-                run_sandbox_hooks(
-                    phase=HookPhase.OnClose,
-                    hooks=hooks_or_default.sandbox,
-                    handle=handle,
-                    env=merged_env,
-                    timeouts=timeouts_or_default,
-                )
-            except Exception:
-                pass
-        try:
-            run_host_hooks(
-                phase=HookPhase.OnClose,
-                hooks=hooks_or_default.host,
-                worktree_path=wt.worktree_path,
-                env=merged_env,
-                timeouts=timeouts_or_default,
-            )
-        except Exception:
-            pass
-        if handle is not None:
-            try:
-                handle.close()
-            except Exception:
-                pass
-        if _existing_worktree is None:
-            wt.close()
+        close_interactive_resources(
+            handle=handle,
+            worktree=wt,
+            hooks=hooks_or_default,
+            env=merged_env,
+            timeouts=timeouts_or_default,
+            close_worktree=_existing_worktree is None,
+        )
 
 
 __all__ = ["InteractiveResult", "interactive"]
