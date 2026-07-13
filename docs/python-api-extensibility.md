@@ -284,26 +284,8 @@ display = RichDisplay()  # uses default rich.console.Console()
 
 Live terminal output powered by the bundled `rich` dependency. Renders severities with color glyphs, spinners with `rich.status.Status`, summaries as bold-key / dim-value blocks. Inject a custom `Console` via `RichDisplay(console=Console(file=...))` for capturing tests.
 
----
+## Compatibility anchors
 
-## Errors
-
-Moved to [Python API: Errors and tracing](python-api-errors-tracing.md#errors).
-
-### `format_error_message(error)`
-
-Moved to [Python API: Errors and tracing](python-api-errors-tracing.md#format_error_messageerror).
-
----
-
-## Tracing
-
-Moved to [Python API: Errors and tracing](python-api-errors-tracing.md#tracing).
-
----
-
-## Version
-
-### `__version__`
-
-Moved to [Python API: Errors and tracing](python-api-errors-tracing.md#__version__).
+- <a id="errors"></a><a id="format_error_messageerror"></a>[Errors and formatting](python-api-errors-tracing.md#errors)
+- <a id="tracing"></a>[Tracing](python-api-errors-tracing.md#tracing)
+- <a id="version"></a><a id="__version__"></a>[Version](python-api-errors-tracing.md#version)
