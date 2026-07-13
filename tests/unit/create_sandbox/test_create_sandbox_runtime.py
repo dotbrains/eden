@@ -10,7 +10,7 @@ import pytest
 from eden.lifecycle import Hook, Hooks, HostHooks, SandboxHooks
 from eden.providers._types import ExecResult
 from eden.sandboxes import Sandbox, create_sandbox
-from tests.unit.create_sandbox_helpers import StubHandle, StubProvider
+from tests.unit.create_sandbox.create_sandbox_helpers import StubHandle, StubProvider
 
 pytestmark = pytest.mark.unit
 

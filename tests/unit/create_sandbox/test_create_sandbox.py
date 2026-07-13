@@ -12,7 +12,7 @@ from eden.providers._types import (
 )
 from eden.sandboxes import create_sandbox
 from eden.sandboxes.errors import UnsupportedStrategy
-from tests.unit.create_sandbox_helpers import StubProvider
+from tests.unit.create_sandbox.create_sandbox_helpers import StubProvider
 
 pytestmark = pytest.mark.unit
 
