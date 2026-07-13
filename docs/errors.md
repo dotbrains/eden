@@ -75,10 +75,7 @@ classDiagram
     WorktreeError <|-- GitCommandFailed
 ```
 
-Module locations:
-- `EdenError` and the top-level subclasses live in `eden/errors.py`.
-- `SandboxError` family lives in `eden/sandboxes/errors.py`.
-- `WorktreeError` family lives in `eden/worktree/errors.py`.
+Module locations: top-level errors live in `eden/errors.py`, sandbox errors in `eden/sandboxes/errors.py`, and worktree errors in `eden/worktree/errors.py`.
 
 ## Top-level errors
 
@@ -242,7 +239,6 @@ Compatibility anchors:
 - [Python API: Errors](python-api.md#errors) — the 16 public error classes by name.
 - [Python API: Cancellation](python-api.md#cancellation) — `AbortController` / `AbortSignal` / `Aborted`.
 - [Error recovery](error-recovery.md) — handling strategies and catch-all examples.
-- [Configuration](configuration.md) — env vars whose absence raises `ProviderUnavailable`.
 - [Sandbox and worktree errors](sandbox-worktree-errors.md) — provider and worktree error families.
 - [Sandbox providers](sandbox-providers.md) — which provider raises which `SandboxError` subclass.
 - [How it works](how-it-works.md) — where each error fires in the iteration loop.
