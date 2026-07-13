@@ -14,207 +14,20 @@ If your provider only adds bind-mount semantics to a different container runtime
 
 ## Protocol surface
 
-Eden defines four Protocols in `eden/providers/_protocols.py`. Three are runtime-checkable; the fourth (`SandboxProvider`) is the factory contract.
+Moved to [Custom provider protocols](custom-provider-protocols.md#protocol-surface).
 
-```mermaid
-classDiagram
-    class SandboxProvider {
-        <<Protocol>>
-        +name: str
-        +kind: bind_mount|isolated|none
-        +supports_strategy(strategy) bool
-        +create(opts) SandboxHandle
-    }
-    class SandboxHandle {
-        <<Protocol>>
-        +worktree_path: Path
-        +exec(cmd, on_line, ...) ExecResult
-        +copy_file_in(src, dst)
-        +copy_file_out(src, dst)
-        +close()
-    }
-    class BindMountSandboxHandle {
-        <<Protocol>>
-    }
-    class IsolatedSandboxHandle {
-        <<Protocol>>
-        +finalize(target) FinalizeResult
-    }
+Compatibility anchors: <a id="sandboxprovider"></a><a id="sandboxhandle"></a><a id="bindmountsandboxhandle"></a><a id="isolatedsandboxhandle"></a><a id="supporting-types"></a><a id="createoptions"></a><a id="execresult"></a><a id="finalizeresult"></a><a id="mount-branchstrategy"></a><a id="factory-helpers"></a><a id="make_bind_mount_provider"></a><a id="make_isolated_provider"></a>
 
-    SandboxHandle <|-- BindMountSandboxHandle
-    SandboxHandle <|-- IsolatedSandboxHandle
-    SandboxProvider ..> SandboxHandle : create&#40;&#41; returns
-```
-
-### `SandboxProvider`
-
-The factory side. Your `provider(...)` factory must return an instance satisfying this Protocol — use [`make_bind_mount_provider`](#make_bind_mount_provider) or [`make_isolated_provider`](#make_isolated_provider) instead of writing a bespoke class unless you have a reason.
-
-All four Protocols, both factories, and every supporting type are re-exported from the top-level `eden` package, so out-of-tree providers can import them without depending on `eden.providers._protocols` directly:
-
-```python
-from eden import (
-    BindMountSandboxHandle,
-    BranchStrategy,
-    CreateOptions,
-    ExecResult,
-    FinalizeResult,
-    IsolatedSandboxHandle,
-    Mount,
-    SandboxHandle,
-    SandboxProvider,
-    make_bind_mount_provider,
-    make_isolated_provider,
-)
-```
-
-`kind` controls the orchestrator's behavior:
-
-- `"bind_mount"` — host filesystem is mounted into the sandbox; no `finalize()` step.
-- `"isolated"` — sandbox is detached; orchestrator calls `handle.finalize(target)` after each iteration.
-- `"none"` — degenerate "sandbox" that just runs on the host (`no_sandbox`).
-
-### `SandboxHandle`
-
-The base handle Protocol every provider's `create()` must return. Runtime-checkable.
-
-```python
-from collections.abc import Callable, Mapping
-from pathlib import Path
-from typing import Protocol, runtime_checkable
-
-from eden import ExecResult
-
-@runtime_checkable
-class SandboxHandle(Protocol):
-    worktree_path: Path
-
-    def exec(
-        self,
-        cmd: str,
-        *,
-        on_line: Callable[[str], None] | None = None,
-        cwd: Path | None = None,
-        env: Mapping[str, str] | None = None,
-        timeout: float | None = None,
-        stdin: str | None = None,
-    ) -> ExecResult: ...
-
-    def copy_file_in(self, host: Path, sandbox: Path) -> None: ...
-
-    def copy_file_out(self, sandbox: Path, host: Path) -> None: ...
-
-    def close(self) -> None: ...
-```
-
-- `worktree_path` — sandbox-side path the orchestrator passes to the agent as `cwd`. For bind-mount providers this is the host worktree; for isolated providers it is a sandbox-local path (e.g. `/workspace`).
-- `exec(cmd, *, on_line, cwd, env, timeout, stdin)` — run a shell command. `cmd` is a string (not argv); the provider chooses how to evaluate it (`/bin/sh -c`, REST shell, etc.). `on_line` is invoked once per stdout line as the command runs (use it to forward to the orchestrator's streaming layer). `stdin`, when given, is written to the command's stdin so the caller can deliver payloads larger than the 128KB Linux execve argv limit; bind-mount providers pipe directly, REST providers (daytona, vercel) wrap the command with `printf <base64> | base64 -d | (cmd)`.
-- `copy_file_in` / `copy_file_out` — single-file transfers between host and sandbox. Used by hooks and session capture.
-- `close()` — release resources. Called in a `finally` block; should not raise.
-
-### `BindMountSandboxHandle`
-
-A marker Protocol — adds no methods over `SandboxHandle`. Lets the orchestrator narrow types when it knows a handle is bind-mount.
-
-```python
-@runtime_checkable
-class BindMountSandboxHandle(SandboxHandle, Protocol):
-    """Marker — bind-mount providers don't add methods."""
-```
-
-### `IsolatedSandboxHandle`
-
-The handle Protocol for detached / patch-sync / cloud sandboxes. Adds one method.
-
-```python
-from eden import FinalizeResult
-
-@runtime_checkable
-class IsolatedSandboxHandle(SandboxHandle, Protocol):
-    def finalize(self, target: Path) -> FinalizeResult: ...
-```
-
-`finalize(target)` replays the sandbox-side state onto the host worktree (`target`). The orchestrator detects the Protocol via `hasattr(handle, "finalize")`, so any handle exposing the method works — the runtime-checkable Protocol is for type-checker narrowing.
-
-`IsolatedSandboxHandle` is re-exported from the top-level `eden` package, so out-of-tree providers can `from eden import IsolatedSandboxHandle` without depending on `eden.providers._protocols` directly. See [python-api.md#isolatedsandboxhandle](python-api.md#isolatedsandboxhandle).
-
-## Supporting types
-
-Read these from `eden/providers/_types.py`. All are frozen dataclasses.
-
-### `CreateOptions`
-
-The single argument the orchestrator hands to your `create()` callable.
-
-```python
-@dataclass(frozen=True)
-class CreateOptions:
-    branch: str
-    worktree_path: Path
-    host_repo_path: Path
-    env: Mapping[str, str]
-    mounts: tuple[Mount, ...]
-    name_hint: str | None
-```
-
-- `branch` — the worktree's branch name.
-- `worktree_path` — host path the orchestrator carved.
-- `host_repo_path` — root of the user's repo (parent of `.eden/`).
-- `env` — environment variables to forward into the sandbox.
-- `mounts` — extra bind mounts the caller requested via the provider factory.
-- `name_hint` — `run(name=...)` value, useful for cloud sandbox names.
-
-### `ExecResult`
-
-```python
-@dataclass(frozen=True)
-class ExecResult:
-    stdout: str
-    stderr: str
-    exit_code: int
-
-    @property
-    def ok(self) -> bool: ...
-    def check(self) -> ExecResult: ...
-```
-
-`check()` raises [`ExecFailed`](errors.md) if `exit_code != 0`. Returned by every `handle.exec(...)` call.
-
-### `FinalizeResult`
-
-```python
-@dataclass(frozen=True)
-class FinalizeResult:
-    applied: bool
-    files_changed: tuple[Path, ...]
-    patch_size_bytes: int
-```
-
-What `IsolatedSandboxHandle.finalize(target)` returns. `applied=False` means at least one copy or unlink failed; failures are logged and the orchestrator continues.
-
-### `Mount`, `BranchStrategy`
-
-See [python-api.md#configuration-types](python-api.md#configuration-types) for the public dataclasses. Your factory accepts `mounts: tuple[Mount, ...]` from the caller and threads them through to `CreateOptions`.
-
-## Factory helpers
-
-Eden ships two factories that wrap a `create` callable into a `SandboxProvider` so you do not have to write the boilerplate yourself. Both are re-exported from the top-level `eden` package.
-
-### `make_bind_mount_provider`
-
-```python
-provider = make_bind_mount_provider(name="my-provider", create=my_create_fn)
-```
-
-Use for any provider where the host worktree is the sandbox (host == sandbox filesystem). The orchestrator will not call `finalize()` on the returned handle. Pass `supported_strategies=` to restrict the default set (`head`, `merge_to_head`, `named`).
-
-### `make_isolated_provider`
-
-```python
-provider = make_isolated_provider(name="my-provider", create=my_create_fn)
-```
-
-Use for detached, patch-sync, or cloud providers. The handle returned by `create` MUST expose `finalize(target) -> FinalizeResult`.
+- [`SandboxProvider`](custom-provider-protocols.md#sandboxprovider)
+- [`SandboxHandle`](custom-provider-protocols.md#sandboxhandle)
+- [`BindMountSandboxHandle`](custom-provider-protocols.md#bindmountsandboxhandle)
+- [`IsolatedSandboxHandle`](custom-provider-protocols.md#isolatedsandboxhandle)
+- [`CreateOptions`](custom-provider-protocols.md#createoptions)
+- [`ExecResult`](custom-provider-protocols.md#execresult)
+- [`FinalizeResult`](custom-provider-protocols.md#finalizeresult)
+- [`Mount`, `BranchStrategy`](custom-provider-protocols.md#mount-branchstrategy)
+- [`make_bind_mount_provider`](custom-provider-protocols.md#make_bind_mount_provider)
+- [`make_isolated_provider`](custom-provider-protocols.md#make_isolated_provider)
 
 ## Skeleton: a custom isolated provider
 
@@ -231,6 +44,7 @@ Compatibility anchors:
 ## See also
 
 - [Python API: `IsolatedSandboxHandle`](python-api.md#isolatedsandboxhandle) — public re-export consumers can import from the top-level package.
+- [Custom provider protocols](custom-provider-protocols.md) — Protocol, type, and factory reference.
 - [Custom provider guide](custom-provider-guide.md) — skeleton implementation, in-tree examples, and provider conventions.
 - [Sandbox providers](sandbox-providers.md) — the in-tree provider catalog and matrix.
 - [How it works](how-it-works.md) — where `create()`, `exec()`, and `finalize()` plug into the iteration loop.
