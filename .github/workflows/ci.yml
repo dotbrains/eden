@@ -27,10 +27,11 @@ jobs:
 
       - name: pre-commit + pytest (unit + e2e, coverage)
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -e ".[dev]"
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -e ".[dev]"
           pre-commit run --all-files --show-diff-on-failure
-          pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
+          .venv/bin/pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
 
   # Package build is checked once so release packaging failures are caught
   # before tag publish.
@@ -44,9 +45,10 @@ jobs:
 
       - name: python -m build
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install build
-          python3 -m build
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install build
+          .venv/bin/python -m build
 
   # Compatibility matrix keeps each remaining runtime/platform concern to one
   # unit-only leg. Linux owns e2e and coverage in the canonical gate.
@@ -62,21 +64,25 @@ jobs:
           - name: linux py3.12
             os: blacksmith-2vcpu-ubuntu-2404
             python: python3
+            venv-python: .venv/bin/python
           - name: macos py3.13
             os: blacksmith-6vcpu-macos-15
             python: python3
+            venv-python: .venv/bin/python
           - name: windows py3.13
             os: blacksmith-2vcpu-windows-2025
             python: python
+            venv-python: .\.venv\Scripts\python.exe
     steps:
       - uses: actions/checkout@v5
 
       - name: pytest (unit)
         run: |
           ${{ matrix.python }} --version
-          ${{ matrix.python }} -m pip install --upgrade pip
-          ${{ matrix.python }} -m pip install -e ".[dev]"
-          ${{ matrix.python }} -m pytest -v -m unit
+          ${{ matrix.python }} -m venv .venv
+          ${{ matrix.venv-python }} -m pip install --upgrade pip
+          ${{ matrix.venv-python }} -m pip install -e ".[dev]"
+          ${{ matrix.venv-python }} -m pytest -v -m unit
 
   # Real provider tests are Linux-only and heavily capability-gated. Run them
   # once instead of once per Python version.
@@ -90,6 +96,7 @@ jobs:
 
       - name: pytest (integration)
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install -e ".[dev]"
-          pytest -v -m integration
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -e ".[dev]"
+          .venv/bin/pytest -v -m integration
