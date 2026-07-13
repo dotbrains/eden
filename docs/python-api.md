@@ -34,7 +34,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 - [Entry points](python-api-entrypoints.md) — `run`, `interactive`, and async wrappers.
 - [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
-- [Types and streaming](python-api-types.md) — configuration dataclasses, result types, and `StreamEvent`.
+- [Types](python-api-types.md) — configuration and result dataclasses.
+- [Streaming](python-api-streaming.md) — `StreamEvent` callbacks and log events.
 - [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
 - [Agents](python-api-agents.md) — agent Protocols and built-in factories.
 - [Sessions](python-api-sessions.md) — transcript capture, storage, and session helpers.
@@ -74,7 +75,7 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 
 - [`Output`](python-api-output.md#output)
 - [`OutputDefinition`](python-api-output.md#outputdefinition)
-- [`StreamEvent`](python-api-types.md#streamevent)
+- [`StreamEvent`](python-api-streaming.md#streamevent)
 
 ### Agents and Sessions
 
@@ -177,7 +178,7 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="configuration-types"></a><a id="timeouts"></a><a id="logging"></a><a id="mount"></a><a id="branchstrategy"></a>[Configuration types](python-api-types.md#configuration-types)
 - <a id="result-types"></a><a id="closeresult"></a><a id="runresult"></a><a id="iteration"></a><a id="commit"></a><a id="usage"></a><a id="finalizeresult"></a>[Result types](python-api-types.md#result-types)
 - <a id="structured-output"></a><a id="output"></a><a id="outputdefinition"></a>[Structured output](python-api-output.md#structured-output)
-- <a id="streaming"></a><a id="streamevent"></a>[Streaming](python-api-types.md#streaming)
+- <a id="streaming"></a><a id="streamevent"></a>[Streaming](python-api-streaming.md#streaming)
 - <a id="agents"></a><a id="agent-protocol"></a><a id="iterationcontext"></a><a id="factories"></a>[Agents](python-api-agents.md#agents)
 - <a id="session-storage"></a><a id="claudesessionstorage"></a><a id="codexsessionstorage"></a><a id="pisessionstorage"></a><a id="session-lookup-helpers"></a><a id="transfer_session"></a>[Sessions](python-api-sessions.md#session-storage)
 - <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a>[Lifecycle hooks](python-api-lifecycle.md#lifecycle-hooks)

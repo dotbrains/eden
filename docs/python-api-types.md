@@ -1,6 +1,8 @@
-# Python API: Types and Streaming
+# Python API: Types
 
-Detailed reference for configuration dataclasses, result types, structured output, and stream events. See [Python API](python-api.md) for the canonical public API index.
+Detailed reference for configuration and result dataclasses. See
+[Python API: Streaming](python-api-streaming.md) for `StreamEvent` and
+[Python API](python-api.md) for the canonical public API index.
 
 ---
 
@@ -205,32 +207,10 @@ Moved to [Python API: Structured output](python-api-output.md#structured-output)
 
 ## Streaming
 
-### `StreamEvent`
+Moved to [Python API: Streaming](python-api-streaming.md#streaming).
 
-The single discriminated union surfaced by `on_event` and the JSONL log.
+Compatibility anchors: <a id="streaming"></a><a id="streamevent"></a>
 
-```python
-@dataclass(frozen=True)
-class StreamEvent:
-    type: Literal["text", "idle_warning", "tool_call", "usage"]
-    agent_name: str
-    iteration: int
-    timestamp: datetime
-    text: str | None = None
-    minutes_idle: int | None = None
-    tool_name: str | None = None
-    tool_input: dict[str, object] | None = None
-    usage: Usage | None = None
-    session_id: str | None = None
-```
-
-The four `type` kinds:
-
-- `"text"` — line of agent output. Carries `text`.
-- `"idle_warning"` — emitted on `idle_warning_interval`. Carries `minutes_idle`.
-- `"tool_call"` — agent invoked a tool. Carries `tool_name` and `tool_input`.
-- `"usage"` — token usage report. Carries `usage` (and optionally `session_id`).
-
-`__post_init__` enforces that the type-specific fields are non-`None`.
+- [`StreamEvent`](python-api-streaming.md#streamevent)
 
 ---

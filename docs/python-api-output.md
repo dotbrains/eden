@@ -1,6 +1,8 @@
 # Python API: Structured Output
 
-Detailed reference for schema-validated payloads returned from `run()`. See [Python API: Types and streaming](python-api-types.md) for configuration, result, and stream types.
+Detailed reference for schema-validated payloads returned from `run()`. See
+[Python API: Types](python-api-types.md) for configuration and result types and
+[Python API: Streaming](python-api-streaming.md) for stream events.
 
 ---
 
@@ -80,5 +82,6 @@ Type alias for the union of `Output.object(...)` and `Output.string(...)` return
 
 ## See also
 
-- [Python API: Types and streaming](python-api-types.md) — configuration, result, and stream types.
+- [Python API: Types](python-api-types.md) — configuration and result types.
+- [Python API: Streaming](python-api-streaming.md) — stream events.
 - [Python API: Errors and tracing](python-api-errors-tracing.md) — `StructuredOutputError`.
