@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import subprocess
 import threading
-import time
 from collections.abc import Callable, Generator, Mapping
 from pathlib import Path
 from queue import Empty, Queue
@@ -13,6 +12,7 @@ from typing import Any
 
 from eden.abort import AbortSignal
 from eden.orchestrator._idle import IdleWatchdog
+from eden.orchestrator.runner._drain_completion import drain_completion
 from eden.orchestrator.runner._stdio import SENTINEL, DrainResult
 from eden.orchestrator.runner._stdio import drain_stream as _drain
 from eden.orchestrator.runner._stdio import write_and_close as _write_and_close
@@ -128,33 +128,11 @@ class _AgentRunner:
         ``total_timeout=None`` disables the bounded budget — only EOF or
         idle exit the loop.
         """
-        deadline = time.monotonic() + total_timeout if total_timeout is not None else None
-        lines: list[str] = []
-        timed_out = False
-        while True:
-            if deadline is not None:
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    timed_out = True
-                    break
-                wait = min(per_item_timeout, remaining)
-            else:
-                wait = per_item_timeout
-            try:
-                item = self._stdout_q.get(timeout=wait)
-            except Empty:
-                # ``Empty`` is ambiguous when the wait was clamped by the
-                # deadline: the queue may have had items pending but the
-                # clamped window expired first. Re-check the deadline so
-                # a noisy-child scenario reports ``timed_out=True`` rather
-                # than a false "idle" exit.
-                if deadline is not None and time.monotonic() >= deadline:
-                    timed_out = True
-                break
-            if item is _SENTINEL:
-                break
-            lines.append(item.rstrip("\n"))
-        return DrainResult(lines=lines, timed_out=timed_out)
+        return drain_completion(
+            self._stdout_q,
+            total_timeout=total_timeout,
+            per_item_timeout=per_item_timeout,
+        )
 
     def terminate(self) -> None:
         proc = self._proc

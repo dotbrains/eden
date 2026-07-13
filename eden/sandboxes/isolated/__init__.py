@@ -7,16 +7,14 @@ import secrets
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable, Mapping
-from dataclasses import dataclass
 from pathlib import Path
 
 from eden.errors import CopyToWorktreeError
 from eden.providers._helpers import make_isolated_provider
 from eden.providers._impl import patch_sync
 from eden.providers._protocols import IsolatedSandboxHandle, SandboxProvider
-from eden.providers._types import CreateOptions, ExecResult, FinalizeResult
-from eden.sandboxes._exec import stream_exec
+from eden.providers._types import CreateOptions
+from eden.sandboxes.isolated._handle import IsolatedHandle
 
 _IGNORED_TOP_LEVEL: tuple[str, ...] = (".git", ".eden")
 _DEFAULT_COPY_TIMEOUT_SECONDS: float = 60.0
@@ -93,63 +91,6 @@ def _sanitize_seed(s: str) -> str:
     return out[:64] if len(out) > 64 else out
 
 
-@dataclass
-class _IsolatedHandle:
-    worktree_path: Path
-    host_worktree_path: Path
-    baseline: dict[Path, str]
-    _preserved: bool = False
-
-    def exec(
-        self,
-        cmd: str,
-        *,
-        on_line: Callable[[str], None] | None = None,
-        cwd: Path | None = None,
-        env: Mapping[str, str] | None = None,
-        timeout: float | None = None,
-        stdin: str | None = None,
-    ) -> ExecResult:
-        merged_cwd = cwd if cwd is not None else self.worktree_path
-        return stream_exec(
-            ["/bin/sh", "-c", cmd],
-            cmd_for_error=cmd,
-            shell=False,
-            cwd=merged_cwd,
-            env=env,
-            on_line=on_line,
-            timeout=timeout,
-            stdin=stdin,
-        )
-
-    def copy_file_in(self, host: Path, sandbox: Path) -> None:
-        sandbox.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(host, sandbox)
-
-    def copy_file_out(self, sandbox: Path, host: Path) -> None:
-        host.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy(sandbox, host)
-
-    def finalize(self, target: Path) -> FinalizeResult:
-        after = patch_sync.snapshot(self.worktree_path)
-        d = patch_sync.diff(before=self.baseline, after=after)
-        return patch_sync.apply(d, src=self.worktree_path, dst=target)
-
-    def preserve(self) -> None:
-        """Mark this handle for preservation: skip cleanup on ``close()``.
-
-        Called by the orchestrator when finalize fails so the isolated
-        worktree stays on disk for the user's ``rsync``-based recovery.
-        """
-        self._preserved = True
-
-    def close(self) -> None:
-        if self._preserved:
-            return
-        if self.worktree_path.exists():
-            shutil.rmtree(self.worktree_path, ignore_errors=True)
-
-
 def provider(
     *,
     base_dir: Path | None = None,
@@ -181,7 +122,7 @@ def provider(
         baseline = patch_sync.snapshot(opts.worktree_path)
         _clone_tree(opts.worktree_path, isolated_root, timeout=copy_timeout)
 
-        return _IsolatedHandle(
+        return IsolatedHandle(
             worktree_path=isolated_root,
             host_worktree_path=opts.worktree_path,
             baseline=baseline,

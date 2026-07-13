@@ -12,12 +12,8 @@ from eden.providers._helpers import make_bind_mount_provider
 from eden.providers._impl.container_handle import ContainerHandle
 from eden.providers._impl.container_identity import host_gid, host_uid
 from eden.providers._impl.container_image import check_image_uid
-from eden.providers._impl.container_mounts import (
-    SANDBOX_HOMEDIR,
-    SelinuxLabel,
-    _ensure_mount_parents,
-    _file_mount_parents,
-)
+from eden.providers._impl.container_mounts import SelinuxLabel
+from eden.providers._impl.container_prepare import prepare_file_mount_parents
 from eden.providers._impl.container_run_args import (
     build_mount_map,
     build_run_argv,
@@ -156,28 +152,13 @@ def make_container_provider(
             )
         container_id = run_proc.stdout.strip()
 
-        # Auto-create in-container parent dirs for file mounts targeting
-        # paths under SANDBOX_HOMEDIR. Without this, docker bind-creates the
-        # chain as root-owned and the agent user (effective_uid) can't write.
-        parents = _file_mount_parents(list(mount_map.values()), sandbox_homedir=SANDBOX_HOMEDIR)
-        if parents:
-            try:
-                _ensure_mount_parents(
-                    binary=binary,
-                    container_id=container_id,
-                    parents=parents,
-                    uid=effective_uid,
-                    gid=effective_gid,
-                )
-            except ContainerStartFailed:
-                # Wipe the just-started container so the user isn't left with
-                # a half-prepared sandbox no one will close.
-                subprocess.run(
-                    [binary, "kill", container_id],
-                    capture_output=True,
-                    text=True,
-                )
-                raise
+        prepare_file_mount_parents(
+            binary=binary,
+            container_id=container_id,
+            mount_map=mount_map,
+            uid=effective_uid,
+            gid=effective_gid,
+        )
 
         return ContainerHandle(
             binary=binary,
