@@ -70,7 +70,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Custom providers](custom-providers.md) — `SandboxProvider` and handle Protocol reference.
 - [Custom provider protocols](custom-provider-protocols.md) — Protocol reference.
 - [Custom provider reference](custom-provider-reference.md) — provider types and factory helpers.
-- [Custom provider guide](custom-provider-guide.md) — skeleton implementation, in-tree examples, and conventions.
+- [Custom provider skeleton](custom-provider-skeleton.md) — minimum viable isolated provider.
+- [Custom provider guide](custom-provider-guide.md) — in-tree examples and conventions.
 - [Development](development.md) — repo layout, test markers, lint and type gates, contributing.
 
 ## Architecture decision records

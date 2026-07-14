@@ -31,7 +31,7 @@ Compatibility anchors: <a id="sandboxprovider"></a><a id="sandboxhandle"></a><a 
 
 ## Skeleton: a custom isolated provider
 
-Moved to [Custom provider guide](custom-provider-guide.md#skeleton-a-custom-isolated-provider).
+Moved to [Custom provider skeleton](custom-provider-skeleton.md).
 
 Compatibility anchors:
 
@@ -46,7 +46,8 @@ Compatibility anchors:
 - [Python API: `IsolatedSandboxHandle`](python-api.md#isolatedsandboxhandle) — public re-export consumers can import from the top-level package.
 - [Custom provider protocols](custom-provider-protocols.md) — Protocol reference.
 - [Custom provider reference](custom-provider-reference.md) — supporting types and factory helpers.
-- [Custom provider guide](custom-provider-guide.md) — skeleton implementation, in-tree examples, and provider conventions.
+- [Custom provider skeleton](custom-provider-skeleton.md) — minimum viable isolated provider.
+- [Custom provider guide](custom-provider-guide.md) — in-tree examples and provider conventions.
 - [Sandbox providers](sandbox-providers.md) — the in-tree provider catalog and matrix.
 - [How it works](how-it-works.md) — where `create()`, `exec()`, and `finalize()` plug into the iteration loop.
 - [Errors](errors.md) — `SandboxError` family raised by providers (`ProviderUnavailable`, `ExecFailed`, `ExecTimeout`, `UnsupportedStrategy`).

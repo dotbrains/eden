@@ -2,7 +2,7 @@
 
 Detailed `SandboxProvider` and handle Protocol reference for out-of-tree sandbox
 providers. See [Custom providers](custom-providers.md) for when to write one and
-[Custom provider guide](custom-provider-guide.md) for a skeleton implementation.
+[Custom provider skeleton](custom-provider-skeleton.md) for a minimal implementation.
 
 ## Protocol surface
 
