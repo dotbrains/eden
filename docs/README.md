@@ -61,6 +61,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Errors](errors.md) — the `EdenError` hierarchy and top-level public errors.
 - [Error hierarchy](error-hierarchy.md) — Mermaid inheritance diagram.
 - [Top-level errors](top-level-errors.md) — top-level `EdenError` subclasses.
+- [Hook and timeout errors](hook-timeout-errors.md) — hook failures and run timeouts.
 - [Configuration errors](config-errors.md) — `ConfigError` and setup-time failures.
 - [REST errors](rest-errors.md) — cloud-provider REST error subclasses.
 - [Error recovery](error-recovery.md) — handling strategies and catch-all examples.

@@ -43,49 +43,27 @@ Moved to [Configuration errors](config-errors.md#floxenverror).
 
 ## `HookError`
 
-Base for host- and sandbox-hook failures.
+Moved to [Hook and timeout errors](hook-timeout-errors.md#hookerror).
 
 ### `HookFailed`
 
-A hook's command exited non-zero. Default `code="hook.failed"`. The orchestrator
-stops the run after the failing hook; subsequent hooks in the same phase do not
-run.
-
-**Recovery:** check `e.cause` (when present) and fix the hook command, or remove
-the hook from the bundle.
+Moved to [Hook and timeout errors](hook-timeout-errors.md#hookfailed).
 
 ### `HookTimeout`
 
-A hook exceeded its `timeout` (per-hook override, or `Timeouts.hook_step`).
-Default `code="hook.timeout"`.
-
-**Recovery:** raise the timeout with `Timeouts(hook_step=...)` or per-hook
-`Hook(..., timeout=...)`, or simplify the hook.
+Moved to [Hook and timeout errors](hook-timeout-errors.md#hooktimeout).
 
 ## `EdenTimeoutError`
 
-Base for time-budget exceedances. Subclasses `builtins.TimeoutError`, so
-`except TimeoutError:` works too.
+Moved to [Hook and timeout errors](hook-timeout-errors.md#edentimeouterror).
 
 ### `IdleTimeout`
 
-Agent stdout was silent past `idle_timeout`. Default `code="timeout.idle"`.
-Raised by the orchestrator's idle watcher; the partially-completed iteration is
-committed before the exception propagates.
-
-**Recovery:** raise `idle_timeout` with `run(idle_timeout=...)`, or investigate
-why the agent stopped emitting (network stalls, infinite loops, prompt issues).
-`idle_warning_interval` lets you observe the silence in real time before it
-trips.
+Moved to [Hook and timeout errors](hook-timeout-errors.md#idletimeout).
 
 ### `StepTimeout`
 
-A single iteration exceeded `Timeouts.iteration_step`. Default
-`code="timeout.step"`. Distinct from `IdleTimeout` in that the agent may still
-be talking; this fires on total elapsed time, not silence.
-
-**Recovery:** raise `Timeouts(iteration_step=...)`, or split the work across more
-iterations.
+Moved to [Hook and timeout errors](hook-timeout-errors.md#steptimeout).
 
 ## `Aborted`
 
