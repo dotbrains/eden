@@ -13,7 +13,8 @@ from eden.worktree._git import (
     branch_exists,
     status_porcelain,
 )
-from eden.worktree._handle import CloseResult, WorktreeHandle
+from eden.worktree._handle import WorktreeHandle
+from eden.worktree._handle_result import CloseResult
 from eden.worktree._lock import acquire_lock
 from eden.worktree._reuse import find_reusable_worktree
 from eden.worktree._worktree_ops import worktree_add, worktree_remove

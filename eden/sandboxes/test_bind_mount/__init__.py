@@ -26,53 +26,14 @@ from __future__ import annotations
 import shutil
 import tempfile
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from eden.providers._helpers import make_bind_mount_provider
 from eden.providers._protocols import BindMountSandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, ExecResult
 from eden.sandboxes._exec import stream_exec
-
-
-@dataclass(frozen=True)
-class ExecCall:
-    cmd: str
-    cwd: Path | None
-    env_keys: tuple[str, ...]
-    timeout: float | None
-    stdin: str | None = None
-
-
-@dataclass(frozen=True)
-class CopyCall:
-    direction: str  # "in" or "out"
-    host: Path
-    sandbox: Path
-
-
-@dataclass
-class CallLog:
-    """Append-only record of every call dispatched through the test handle.
-
-    Pass an instance to ``provider(call_log=...)`` to inspect what the
-    orchestrator did. Aliased lists make assertions terse:
-
-        log = CallLog()
-        provider(call_log=log)
-        # ... orchestrator runs ...
-        assert log.exec_calls[0].cmd == "git status"
-    """
-
-    exec_calls: list[ExecCall] = field(default_factory=list)
-    copy_calls: list[CopyCall] = field(default_factory=list)
-    closed: bool = False
-
-    def reset(self) -> None:
-        self.exec_calls.clear()
-        self.copy_calls.clear()
-        self.closed = False
-
+from eden.sandboxes.test_bind_mount._log import CallLog, CopyCall, ExecCall
 
 ExecHandler = Callable[[ExecCall], ExecResult]
 

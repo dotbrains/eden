@@ -6,11 +6,12 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, status_porcelain
 from eden.worktree._handle_close import close_worktree_handle
 from eden.worktree._handle_protocols import StatusPorcelain, WorktreeRemove
+from eden.worktree._handle_result import CloseResult
 from eden.worktree._handle_run import (
     create_worktree_sandbox,
     interactive_in_worktree,
@@ -31,12 +32,6 @@ if TYPE_CHECKING:
     from eden.providers._types import Mount
     from eden.sandboxes._sandbox import Sandbox
     from eden.streaming import StreamEvent
-
-
-@dataclass(frozen=True)
-class CloseResult:
-    action: Literal["removed", "preserved", "released_only"]
-    reason: str | None = None
 
 
 @dataclass(frozen=True)
