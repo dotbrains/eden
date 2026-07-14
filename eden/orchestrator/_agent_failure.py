@@ -9,6 +9,7 @@ from typing import Protocol
 
 from eden.agents._errors import parse_stdout_error
 from eden.errors import AgentError
+from eden.orchestrator._agent_exec import AgentExecution
 from eden.orchestrator._recovery import format_agent_error_recovery
 from eden.streaming import StreamEvent
 
@@ -69,4 +70,35 @@ def raise_agent_exit_without_completion(
     raise err
 
 
-__all__ = ["raise_agent_exit_without_completion"]
+def raise_if_agent_failed_without_completion(
+    *,
+    agent_name: str,
+    iteration: int,
+    execution: AgentExecution,
+    stdout: str,
+    branch: str,
+    worktree_path: Path,
+    log_path: Path | None,
+    sink: _EventSink | None,
+    on_event: Callable[[StreamEvent], None] | None,
+    timestamp: Callable[[], datetime],
+) -> None:
+    exit_code = execution.exit_code
+    if execution.completion is not None or exit_code is None or exit_code == 0:
+        return
+    raise_agent_exit_without_completion(
+        agent_name=agent_name,
+        iteration=iteration,
+        exit_code=exit_code,
+        stderr=execution.stderr,
+        stdout=stdout,
+        branch=branch,
+        worktree_path=worktree_path,
+        log_path=log_path,
+        sink=sink,
+        on_event=on_event,
+        timestamp=timestamp,
+    )
+
+
+__all__ = ["raise_agent_exit_without_completion", "raise_if_agent_failed_without_completion"]

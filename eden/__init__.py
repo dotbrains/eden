@@ -91,15 +91,12 @@ from eden.streaming import StreamEvent
 from eden.worktree import CloseResult
 
 __all__ = [
-    # cancellation
     "AbortController",
     "AbortSignal",
     "Aborted",
-    # agent
     "Agent",
     "AgentError",
     "BindMountSandboxHandle",
-    # provider re-exports
     "BranchStrategy",
     "ClaudeSessionStorage",
     "CloseResult",
@@ -111,7 +108,6 @@ __all__ = [
     "CwdError",
     "Display",
     "DisplayEntry",
-    # errors
     "EdenError",
     "EdenTimeoutError",
     "EnvMergeError",
@@ -133,7 +129,6 @@ __all__ = [
     "IsolatedSandboxHandle",
     "Iteration",
     "IterationContext",
-    # config / data
     "Logging",
     "Mount",
     "Output",
@@ -178,7 +173,6 @@ __all__ = [
     "make_bind_mount_provider",
     "make_isolated_provider",
     "opencode",
-    # entrypoints
     "pi",
     "register_shutdown",
     "run",

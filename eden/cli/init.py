@@ -23,19 +23,12 @@ from eden.cli._init_templates import (
     TEMPLATES_REQUIRING_BACKLOG as _TEMPLATES_REQUIRING_BACKLOG,
 )
 from eden.cli._init_templates import (
-    VALID_AGENTS as _VALID_AGENTS,
+    default_model as _default_model,
 )
 from eden.cli._init_templates import (
-    VALID_BACKLOGS as _VALID_BACKLOGS,
+    render_template as _render_template,
 )
-from eden.cli._init_templates import (
-    VALID_SANDBOXES as _VALID_SANDBOXES,
-)
-from eden.cli._init_templates import (
-    VALID_TEMPLATES as _VALID_TEMPLATES,
-)
-from eden.cli._init_templates import default_model as _default_model
-from eden.cli._init_templates import render_template as _render_template
+from eden.cli._init_validation import validate_init_options as _validate_init_options
 
 console = Console(stderr=True)
 
@@ -150,23 +143,12 @@ def init_command(
 
     image_name = image_name or f"eden:{Path.cwd().name.lower()}"
 
-    if sandbox not in _VALID_SANDBOXES:
-        raise typer.BadParameter(
-            f"sandbox must be one of {list(_VALID_SANDBOXES)}, got {sandbox!r}",
-        )
-    if agent not in _VALID_AGENTS:
-        raise typer.BadParameter(
-            f"agent must be one of {list(_VALID_AGENTS)}, got {agent!r}",
-        )
-    if template not in _VALID_TEMPLATES:
-        raise typer.BadParameter(
-            f"template must be one of {list(_VALID_TEMPLATES)}, got {template!r}",
-        )
-    if template in _TEMPLATES_REQUIRING_BACKLOG:
-        if backlog not in _VALID_BACKLOGS:
-            raise typer.BadParameter(
-                f"backlog must be one of {list(_VALID_BACKLOGS)}, got {backlog!r}",
-            )
+    _validate_init_options(
+        sandbox=sandbox,
+        agent=agent,
+        template=template,
+        backlog=backlog,
+    )
 
     files = _render_template(
         template=template,

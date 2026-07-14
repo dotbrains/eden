@@ -123,7 +123,9 @@ class RunResult:
         never emitted a session id) or when the result was produced by an
         in-process API that does not store the run context.
         """
-        return _continue(self, prompt=prompt, fork=False, overrides=overrides)
+        from eden._result_continue import continue_run_result
+
+        return continue_run_result(self, prompt=prompt, fork=False, overrides=overrides)
 
     def fork(self, prompt: str, **overrides: Any) -> RunResult:
         """Run a follow-up iteration that writes a NEW session id while
@@ -140,47 +142,6 @@ class RunResult:
         ``codex exec fork <id>`` (codex). Agents without session support
         raise :class:`eden.errors.InvalidOptions`.
         """
-        return _continue(self, prompt=prompt, fork=True, overrides=overrides)
+        from eden._result_continue import continue_run_result
 
-
-def _continue(
-    result: RunResult,
-    *,
-    prompt: str,
-    fork: bool,
-    overrides: dict[str, Any],
-) -> RunResult:
-    """Shared implementation of ``RunResult.resume`` / ``.fork``."""
-    from eden.errors import InvalidOptions
-
-    if result._ctx is None:
-        raise InvalidOptions(
-            code="config.invalid_options",
-            message=("RunResult has no captured run context; cannot resume / fork"),
-            hint="resume / fork only work on results returned by eden.run()",
-        )
-    if result.session_id is None:
-        raise InvalidOptions(
-            code="config.invalid_options",
-            message=(
-                "RunResult has no session_id; cannot resume / fork. The agent "
-                "either did not capture a session or did not emit one this run."
-            ),
-            hint=(
-                "ensure the agent has capture_sessions=True (default for "
-                "claude_code / codex / pi) and that the iteration produced a "
-                "session id"
-            ),
-        )
-    from eden.orchestrator import run as _run
-
-    kwargs: dict[str, Any] = {
-        "agent": result._ctx.agent,
-        "sandbox": result._ctx.sandbox,
-        "cwd": result._ctx.cwd,
-        "prompt": prompt,
-        "resume_session": result.session_id,
-        "fork_session": fork,
-    }
-    kwargs.update(overrides)
-    return _run(**kwargs)
+        return continue_run_result(self, prompt=prompt, fork=True, overrides=overrides)

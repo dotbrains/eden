@@ -14,7 +14,7 @@ from eden.agents._flox import flox_wrap
 from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
 from eden.orchestrator._agent_exec import execute_agent_iteration
-from eden.orchestrator._agent_failure import raise_agent_exit_without_completion
+from eden.orchestrator._agent_failure import raise_if_agent_failed_without_completion
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._session_capture import capture_iteration_session
 from eden.orchestrator._setup import SetupResult
@@ -31,7 +31,6 @@ from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
 from eden.worktree._create import WorktreeHandle
 
-# Slack for mtime truncation when scoping subagent transcript capture.
 _SIDECHAIN_MTIME_SLACK = 2.0
 
 
@@ -126,21 +125,18 @@ def run_loop_iteration(
         timestamp=_utcnow,
     )
 
-    if agent_execution.completion is None:
-        if agent_execution.exit_code is not None and agent_execution.exit_code != 0:
-            raise_agent_exit_without_completion(
-                agent_name=agent.name,
-                iteration=iteration_index,
-                exit_code=agent_execution.exit_code,
-                stderr=agent_execution.stderr,
-                stdout=stdout_chunks.to_string(),
-                branch=worktree.branch,
-                worktree_path=worktree.worktree_path,
-                log_path=log_path,
-                sink=logger.sink,
-                on_event=on_event,
-                timestamp=_utcnow,
-            )
+    raise_if_agent_failed_without_completion(
+        agent_name=agent.name,
+        iteration=iteration_index,
+        execution=agent_execution,
+        stdout=stdout_chunks.to_string(),
+        branch=worktree.branch,
+        worktree_path=worktree.worktree_path,
+        log_path=log_path,
+        sink=logger.sink,
+        on_event=on_event,
+        timestamp=_utcnow,
+    )
 
     iter_session_file = capture_iteration_session(
         session_storage=session_storage,
