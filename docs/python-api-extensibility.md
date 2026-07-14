@@ -1,12 +1,12 @@
 # Python API: Extensibility
 
-Detailed reference for provider protocols. See [Python API: Lifecycle](python-api-lifecycle.md) for hooks and cancellation, [Python API: Display](python-api-display.md) for display sinks, and [Python API: Errors and tracing](python-api-errors-tracing.md) for error formatting, tracing, and version metadata.
+Detailed reference for provider protocols. See [Python API: Lifecycle](python-api-lifecycle.md) for hooks, [Python API: Cancellation](python-api-cancellation.md) for abort signals, [Python API: Display](python-api-display.md) for display sinks, and [Python API: Errors and tracing](python-api-errors-tracing.md) for error formatting, tracing, and version metadata.
 
 ---
 
 ## Lifecycle and cancellation
 
-Moved to [Python API: Lifecycle](python-api-lifecycle.md).
+Moved to [Python API: Lifecycle](python-api-lifecycle.md) and [Python API: Cancellation](python-api-cancellation.md).
 
 Compatibility anchors: <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a><a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>
 

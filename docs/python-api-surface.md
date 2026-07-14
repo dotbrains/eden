@@ -65,11 +65,11 @@ for the canonical index and compatibility anchors.
 - [`HostHooks`](python-api-lifecycle.md#hosthooks)
 - [`SandboxHooks`](python-api-lifecycle.md#sandboxhooks)
 - [`Hooks`](python-api-lifecycle.md#hooks)
-- [`AbortController`](python-api-lifecycle.md#abortcontroller)
-- [`AbortSignal`](python-api-lifecycle.md#abortsignal)
-- [`Aborted`](python-api-lifecycle.md#aborted)
-- [`register_shutdown`](python-api-lifecycle.md#register_shutdowncallback)
-- [`ShutdownCallback`](python-api-lifecycle.md#shutdowncallback)
+- [`AbortController`](python-api-cancellation.md#abortcontroller)
+- [`AbortSignal`](python-api-cancellation.md#abortsignal)
+- [`Aborted`](python-api-cancellation.md#aborted)
+- [`register_shutdown`](python-api-cancellation.md#register_shutdowncallback)
+- [`ShutdownCallback`](python-api-cancellation.md#shutdowncallback)
 
 ## Provider Protocols
 

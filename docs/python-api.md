@@ -27,7 +27,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [Structured output](python-api-output.md) — `Output`, `OutputDefinition`, schema validation, and retries.
 - [Agents](python-api-agents.md) — agent Protocols and built-in factories.
 - [Sessions](python-api-sessions.md) — transcript capture, storage, and session helpers.
-- [Lifecycle](python-api-lifecycle.md) — hooks, cancellation, and shutdown callbacks.
+- [Lifecycle](python-api-lifecycle.md) — hooks.
+- [Cancellation](python-api-cancellation.md) — abort signals and shutdown callbacks.
 - [Extensibility](python-api-extensibility.md) — provider Protocols.
 - [Display](python-api-display.md) — display sinks and display entries.
 - [Errors and tracing](python-api-errors-tracing.md) — error formatting, tracing, and version metadata.
@@ -57,7 +58,7 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="agents"></a><a id="agent-protocol"></a><a id="iterationcontext"></a><a id="factories"></a>[Agents](python-api-agents.md#agents)
 - <a id="session-storage"></a><a id="claudesessionstorage"></a><a id="codexsessionstorage"></a><a id="pisessionstorage"></a><a id="session-lookup-helpers"></a><a id="transfer_session"></a>[Sessions](python-api-sessions.md#session-storage)
 - <a id="lifecycle-hooks"></a><a id="hook"></a><a id="hookphase"></a><a id="hosthooks"></a><a id="sandboxhooks"></a><a id="hooks"></a>[Lifecycle hooks](python-api-lifecycle.md#lifecycle-hooks)
-- <a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>[Cancellation](python-api-lifecycle.md#cancellation)
+- <a id="cancellation"></a><a id="abortcontroller"></a><a id="abortsignal"></a><a id="aborted"></a><a id="register_shutdowncallback"></a><a id="shutdowncallback"></a>[Cancellation](python-api-cancellation.md#cancellation)
 - <a id="provider-protocol-re-exports"></a><a id="sandboxhandle"></a><a id="bindmountsandboxhandle"></a><a id="isolatedsandboxhandle"></a><a id="sandboxprovider"></a><a id="createoptions"></a><a id="execresult"></a><a id="make_bind_mount_provider"></a><a id="make_isolated_provider"></a>[Provider Protocol re-exports](python-api-extensibility.md#provider-protocol-re-exports)
 - <a id="display"></a><a id="displayentry"></a><a id="silentdisplay"></a><a id="filedisplay"></a><a id="richdisplay"></a>[Display](python-api-display.md#display)
 - <a id="errors"></a><a id="format_error_messageerror"></a><a id="structuredoutputerror"></a>[Errors](python-api-errors-tracing.md#errors)
