@@ -1,13 +1,4 @@
-"""`eden cost` — aggregate token usage from captured session JSONLs.
-
-Walks ``<repo>/.eden/sessions/<branch>/iter-*-<session-id>.jsonl`` and sums
-the ``usage`` recorded on each session's terminal ``result`` line. Prints a
-per-branch breakdown plus an overall total.
-
-Usage records are emitted by Claude Code's stream-json output and captured
-verbatim by ``eden.session.capture_session``; the sums match what
-``RunResult.usage`` reports for individual runs.
-"""
+"""Aggregate token usage from captured session JSONLs."""
 
 from __future__ import annotations
 

@@ -62,7 +62,6 @@ class WorktreeHandle:
         copy_to_worktree: list[str] | None = None,
         timeouts: Timeouts | None = None,
     ) -> Sandbox:
-        """Create a sandbox backed by this worktree."""
         return create_worktree_sandbox(
             self,
             sandbox=sandbox,
