@@ -1,5 +1,3 @@
-"""Eden — Python orchestrator for AI coding agents in sandboxed worktrees."""
-
 from __future__ import annotations
 
 from eden._error_format import format_error_message

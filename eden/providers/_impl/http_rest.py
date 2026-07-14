@@ -25,9 +25,7 @@ from eden.tracing import set_attributes, span
 
 _DEFAULT_TIMEOUT = 60.0
 _DEFAULT_MAX_RETRIES = 3
-# Hard ceiling on Retry-After honour. Servers occasionally return values like
-# 7200s (two hours); waiting that long would hang any orchestrated run with
-# nothing useful to show. Surface a typed RestRateLimited at this cap instead.
+# Hard ceiling on Retry-After honour; huge values would hang orchestrated runs.
 _DEFAULT_MAX_RETRY_AFTER = 60.0
 
 

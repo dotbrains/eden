@@ -66,9 +66,7 @@ class WorktreeHandle:
     ) -> Sandbox:
         """Create a sandbox backed by this worktree.
 
-        The returned sandbox does not own the worktree: closing it tears down
-        only the provider handle. Call :meth:`close` on this worktree when the
-        whole workflow is finished.
+        Closing it tears down only the provider handle, not this worktree.
         """
         return create_worktree_sandbox(
             self,
