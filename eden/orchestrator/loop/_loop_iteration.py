@@ -63,7 +63,6 @@ def run_loop_iteration(
     log_path: Path | None,
 ) -> LoopIterationResult:
     signal.raise_if_aborted()
-
     run_iteration_start_hooks(
         hooks=hooks,
         handle=handle,

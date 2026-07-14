@@ -1,5 +1,3 @@
-"""Shared container-runtime provider: docker / podman bind-mount sandboxes."""
-
 from __future__ import annotations
 
 import shutil

@@ -1,5 +1,3 @@
-"""Worktree manager: create_worktree, WorktreeHandle, CloseResult."""
-
 from __future__ import annotations
 
 import datetime as _dt

@@ -1,4 +1,4 @@
-"""Centralized formatter for surface-friendly error messages.
+"""Format surface-friendly error messages.
 
 Eden's error taxonomy spans three sub-packages:
 
@@ -30,8 +30,6 @@ carry one (notably ``ProviderUnavailable``, ``ImageNotFound``,
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from eden._error_hints import provider_hint, worktree_hint
 from eden.errors import (
     Aborted,
@@ -53,9 +51,6 @@ from eden.errors import (
     StepTimeout,
     StructuredOutputError,
 )
-
-if TYPE_CHECKING:
-    pass
 
 
 def _has_attr(obj: object, name: str) -> bool:

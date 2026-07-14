@@ -1,5 +1,3 @@
-"""``eden.interactive()`` — launch an agent attached to the parent TTY."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
