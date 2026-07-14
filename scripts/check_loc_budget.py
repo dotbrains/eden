@@ -23,7 +23,7 @@ class DirectoryBudget:
 
 
 FILE_BUDGETS = (
-    FileBudget("eden/**/*.py", 171),
+    FileBudget("eden/**/*.py", 170),
     FileBudget("tests/**/*.py", 177),
     FileBudget("docs/**/*.md", 121, excludes=("docs/superpowers/**",)),
 )

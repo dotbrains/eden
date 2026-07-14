@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from pathlib import Path
 
 from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
@@ -69,8 +68,8 @@ def _run_loop(
         existing_handle=existing_handle,
         git_timeout=timeouts.git_setup,
     )
-    log_path: Path | None = None
-    preserved: Path | None = None
+    log_path = None
+    preserved = None
     unregister_shutdown: Callable[[], None] | None = None
 
     session_context = prepare_loop_session_context(

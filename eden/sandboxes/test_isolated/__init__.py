@@ -1,13 +1,3 @@
-"""Filesystem-backed isolated provider for tests.
-
-The sandbox is a temp directory carved per-create() call, populated
-by copying the orchestrator-supplied worktree at create time. ``exec``
-runs ``/bin/sh -c`` inside the temp dir (or a stub handler if one is
-supplied). ``finalize(target)`` replays the in-sandbox state onto the
-target via :mod:`eden.providers._impl.patch_sync`, matching the
-production ``isolated`` provider.
-"""
-
 from __future__ import annotations
 
 import shutil

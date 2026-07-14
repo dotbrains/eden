@@ -72,7 +72,6 @@ def _worktree_path_for(host_repo_path: Path, branch: str) -> Path:
 
 
 def _ensure_eden_gitignore(host_repo_path: Path) -> None:
-    """Write .eden/.gitignore so git ignores eden's own metadata directory."""
     eden_dir = _eden_dir(host_repo_path)
     gitignore = eden_dir / ".gitignore"
     if not gitignore.exists():

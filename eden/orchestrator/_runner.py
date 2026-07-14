@@ -1,5 +1,3 @@
-"""Agent process runner: spawn, stream stdout, integrate idle + abort."""
-
 from __future__ import annotations
 
 import os

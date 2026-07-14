@@ -32,10 +32,9 @@ def create_sandbox(
     throw_on_duplicate_worktree: bool = True,
     timeouts: Timeouts | None = None,
 ) -> Sandbox:
-    """Resolve branch/strategy, carve a worktree, and create the sandbox handle.
+    """Resolve branch/strategy, carve a worktree, and create a sandbox.
 
-    ``base_branch`` overrides the fork point of the default ``merge_to_head``
-    strategy. It is mutually exclusive with ``branch_strategy``.
+    ``base_branch`` overrides the default ``merge_to_head`` fork point.
 
     ``worktree`` reuses a caller-managed :class:`WorktreeHandle` (from
     :func:`eden.create_worktree`) instead of carving a fresh one. Ownership is
