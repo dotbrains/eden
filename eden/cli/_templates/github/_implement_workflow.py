@@ -1,5 +1,3 @@
-"""Implement workflow text for the GitHub agent template."""
-
 # ruff: noqa: E501
 
 from __future__ import annotations

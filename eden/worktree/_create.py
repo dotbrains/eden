@@ -101,8 +101,6 @@ def create_worktree(
     ``close()`` reuses it for the teardown ``git worktree remove``. Callers
     in the run loop pass ``Timeouts.git_setup``.
     """
-    # Ensure .eden/ is gitignored regardless of strategy so metadata files
-    # created by any path don't surface as untracked in the host repo.
     _ensure_eden_gitignore(host_repo_path)
 
     if strategy.tag == "head":

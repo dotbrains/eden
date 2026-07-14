@@ -1,39 +1,19 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, status_porcelain
 from eden.worktree._handle_close import close_worktree_handle
+from eden.worktree._handle_methods import _WorktreeMethods
 from eden.worktree._handle_protocols import StatusPorcelain, WorktreeRemove
 from eden.worktree._handle_result import CloseResult
-from eden.worktree._handle_run import (
-    create_worktree_sandbox,
-    interactive_in_worktree,
-    run_in_worktree,
-)
 from eden.worktree._lock import _LockHandle
 from eden.worktree._worktree_ops import worktree_remove
 
-if TYPE_CHECKING:
-    from eden._types import RunResult, Timeouts
-    from eden.abort import AbortSignal
-    from eden.agents._protocol import Agent
-    from eden.lifecycle import Hooks
-    from eden.logging import Logging
-    from eden.orchestrator.interactive import InteractiveResult
-    from eden.output import OutputDefinition
-    from eden.providers._protocols import SandboxProvider
-    from eden.providers._types import Mount
-    from eden.sandboxes._sandbox import Sandbox
-    from eden.streaming import StreamEvent
-
 
 @dataclass(frozen=True)
-class WorktreeHandle:
+class WorktreeHandle(_WorktreeMethods):
     branch: str
     worktree_path: Path
     host_repo_path: Path
@@ -49,112 +29,6 @@ class WorktreeHandle:
 
     def __exit__(self, *exc: object) -> None:
         self.close()
-
-    def create_sandbox(
-        self,
-        *,
-        sandbox: SandboxProvider,
-        cwd: Path | None = None,
-        env: Mapping[str, str] | None = None,
-        mounts: tuple[Mount, ...] | None = None,
-        name: str | None = None,
-        hooks: Hooks | None = None,
-        copy_to_worktree: list[str] | None = None,
-        timeouts: Timeouts | None = None,
-    ) -> Sandbox:
-        return create_worktree_sandbox(
-            self,
-            sandbox=sandbox,
-            cwd=cwd,
-            env=env,
-            mounts=mounts,
-            name=name,
-            hooks=hooks,
-            copy_to_worktree=copy_to_worktree,
-            timeouts=timeouts,
-        )
-
-    def run(
-        self,
-        *,
-        agent: Agent,
-        sandbox: SandboxProvider,
-        prompt: str | None = None,
-        prompt_file: str | Path | None = None,
-        prompt_args: Mapping[str, str] | None = None,
-        env: Mapping[str, str] | None = None,
-        mounts: tuple[Mount, ...] | None = None,
-        max_iterations: int = 1,
-        completion_signal: str | list[str] = "<promise>COMPLETE</promise>",
-        idle_timeout: float | timedelta = 600.0,
-        idle_warning_interval: float | timedelta | None = None,
-        completion_timeout: float | timedelta | None = 60.0,
-        name: str | None = None,
-        hooks: Hooks | None = None,
-        timeouts: Timeouts | None = None,
-        on_event: Callable[[StreamEvent], None] | None = None,
-        logging: Logging | None = None,
-        signal: AbortSignal | None = None,
-        output: OutputDefinition | None = None,
-        resume_session: str | None = None,
-        fork_session: bool = False,
-        copy_to_worktree: list[str] | None = None,
-    ) -> RunResult:
-        return run_in_worktree(
-            self,
-            agent=agent,
-            sandbox=sandbox,
-            prompt=prompt,
-            prompt_file=prompt_file,
-            prompt_args=prompt_args,
-            env=env,
-            mounts=mounts,
-            max_iterations=max_iterations,
-            completion_signal=completion_signal,
-            idle_timeout=idle_timeout,
-            idle_warning_interval=idle_warning_interval,
-            completion_timeout=completion_timeout,
-            name=name,
-            hooks=hooks,
-            timeouts=timeouts,
-            on_event=on_event,
-            logging=logging,
-            signal=signal,
-            output=output,
-            resume_session=resume_session,
-            fork_session=fork_session,
-            copy_to_worktree=copy_to_worktree,
-        )
-
-    def interactive(
-        self,
-        *,
-        agent: Agent,
-        sandbox: SandboxProvider | None = None,
-        prompt: str | None = None,
-        prompt_file: str | Path | None = None,
-        prompt_args: Mapping[str, str] | None = None,
-        env: Mapping[str, str] | None = None,
-        name: str | None = None,
-        hooks: Hooks | None = None,
-        collect_args: bool | None = None,
-        signal: AbortSignal | None = None,
-        timeouts: Timeouts | None = None,
-    ) -> InteractiveResult:
-        return interactive_in_worktree(
-            self,
-            agent=agent,
-            sandbox=sandbox,
-            prompt=prompt,
-            prompt_file=prompt_file,
-            prompt_args=prompt_args,
-            env=env,
-            name=name,
-            hooks=hooks,
-            collect_args=collect_args,
-            signal=signal,
-            timeouts=timeouts,
-        )
 
     def close(self) -> CloseResult:
         action, reason = close_worktree_handle(

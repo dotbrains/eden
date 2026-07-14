@@ -126,7 +126,6 @@ def _run_loop(
             session_storage=session_context.storage,
             log_path=log_path,
         )
-
         finalize_loop_sandbox(
             handle=resources.handle,
             worktree=wt,

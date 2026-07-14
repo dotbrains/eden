@@ -49,9 +49,8 @@ def create_sandbox(
     copy from the host repo into the freshly-carved worktree before the
     sandbox boots. Incompatible with the ``head`` branch strategy.
 
-    ``hooks`` runs ``host.on_worktree_ready`` after ``copy_to_worktree`` and
-    before sandbox creation, ``sandbox.on_sandbox_ready`` after the provider
-    handle is created, and ``*.on_close`` from :meth:`Sandbox.close`.
+    ``hooks`` runs ``host.on_worktree_ready``, ``sandbox.on_sandbox_ready``,
+    and ``*.on_close`` from :meth:`Sandbox.close`.
 
     ``timeouts`` caps the carve's git plumbing via ``Timeouts.git_setup``
     (and is reused by ``close()`` for the teardown ``git worktree remove``).

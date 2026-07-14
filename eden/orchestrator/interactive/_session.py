@@ -24,7 +24,7 @@ from eden.worktree._create import WorktreeHandle
 
 @dataclass(frozen=True)
 class InteractiveResult:
-    """Returned by :func:`eden.interactive` after the agent exits.
+    """Result returned by :func:`eden.interactive`.
 
     ``exit_code`` is the agent process's exit status. ``branch`` is the
     worktree branch the session ran on (may equal ``"HEAD"`` for the head
@@ -60,8 +60,7 @@ def interactive(
 ) -> InteractiveResult:
     """Run an agent attached to the parent TTY.
 
-    Unlike :func:`eden.run`, the agent inherits the caller's stdin / stdout /
-    stderr — the user types directly into the agent's TUI. There is no
+    Unlike :func:`eden.run`, the agent inherits stdin / stdout / stderr. There is no
     iteration loop, no idle watchdog, no stream parsing, no completion-signal
     matching. The function returns when the agent process exits.
 

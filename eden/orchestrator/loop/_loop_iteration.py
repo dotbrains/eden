@@ -148,7 +148,6 @@ def run_loop_iteration(
         logger=logger,
         on_event=on_event,
     )
-
     run_iteration_end_hooks(
         hooks=hooks,
         handle=handle,
