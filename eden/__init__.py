@@ -63,13 +63,7 @@ from eden.providers._protocols import (
     SandboxHandle,
     SandboxProvider,
 )
-from eden.providers._types import (
-    BranchStrategy,
-    CreateOptions,
-    ExecResult,
-    FinalizeResult,
-    Mount,
-)
+from eden.providers._types import BranchStrategy, CreateOptions, ExecResult, FinalizeResult, Mount
 from eden.sandboxes import Sandbox, create_sandbox
 from eden.session import (
     claude_host_session_path,

@@ -1,5 +1,3 @@
-"""Single-iteration execution for the orchestrator loop."""
-
 from __future__ import annotations
 
 import time
