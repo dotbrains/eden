@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -13,6 +13,7 @@ from eden.orchestrator._idle import IdleWatchdog
 from eden.orchestrator._logging import LoopLogger
 from eden.orchestrator._runner import _AgentRunner
 from eden.orchestrator.loop._agent_stream import parse_event, stdin_payload
+from eden.orchestrator.runner._completion import drain_after_completion
 from eden.providers._protocols import SandboxHandle
 from eden.streaming import StreamEvent
 from eden.streaming._bounded_tail import BoundedTail
@@ -126,34 +127,18 @@ def execute_agent_iteration(
                 hit = match(line, completion_signal)
                 if hit is not None:
                     iter_completion = hit
-                    drain = runner.drain_remaining(total_timeout=completion_timeout)
-                    if drain.timed_out:
-                        warn_ev = StreamEvent(
-                            type="text",
-                            agent_name=agent.name,
-                            iteration=iteration,
-                            timestamp=timestamp(),
-                            text=(
-                                f"[eden] completion_timeout ({completion_timeout}s) "
-                                "elapsed after completion signal — agent process did "
-                                "not EOF; terminating now. Iteration succeeded."
-                            ),
-                        )
-                        logger.write(warn_ev)
-                        if on_event is not None:
-                            on_event(warn_ev)
-                    for trailing in drain.lines:
-                        stdout_chunks.push(trailing + "\n")
-                        _emit_raw(trailing)
-                        trailing_parsed = agent.parse_stream(trailing)
-                        if trailing_parsed is not None:
-                            _handle_event(
-                                replace(
-                                    trailing_parsed,
-                                    iteration=iteration,
-                                    agent_name=agent.name,
-                                )
-                            )
+                    drain_after_completion(
+                        runner=runner,
+                        agent=agent,
+                        iteration=iteration,
+                        completion_timeout=completion_timeout,
+                        logger=logger,
+                        on_event=on_event,
+                        stdout_chunks=stdout_chunks,
+                        timestamp=timestamp,
+                        emit_raw=_emit_raw,
+                        handle_event=_handle_event,
+                    )
                     runner.terminate()
                     break
             agent_exit_code = runner.exit_code()

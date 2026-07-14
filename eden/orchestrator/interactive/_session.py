@@ -68,9 +68,8 @@ def interactive(
     :class:`InvalidOptions` for now — TTY allocation in containerized
     sandboxes (``docker exec -t``) is a separate, deeper feature.
 
-    ``prompt`` / ``prompt_file`` / ``prompt_args`` are optional. When supplied,
-    eden renders the prompt the same way ``run()`` does (``{{SOURCE_BRANCH}}``,
-    ``{{TARGET_BRANCH}}``, ``!`...``` shell expansion, custom args) and passes
+    Optional prompt inputs render like ``run()`` (``{{SOURCE_BRANCH}}``,
+    ``{{TARGET_BRANCH}}``, shell expansion, custom args) and pass
     the resulting text to the agent's interactive argv builder. Agents that
     define a ``build_interactive_command(ctx)`` method use it; others fall
     back to ``build_command(ctx)``.

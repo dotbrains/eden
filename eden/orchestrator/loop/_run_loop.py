@@ -68,8 +68,6 @@ def _run_loop(
         existing_handle=existing_handle,
         git_timeout=timeouts.git_setup,
     )
-    log_path = None
-    preserved = None
     unregister_shutdown: Callable[[], None] | None = None
 
     session_context = prepare_loop_session_context(

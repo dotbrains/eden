@@ -32,10 +32,6 @@ from eden.worktree._create import WorktreeHandle
 _SIDECHAIN_MTIME_SLACK = 2.0
 
 
-def _utcnow() -> datetime:
-    return datetime.now(UTC)
-
-
 def run_loop_iteration(
     *,
     iteration_index: int,
@@ -112,7 +108,7 @@ def run_loop_iteration(
         on_event=on_event,
         signal=signal,
         stdout_chunks=stdout_chunks,
-        timestamp=_utcnow,
+        timestamp=lambda: datetime.now(UTC),
     )
 
     raise_if_agent_failed_without_completion(
@@ -125,7 +121,7 @@ def run_loop_iteration(
         log_path=log_path,
         sink=logger.sink,
         on_event=on_event,
-        timestamp=_utcnow,
+        timestamp=lambda: datetime.now(UTC),
     )
 
     iter_session_file = capture_iteration_session(
@@ -137,7 +133,7 @@ def run_loop_iteration(
         iteration=iteration_index,
         since=iter_started_at,
         agent_name=agent.name,
-        timestamp=_utcnow(),
+        timestamp=datetime.now(UTC),
         sink=logger.sink,
     )
 

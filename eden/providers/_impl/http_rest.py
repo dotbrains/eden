@@ -161,8 +161,7 @@ class RestClient:
 
             raise_status(resp, url)
 
-        # Unreachable in practice (loop either returns or raises),
-        # but mypy needs a fallthrough.
+        # Unreachable in practice; mypy needs a fallthrough.
         raise RestError(message="exhausted retries", cause=last_exc, url=url)
 
 

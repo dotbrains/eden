@@ -45,9 +45,8 @@ def create_sandbox(
     Mutually exclusive with ``branch``/``branch_strategy``/``base_branch``,
     whose job (picking the branch) was done when the worktree was carved.
 
-    ``copy_to_worktree`` is a list of host-relative file/directory paths to
-    copy from the host repo into the freshly-carved worktree before the
-    sandbox boots. Incompatible with the ``head`` branch strategy.
+    ``copy_to_worktree`` copies host-relative paths into the worktree before
+    sandbox boot. Incompatible with the ``head`` branch strategy.
 
     ``hooks`` runs ``host.on_worktree_ready``, ``sandbox.on_sandbox_ready``,
     and ``*.on_close`` from :meth:`Sandbox.close`.
@@ -107,7 +106,7 @@ def create_sandbox(
             git_timeout=resolved_timeouts.git_setup,
         )
 
-    # .eden/.env values flow into the container at create time; explicit env= wins.
+    # .eden/.env flows into container creation; explicit env= wins.
     combined_env = {**load_eden_env(host_repo_path), **(dict(env) if env else {})}
 
     try:

@@ -40,8 +40,7 @@ def stream_exec(
 ) -> ExecResult:
     """Run a subprocess with line-buffered stdout+stderr drained via threads.
 
-    On `timeout`: SIGTERM, then SIGKILL after a 5s grace, then raise
-    `ExecTimeout` carrying whatever was captured.
+    On `timeout`: SIGTERM, then SIGKILL after 5s, then raise `ExecTimeout`.
 
     ``stdin``, when given, is written to the process's stdin on a daemon
     thread. The write is offloaded so a large payload can't deadlock

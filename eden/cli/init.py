@@ -93,9 +93,7 @@ def init_command(
         console.print(f"[red]refusing to overwrite existing {target}[/red]")
         raise typer.Exit(code=1)
 
-    # Resolve each option from its flag, an interactive prompt, or a default.
-    # When stdin is not a TTY and a flag is missing, _resolve_option fails
-    # fast naming the flag instead of hanging on the prompt.
+    # Resolve each option from a flag, prompt, or default; non-TTY stdin fails fast.
     interactive = sys.stdin.isatty() and not yes
     sandbox = _resolve_option(
         sandbox,

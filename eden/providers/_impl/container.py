@@ -47,7 +47,7 @@ def make_container_provider(
     userns: Literal["keep-id"] | None = None,
     max_output_tail_chars: int = DEFAULT_MAX_CHARS,
 ) -> SandboxProvider:
-    """Build a bind-mount SandboxProvider backed by ``<binary> run``.
+    """Build a bind-mount provider backed by ``<binary> run``.
 
     Identical argv shape for docker and podman; the binary name is threaded
     through every subprocess call (run, exec, cp, kill).
@@ -72,10 +72,7 @@ def make_container_provider(
     ``devices`` exposes host device specs such as ``"/dev/kvm"`` or
     ``"/dev/dri:/dev/dri:rwm"`` for GPU workloads or KVM nesting.
 
-    ``cpus`` bounds the container's CPU usage (passed as ``--cpus <value>``,
-    e.g. ``1.5``). Useful when several sandboxes share a host or when a
-    parallel-planner template spawns N branches that would otherwise
-    saturate the box.
+    ``cpus`` bounds container CPU usage via ``--cpus <value>``.
 
     ``groups`` is a tuple of supplementary group names or GIDs passed via
     ``--group-add``. Most commonly used to grant the in-container ``agent``

@@ -37,8 +37,7 @@ class Sandbox:
     create_env: Mapping[str, str] = field(default_factory=dict)
     timeouts: Timeouts = field(default_factory=Timeouts)
     _last_session_id: str | None = field(default=None, repr=False, compare=False)
-    """Session id of the most recent ``run()`` that captured one; powers the
-    no-argument :meth:`resume` / :meth:`fork` convenience methods."""
+    """Most recent captured session id for no-argument ``resume`` / ``fork``."""
 
     def __enter__(self) -> Sandbox:
         return self

@@ -111,8 +111,7 @@ class _AgentRunner:
         """Return buffered lines remaining after the completion signal.
 
         Called once the completion signal is matched so trailing lines
-        (e.g. the ``result`` JSON emitted by ``claude --output-format
-        stream-json``) are captured before the process is terminated.
+        are captured before the process is terminated.
 
         Three exit conditions:
 
@@ -165,5 +164,5 @@ class _AgentRunner:
 
     @property
     def stderr_text(self) -> str:
-        """Return the captured stderr accumulated so far. Safe after EOF."""
+        """Return captured stderr. Safe after EOF."""
         return "".join(self._stderr_chunks)

@@ -9,9 +9,8 @@ Eden's error taxonomy spans three sub-packages:
 * ``eden.worktree.errors`` — git worktree problems.
 
 Every concrete error already attaches a structured ``code`` and a
-human-readable ``message``; many already carry a ``hint``. There is
-value in *one* place that consults all of them and returns a single
-display string with a friendlier prefix.
+human-readable ``message``; many already carry a ``hint``. One formatter
+can consult all of them and return a friendlier display string.
 
 This module provides that. CLI surfaces (``eden run``, REPL drivers,
 custom orchestrators) can route any ``EdenError`` through
