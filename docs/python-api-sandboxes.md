@@ -1,8 +1,9 @@
 # Python API: Sandboxes and Worktrees
 
-Detailed reference for caller-managed sandboxes and worktree creation. See
+Detailed reference for caller-managed sandboxes. See
 [Python API: Entry points](python-api-entrypoints.md) for `run(...)`,
-`interactive(...)`, and the async wrappers.
+`interactive(...)`, and the async wrappers, and
+[Python API: Worktrees](python-api-worktrees.md) for standalone worktrees.
 
 ---
 
@@ -27,7 +28,7 @@ def create_sandbox(
 ) -> Sandbox: ...
 ```
 
-`worktree` (when supplied) reuses a caller-managed `WorktreeHandle` from [`create_worktree()`](#create_worktree) instead of carving a fresh one. Ownership is then split: `Sandbox.close()` tears down the container only, and the caller's `worktree.close()` decides the worktree's fate (preserved if dirty, removed if clean) so one worktree can host several sequential sandboxes. Mutually exclusive with `branch`/`branch_strategy`/`base_branch`.
+`worktree` (when supplied) reuses a caller-managed `WorktreeHandle` from [`create_worktree()`](python-api-worktrees.md#create_worktree) instead of carving a fresh one. Ownership is then split: `Sandbox.close()` tears down the container only, and the caller's `worktree.close()` decides the worktree's fate (preserved if dirty, removed if clean) so one worktree can host several sequential sandboxes. Mutually exclusive with `branch`/`branch_strategy`/`base_branch`.
 
 ```python
 with eden.create_worktree(branch="eden/feature/x") as wt:
@@ -90,45 +91,4 @@ with eden.create_sandbox(sandbox=docker_provider(...)) as s:
 
 ## `create_worktree(...)`
 
-Carves a worktree without launching an agent, useful when you want to manage the iteration loop yourself.
-
-```python
-def create_worktree(
-    *,
-    branch: str | None = None,
-    branch_strategy: BranchStrategy | None = None,
-    base_branch: str | None = None,
-    cwd: str | Path | None = None,
-    copy_to_worktree: list[str] | None = None,
-    hooks: Hooks | None = None,
-    timeouts: Timeouts | None = None,
-    name: str | None = None,
-    throw_on_duplicate_worktree: bool = True,
-) -> WorktreeHandle: ...
-```
-
-Provide either `branch` (named) or `branch_strategy` (any of the three strategies); supplying both raises `ValueError`. Defaults to `BranchStrategy.merge_to_head()`. `cwd` selects the host repo instead of `Path.cwd()`. `copy_to_worktree` copies host-relative files into the carved worktree before `host.on_worktree_ready` hooks run. `timeouts.git_setup` controls git worktree operations and `timeouts.hook_step` controls hooks. Returns a `WorktreeHandle` with `.branch`, `.worktree_path`, `.close()`, `.run(...)`, `.interactive(...)`, and `.create_sandbox(...)` (works as a context manager).
-
-Use the handle directly when a workflow needs to keep one branch/worktree across several steps:
-
-```python
-from eden.sandboxes.no_sandbox import provider as no_sandbox
-
-with eden.create_worktree(branch="eden/issue-42") as wt:
-    explore = wt.interactive(agent=eden.claude_code("..."), sandbox=no_sandbox())
-    result = wt.run(
-        agent=eden.claude_code("..."),
-        sandbox=docker_provider(...),
-        prompt_file=".eden/implement.md",
-        max_iterations=5,
-    )
-    with wt.create_sandbox(sandbox=docker_provider(...)) as sb:
-        checked = sb.exec("pytest -q", timeout=120)
-        checked.check()
-```
-
-`wt.run(...)` creates a short-lived sandbox backed by the worktree, runs one agent loop through [`Sandbox.run(...)`](#sandboxrun), closes only the sandbox handle, and leaves the worktree open for more work. It accepts the same options as `Sandbox.run(...)` plus `sandbox=`, provider `mounts=`, `copy_to_worktree=`, and sandbox-creation `hooks=`.
-
-`wt.interactive(...)` launches an interactive session in the existing worktree without carving or closing another worktree. It accepts the same prompt/env/name/hook/signal/timeout options as top-level [`interactive(...)`](python-api-interactive.md#interactive).
-
-`wt.create_sandbox(...)` is equivalent to [`create_sandbox(worktree=wt, ...)`](#create_sandbox): each returned `Sandbox.close()` removes only its provider handle; the worktree lives until `wt.close()`.
+Moved to [Python API: Worktrees](python-api-worktrees.md#create_worktree).

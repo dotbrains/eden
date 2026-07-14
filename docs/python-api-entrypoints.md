@@ -103,4 +103,4 @@ Compatibility anchors:
 - [`Sandbox.exec(...)`](python-api-sandboxes.md#sandboxexec)
 - [`Sandbox.run(...)`](python-api-sandboxes.md#sandboxrun)
 - [`Sandbox.resume(...)` / `Sandbox.fork(...)`](python-api-sandboxes.md#sandboxresume-sandboxfork)
-- [`create_worktree(...)`](python-api-sandboxes.md#create_worktree)
+- [`create_worktree(...)`](python-api-worktrees.md#create_worktree)

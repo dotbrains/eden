@@ -20,7 +20,8 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [Python API: Entry points](python-api-entrypoints.md) — `run`.
 - [Python API: Interactive](python-api-interactive.md) — terminal-attached agent sessions.
 - [Python API: Async](python-api-async.md) — `eden.aio` wrappers for async callers.
-- [Python API: Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
+- [Python API: Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox`.
+- [Python API: Worktrees](python-api-worktrees.md) — standalone worktree creation.
 - [Python API: Types](python-api-types.md) — configuration dataclasses.
 - [Python API: Results](python-api-results.md) — result dataclasses.
 - [Python API: Logging](python-api-logging.md) — stream-event sink configuration.

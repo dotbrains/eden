@@ -10,7 +10,7 @@ for the canonical index and compatibility anchors.
 - [`interactive`](python-api-interactive.md#interactive)
 - [`InteractiveResult`](python-api-interactive.md#interactiveresult)
 - [`create_sandbox`](python-api-sandboxes.md#create_sandbox)
-- [`create_worktree`](python-api-sandboxes.md#create_worktree)
+- [`create_worktree`](python-api-worktrees.md#create_worktree)
 - [`Sandbox`](python-api-sandboxes.md#sandboxexec)
 
 ## Configuration

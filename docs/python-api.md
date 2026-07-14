@@ -18,7 +18,8 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [Entry points](python-api-entrypoints.md) — `run`.
 - [Interactive](python-api-interactive.md) — terminal-attached agent sessions.
 - [Async API](python-api-async.md) — `eden.aio` wrappers for async callers.
-- [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox` and worktree creation.
+- [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox`.
+- [Worktrees](python-api-worktrees.md) — standalone worktree creation.
 - [Types](python-api-types.md) — configuration dataclasses.
 - [Results](python-api-results.md) — result dataclasses.
 - [Logging](python-api-logging.md) — stream-event sink configuration.
@@ -47,7 +48,7 @@ Existing deep links to this file land on the anchors below. Follow each link for
 - <a id="sandboxexec"></a>[`Sandbox.exec(...)`](python-api-sandboxes.md#sandboxexec)
 - <a id="sandboxrun"></a>[`Sandbox.run(...)`](python-api-sandboxes.md#sandboxrun)
 - <a id="sandboxresume-sandboxfork"></a>[`Sandbox.resume(...)` / `Sandbox.fork(...)`](python-api-sandboxes.md#sandboxresume-sandboxfork)
-- <a id="create_worktree"></a>[`create_worktree(...)`](python-api-sandboxes.md#create_worktree)
+- <a id="create_worktree"></a>[`create_worktree(...)`](python-api-worktrees.md#create_worktree)
 - <a id="configuration-types"></a><a id="timeouts"></a><a id="mount"></a><a id="branchstrategy"></a>[Configuration types](python-api-types.md#configuration-types)
 - <a id="logging"></a>[Logging](python-api-logging.md#logging)
 - <a id="result-types"></a><a id="closeresult"></a><a id="runresult"></a><a id="iteration"></a><a id="commit"></a><a id="usage"></a><a id="finalizeresult"></a>[Result types](python-api-results.md#result-types)
