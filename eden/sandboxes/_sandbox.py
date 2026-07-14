@@ -1,5 +1,3 @@
-"""Reusable sandbox context-manager wrapper."""
-
 from __future__ import annotations
 
 import shlex
@@ -49,7 +47,6 @@ class Sandbox:
         self.close()
 
     def close(self) -> CloseResult:
-        """Close the sandbox handle, and the worktree if this sandbox owns it."""
         return close_sandbox(
             worktree=self.worktree,
             handle=self.handle,

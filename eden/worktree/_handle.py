@@ -100,7 +100,6 @@ class WorktreeHandle:
         fork_session: bool = False,
         copy_to_worktree: list[str] | None = None,
     ) -> RunResult:
-        """Run an agent in a short-lived sandbox backed by this worktree."""
         return run_in_worktree(
             self,
             agent=agent,
@@ -142,7 +141,6 @@ class WorktreeHandle:
         signal: AbortSignal | None = None,
         timeouts: Timeouts | None = None,
     ) -> InteractiveResult:
-        """Run an interactive agent session in this worktree."""
         return interactive_in_worktree(
             self,
             agent=agent,

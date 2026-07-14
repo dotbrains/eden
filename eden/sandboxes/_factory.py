@@ -150,9 +150,8 @@ def create_sandbox(
             finally:
                 raise
     except Exception:
-        # A caller-provided worktree outlives this sandbox by design — only
-        # close what this factory carved itself. A cleanup failure must not
-        # replace the creation error, so it is reported and suppressed.
+        # A caller-provided worktree outlives this sandbox by design.
+        # Report but suppress cleanup failures so they do not replace creation errors.
         if owns_worktree:
             try:
                 wt.close()

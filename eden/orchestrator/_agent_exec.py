@@ -167,6 +167,3 @@ def execute_agent_iteration(
         )
     finally:
         wd.stop()
-
-
-__all__ = ["AgentExecution", "execute_agent_iteration"]

@@ -15,7 +15,10 @@ from eden.providers._impl.http_retry import (
 from eden.providers._impl.http_retry import (
     parse_retry_after as _parse_retry_after,
 )
-from eden.providers._impl.http_retry import raise_status, retry_delay
+from eden.providers._impl.http_retry import (
+    raise_status,
+    retry_delay,
+)
 from eden.tracing import set_attributes, span
 
 _DEFAULT_TIMEOUT = 60.0
@@ -25,12 +28,6 @@ _DEFAULT_MAX_RETRY_AFTER = 60.0
 
 @dataclass
 class RestClient:
-    """Sync REST client with auth-header injection + smart retries.
-
-    Errors map to typed exceptions; injected ``sleep`` and ``rand`` keep retry
-    tests deterministic.
-    """
-
     base_url: str
     headers: Mapping[str, str]
     timeout: float = _DEFAULT_TIMEOUT

@@ -167,6 +167,3 @@ def make_container_provider(
         )
 
     return make_bind_mount_provider(name=binary, create=_create)
-
-
-__all__ = ["make_container_provider"]

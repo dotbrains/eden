@@ -49,8 +49,7 @@ def _eden_dir(host_repo_path: Path) -> Path:
     Git keys its worktree records by realpath. When users symlink
     ``.eden/`` to another disk (a common setup when the host repo lives
     on a small SSD), passing the symlink-relative path to
-    ``git worktree add / remove`` makes git's internal lookup miss its
-    own records. Resolving once at the entry point fixes both branches.
+    ``git worktree add / remove`` makes git's internal lookup miss records.
 
     The directory is created if it does not exist so ``.resolve()``
     returns an absolute path on every platform (Windows in particular

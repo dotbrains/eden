@@ -58,7 +58,7 @@ def interactive(
     timeouts: Timeouts | None = None,
     _existing_worktree: WorktreeHandle | None = None,
 ) -> InteractiveResult:
-    """Run an agent attached to the parent TTY for an interactive session.
+    """Run an agent attached to the parent TTY.
 
     Unlike :func:`eden.run`, the agent inherits the caller's stdin / stdout /
     stderr — the user types directly into the agent's TUI. There is no
@@ -76,10 +76,8 @@ def interactive(
     define a ``build_interactive_command(ctx)`` method use it; others fall
     back to ``build_command(ctx)``.
 
-    ``collect_args`` controls interactive collection of missing
-    ``{{KEY}}`` placeholders. When ``None`` (default), eden collects them
-    only when ``stdin`` is a TTY — CI runs hit the normal
-    :class:`eden.errors.PromptError`. Pass ``True`` / ``False`` to force.
+    ``collect_args`` controls interactive collection of missing ``{{KEY}}``
+    placeholders. By default, eden collects them only when ``stdin`` is a TTY.
     """
     resources = prepare_interactive_resources(
         sandbox=sandbox,

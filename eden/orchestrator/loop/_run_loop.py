@@ -104,7 +104,6 @@ def _run_loop(
         log_path = runtime.log_path
         flox_env_dir = runtime.flox_env_dir
         assert resources.logger is not None
-
         run_loop_iterations(
             max_iterations=max_iterations,
             agent=agent,
