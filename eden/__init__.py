@@ -115,7 +115,6 @@ __all__ = [
     "FileDisplay",
     "FinalizeResult",
     "FloxEnvError",
-    # lifecycle
     "Hook",
     "HookError",
     "HookFailed",

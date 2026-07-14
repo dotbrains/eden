@@ -55,10 +55,7 @@ def _run_loop(
     existing_worktree: WorktreeHandle | None = None,
     existing_handle: SandboxHandle | None = None,
 ) -> RunResult:
-    # Caller-managed mode: when both ``existing_worktree`` and
-    # ``existing_handle`` are provided, the loop reuses them and skips both
-    # creation and teardown — used by ``Sandbox.run()`` so multiple agents
-    # can share one container and one branch.
+    # Caller-managed mode reuses both worktree and handle for ``Sandbox.run()``.
     wt, caller_managed = prepare_loop_worktree(
         sandbox=sandbox,
         setup=setup,
