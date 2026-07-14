@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal
 
 from eden.agents.claude_code._agent import _ClaudeCodeAgent
-from eden.agents.claude_code._argv import ClaudePermissionMode
+from eden.agents.claude_code._argv import ClaudeEffort, ClaudePermissionMode
 from eden.errors import InvalidOptions
 
 _DEFAULT_MODEL = "claude-opus-4-8"
@@ -16,6 +15,8 @@ _VALID_PERMISSION_MODES: tuple[str, ...] = (
     "default",
     "acceptEdits",
     "plan",
+    "auto",
+    "dontAsk",
     "bypassPermissions",
 )
 
@@ -24,7 +25,7 @@ def claude_code(
     model: str = _DEFAULT_MODEL,
     *,
     name: str = "claude-code",
-    effort: Literal["low", "medium", "high"] | None = None,
+    effort: ClaudeEffort | None = None,
     env: Mapping[str, str] | None = None,
     capture_sessions: bool = True,
     dangerously_skip_permissions: bool = False,
@@ -55,12 +56,12 @@ def claude_code(
         permission_mode: Graduated tool-approval control, appended as
             ``--permission-mode <mode>``. One of ``"default"`` (prompt per
             tool), ``"acceptEdits"`` (auto-accept file edits, prompt for the
-            rest), ``"plan"`` (plan only, no edits), or ``"bypassPermissions"``
-            (skip all prompts). Use this instead of the all-or-nothing
-            ``dangerously_skip_permissions`` when you want a middle ground —
-            e.g. ``"acceptEdits"`` for safe autonomous editing inside a sandbox
-            or ``"plan"`` for a read-only planning iteration. Mutually
-            exclusive with ``dangerously_skip_permissions=True``.
+            rest), ``"plan"`` (plan only, no edits), ``"auto"`` (AI-mediated
+            per-tool decisions), ``"dontAsk"`` (refuse instead of prompting),
+            or ``"bypassPermissions"`` (skip all prompts). Use this instead of
+            the all-or-nothing ``dangerously_skip_permissions`` when you want a
+            middle ground. Mutually exclusive with
+            ``dangerously_skip_permissions=True``.
         extra_args: Escape hatch for unsurfaced Claude CLI flags. Inserted
             before the ``--`` prompt separator.
         flox_env: Optional path to a directory containing a Flox env

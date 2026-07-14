@@ -68,6 +68,28 @@ def test_build_command_with_effort_includes_thinking_effort() -> None:
     assert "--thinking-effort" in argv
 
 
+def test_build_command_accepts_new_effort_levels() -> None:
+    a = claude_code(model="m", effort="xhigh")
+    argv = a.build_command(_ctx())
+    idx = argv.index("--thinking-effort")
+    assert argv[idx + 1] == "xhigh"
+
+
+def test_build_command_accepts_new_permission_modes() -> None:
+    a = claude_code(model="m", permission_mode="auto")
+    argv = a.build_command(_ctx())
+    idx = argv.index("--permission-mode")
+    assert argv[idx + 1] == "auto"
+
+
+def test_interactive_command_accepts_new_permission_modes() -> None:
+    a = claude_code(model="m", permission_mode="dontAsk")
+    argv = a.build_interactive_command(_ctx(prompt="seed"))
+    idx = argv.index("--permission-mode")
+    assert argv[idx + 1] == "dontAsk"
+    assert argv[-1] == "seed"
+
+
 def test_parse_stream_returns_text_for_assistant_block() -> None:
     a = claude_code(model="m")
     line = json.dumps(

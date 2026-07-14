@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from eden.agents._context import IterationContext
-from eden.agents.claude_code._argv import ClaudePermissionMode, build_argv
+from eden.agents.claude_code._argv import ClaudeEffort, ClaudePermissionMode, build_argv
 from eden.agents.claude_code._stream import parse_line
 from eden.streaming import StreamEvent
 
@@ -21,7 +21,7 @@ class _ClaudeCodeAgent:
     name: str
     model: str
     captures_sessions: bool
-    _effort: Literal["low", "medium", "high"] | None = None
+    _effort: ClaudeEffort | None = None
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
     _dangerously_skip_permissions: bool = False

@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-ClaudePermissionMode = Literal["default", "acceptEdits", "plan", "bypassPermissions"]
+ClaudeEffort = Literal["low", "medium", "high", "xhigh", "max"]
+ClaudePermissionMode = Literal[
+    "default",
+    "acceptEdits",
+    "plan",
+    "auto",
+    "dontAsk",
+    "bypassPermissions",
+]
 
 _BASE: tuple[str, ...] = (
     "claude",
@@ -18,7 +26,7 @@ _BASE: tuple[str, ...] = (
 def build_argv(
     *,
     model: str,
-    effort: Literal["low", "medium", "high"] | None,
+    effort: ClaudeEffort | None,
     extra_args: tuple[str, ...],
     resume_session: str | None = None,
     fork_session: bool = False,
@@ -40,9 +48,9 @@ def build_argv(
     per-tool permission prompts inside a sandboxed container.
     ``permission_mode``, when set, appends ``--permission-mode <mode>`` for
     graduated tool-approval control (``"default"``, ``"acceptEdits"``,
-    ``"plan"``, ``"bypassPermissions"``) instead of the all-or-nothing
-    ``dangerously_skip_permissions``. The caller (the ``claude_code``
-    factory) enforces that ``permission_mode`` and
+    ``"plan"``, ``"auto"``, ``"dontAsk"``, ``"bypassPermissions"``) instead
+    of the all-or-nothing ``dangerously_skip_permissions``. The caller (the
+    ``claude_code`` factory) enforces that ``permission_mode`` and
     ``dangerously_skip_permissions`` are not both set.
     """
     argv: list[str] = [*_BASE, "--model", model]

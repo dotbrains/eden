@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from eden.agents.claude_code._argv import build_argv
+from eden.agents.claude_code._argv import ClaudeEffort, ClaudePermissionMode, build_argv
 
 pytestmark = pytest.mark.unit
 
@@ -35,6 +35,13 @@ def test_effort_threaded() -> None:
     assert "--thinking-effort" in argv
     idx = argv.index("--thinking-effort")
     assert argv[idx + 1] == "high"
+
+
+@pytest.mark.parametrize("effort", ["low", "medium", "high", "xhigh", "max"])
+def test_all_effort_levels_threaded(effort: ClaudeEffort) -> None:
+    argv = build_argv(model="m", effort=effort, extra_args=())
+    idx = argv.index("--thinking-effort")
+    assert argv[idx + 1] == effort
 
 
 def test_extra_args_appended_before_stdin_sigil() -> None:
@@ -89,3 +96,13 @@ def test_permission_mode_appears_before_extra_args() -> None:
         permission_mode="plan",
     )
     assert argv.index("--permission-mode") < argv.index("--allowed-tools")
+
+
+@pytest.mark.parametrize(
+    "mode",
+    ["default", "acceptEdits", "plan", "auto", "dontAsk", "bypassPermissions"],
+)
+def test_all_permission_modes_threaded(mode: ClaudePermissionMode) -> None:
+    argv = build_argv(model="m", effort=None, extra_args=(), permission_mode=mode)
+    idx = argv.index("--permission-mode")
+    assert argv[idx + 1] == mode

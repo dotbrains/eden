@@ -20,18 +20,19 @@ def claude_code(
     model: str,
     *,
     name: str = "claude-code",
-    effort: Literal["low", "medium", "high"] | None = None,
+    effort: Literal["low", "medium", "high", "xhigh", "max"] | None = None,
     env: Mapping[str, str] | None = None,
     capture_sessions: bool = True,
     dangerously_skip_permissions: bool = False,
-    permission_mode: Literal["default", "acceptEdits", "plan", "bypassPermissions"] | None = None,
+    permission_mode: Literal["default", "acceptEdits", "plan", "auto", "dontAsk", "bypassPermissions"] | None = None,
     extra_args: tuple[str, ...] = (),
 ) -> _ClaudeCodeAgent: ...
 ```
 
 - `model` - Claude model id, threaded into `--model`. Required.
 - `name` - agent identifier. Default `"claude-code"`.
-- `effort` - optional `--thinking-effort` level.
+- `effort` - optional `--thinking-effort` level. `max` is intended for Opus
+  models.
 - `env` - per-agent environment additions; merged with the host env.
 - `capture_sessions` - copy each iteration's session JSONL into
   `.eden/sessions/`. Default `True`.
