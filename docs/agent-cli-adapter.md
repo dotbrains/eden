@@ -1,9 +1,10 @@
 # Agent CLI adapter
 
 Detailed reference for the generic `cli_agent` adapter. See
-[Agent CLI factories](agent-cli-factories.md) for dedicated `codex`, `opencode`,
-and `pi` wrappers, and [Agent CLI editor factories](agent-cli-editor-factories.md)
-for `cursor` and `copilot`.
+[Agent CLI factories](agent-cli-factories.md) for `codex`,
+[Agent CLI other factories](agent-cli-other-factories.md) for `opencode` and
+`pi`, and [Agent CLI editor factories](agent-cli-editor-factories.md) for
+`cursor` and `copilot`.
 
 ## `cli_agent`
 

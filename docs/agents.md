@@ -51,7 +51,7 @@ You can also import directly from each subpackage (`from eden.agents.codex impor
 
 ## Factory Reference
 
-Detailed per-factory options moved to [Agent factories](agent-factories.md), [Agent CLI factories](agent-cli-factories.md), and [Agent CLI editor factories](agent-cli-editor-factories.md).
+Detailed per-factory options moved to [Agent factories](agent-factories.md), [Claude Code agent](agent-claude-code.md), [Agent CLI factories](agent-cli-factories.md), [Agent CLI other factories](agent-cli-other-factories.md), and [Agent CLI editor factories](agent-cli-editor-factories.md).
 
 ### `simulated_agent`
 
@@ -59,7 +59,7 @@ Moved to [`simulated_agent`](agent-factories.md#simulated_agent).
 
 ### `claude_code`
 
-Moved to [`claude_code`](agent-factories.md#claude_code).
+Moved to [`claude_code`](agent-claude-code.md#claude_code).
 
 ### `codex`
 
@@ -67,11 +67,11 @@ Moved to [`codex`](agent-factories.md#codex).
 
 ### `opencode`
 
-Moved to [`opencode`](agent-factories.md#opencode).
+Moved to [`opencode`](agent-cli-other-factories.md#opencode).
 
 ### `pi`
 
-Moved to [`pi`](agent-factories.md#pi).
+Moved to [`pi`](agent-cli-other-factories.md#pi).
 
 ### `cursor`
 
@@ -96,8 +96,10 @@ Each agent reads its own credentials from environment variables, per its own doc
 ## See also
 
 - [Python API: Agents](python-api.md#agents) — full Protocol and factory reference.
-- [Agent factories](agent-factories.md) — `simulated_agent` and `claude_code` arguments and behavior.
-- [Agent CLI factories](agent-cli-factories.md) — CLI adapter arguments, argv shapes, and stream parsers.
+- [Agent factories](agent-factories.md) — `simulated_agent` arguments and behavior.
+- [Claude Code agent](agent-claude-code.md) — `claude_code` arguments and transcript capture.
+- [Agent CLI factories](agent-cli-factories.md) — Codex argv shape and stream parser.
+- [Agent CLI other factories](agent-cli-other-factories.md) — opencode and pi argv shapes.
 - [Agent CLI editor factories](agent-cli-editor-factories.md) — Cursor and Copilot factory options.
 - [Agent Flox runtime](agent-flox-runtime.md) — per-agent toolchain activation.
 - [Custom providers](custom-providers.md) — for sandbox-side provider authoring (the agent side stays unchanged).

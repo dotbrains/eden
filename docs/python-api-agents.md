@@ -57,7 +57,7 @@ Moved to [Agent factories](agent-factories.md#simulated_agent).
 
 #### `claude_code(...)`
 
-Moved to [Agent factories](agent-factories.md#claude_code).
+Moved to [Claude Code agent](agent-claude-code.md#claude_code).
 
 #### `codex(...)`
 
@@ -65,11 +65,11 @@ Moved to [Agent CLI factories](agent-cli-factories.md#codex).
 
 #### `opencode(...)`
 
-Moved to [Agent CLI factories](agent-cli-factories.md#opencode).
+Moved to [Agent CLI other factories](agent-cli-other-factories.md#opencode).
 
 #### `pi(...)`
 
-Moved to [Agent CLI factories](agent-cli-factories.md#pi).
+Moved to [Agent CLI other factories](agent-cli-other-factories.md#pi).
 
 #### `cursor(...)`
 
