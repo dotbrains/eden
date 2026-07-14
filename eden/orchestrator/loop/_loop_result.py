@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from eden._types import Commit, Iteration, RunResult
@@ -10,6 +11,13 @@ from eden.orchestrator._result import assemble_loop_result
 from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxProvider
 from eden.streaming._bounded_tail import BoundedTail
+
+
+@dataclass(frozen=True)
+class LoopIterationResult:
+    iteration: Iteration
+    completion: str | None
+    rendered_prompt: str
 
 
 def build_loop_result(
@@ -47,4 +55,4 @@ def build_loop_result(
     )
 
 
-__all__ = ["build_loop_result"]
+__all__ = ["LoopIterationResult", "build_loop_result"]

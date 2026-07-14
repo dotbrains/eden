@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -25,6 +24,7 @@ from eden.orchestrator.loop._iteration_hooks import (
     run_iteration_start_hooks,
 )
 from eden.orchestrator.loop._iteration_prompt import render_iteration_prompt
+from eden.orchestrator.loop._loop_result import LoopIterationResult
 from eden.providers._protocols import SandboxHandle
 from eden.session._protocol import SessionStorage
 from eden.streaming import StreamEvent
@@ -32,13 +32,6 @@ from eden.streaming._bounded_tail import BoundedTail
 from eden.worktree._create import WorktreeHandle
 
 _SIDECHAIN_MTIME_SLACK = 2.0
-
-
-@dataclass(frozen=True)
-class LoopIterationResult:
-    iteration: Iteration
-    completion: str | None
-    rendered_prompt: str
 
 
 def _utcnow() -> datetime:

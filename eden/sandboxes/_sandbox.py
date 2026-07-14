@@ -17,6 +17,7 @@ from eden.logging._config import Logging
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import ExecResult
 from eden.sandboxes._duration import maybe_seconds, seconds
+from eden.sandboxes._sandbox_continue import continue_sandbox_session
 from eden.sandboxes._sandbox_lifecycle import close_sandbox
 from eden.sandboxes._sandbox_run import validate_sandbox_run_options
 from eden.streaming import StreamEvent
@@ -162,22 +163,10 @@ class Sandbox:
         return self._continue(prompt, fork=True, overrides=overrides)
 
     def _continue(self, prompt: str, *, fork: bool, overrides: Mapping[str, object]) -> RunResult:
-        from eden.errors import InvalidOptions
-
-        if self._last_session_id is None:
-            raise InvalidOptions(
-                code="config.invalid_options",
-                message=(
-                    f"no captured session to {'fork' if fork else 'resume'}; "
-                    "call run() first on an agent that captures sessions"
-                ),
-                hint=(
-                    "claude_code captures sessions by default; "
-                    "cli_agent needs capture_sessions=True"
-                ),
-            )
-        kwargs: dict[str, object] = dict(overrides)
-        kwargs["prompt"] = prompt
-        kwargs["resume_session"] = self._last_session_id
-        kwargs["fork_session"] = fork
-        return self.run(**kwargs)  # type: ignore[arg-type]
+        return continue_sandbox_session(
+            run=self.run,
+            last_session_id=self._last_session_id,
+            prompt=prompt,
+            fork=fork,
+            overrides=overrides,
+        )
