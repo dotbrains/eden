@@ -50,10 +50,7 @@ def execute_agent_iteration(
     stdout_chunks: BoundedTail,
     timestamp: Callable[[], datetime],
 ) -> AgentExecution:
-    wd = IdleWatchdog(
-        idle_timeout=idle_timeout,
-        idle_warning_interval=idle_warning_interval,
-    )
+    wd = IdleWatchdog(idle_timeout=idle_timeout, idle_warning_interval=idle_warning_interval)
     wd.start()
     try:
         iter_completion: str | None = None

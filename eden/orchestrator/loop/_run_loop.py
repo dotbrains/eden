@@ -12,10 +12,7 @@ from eden.orchestrator._setup import SetupResult
 from eden.orchestrator.loop._loop_cleanup import close_loop_resources
 from eden.orchestrator.loop._loop_finalize import finalize_loop_sandbox
 from eden.orchestrator.loop._loop_iterations import run_loop_iterations
-from eden.orchestrator.loop._loop_resources import (
-    prepare_loop_run_resources,
-    prepare_loop_worktree,
-)
+from eden.orchestrator.loop._loop_resources import prepare_loop_run_resources, prepare_loop_worktree
 from eden.orchestrator.loop._loop_result import build_loop_result
 from eden.orchestrator.loop._loop_session import prepare_loop_session_context
 from eden.orchestrator.loop._loop_startup import start_loop_runtime

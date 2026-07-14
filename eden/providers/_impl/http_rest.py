@@ -15,10 +15,7 @@ from eden.providers._impl.http_retry import (
 from eden.providers._impl.http_retry import (
     parse_retry_after as _parse_retry_after,
 )
-from eden.providers._impl.http_retry import (
-    raise_status,
-    retry_delay,
-)
+from eden.providers._impl.http_retry import raise_status, retry_delay
 from eden.tracing import set_attributes, span
 
 _DEFAULT_TIMEOUT = 60.0
