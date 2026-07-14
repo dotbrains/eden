@@ -1,5 +1,3 @@
-"""Orchestrator iteration loop driver."""
-
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
@@ -55,7 +53,6 @@ def _run_loop(
     existing_worktree: WorktreeHandle | None = None,
     existing_handle: SandboxHandle | None = None,
 ) -> RunResult:
-    # Caller-managed mode reuses both worktree and handle for ``Sandbox.run()``.
     wt, caller_managed = prepare_loop_worktree(
         sandbox=sandbox,
         setup=setup,

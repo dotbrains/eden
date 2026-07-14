@@ -1,5 +1,3 @@
-"""create_sandbox top-level factory."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -111,11 +109,7 @@ def create_sandbox(
             git_timeout=resolved_timeouts.git_setup,
         )
 
-    # .eden/.env values flow into the container at create time so entrypoints
-    # and on_sandbox_ready hooks see them; explicit env= still wins. The file
-    # is looked up under the repo ``create_worktree`` carved from (the host
-    # process's CWD when this factory carves), not the agent's ``cwd=`` —
-    # those have different meanings in this factory.
+    # .eden/.env values flow into the container at create time; explicit env= wins.
     combined_env = {**load_eden_env(host_repo_path), **(dict(env) if env else {})}
 
     try:

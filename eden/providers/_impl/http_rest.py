@@ -1,5 +1,3 @@
-"""Shared REST client for cloud sandbox providers."""
-
 from __future__ import annotations
 
 import random
@@ -25,7 +23,6 @@ from eden.tracing import set_attributes, span
 
 _DEFAULT_TIMEOUT = 60.0
 _DEFAULT_MAX_RETRIES = 3
-# Hard ceiling on Retry-After honour; huge values would hang orchestrated runs.
 _DEFAULT_MAX_RETRY_AFTER = 60.0
 
 

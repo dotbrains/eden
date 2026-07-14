@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from eden._error_format import format_error_message
 from eden._types import Commit, Iteration, RunResult, Timeouts, Usage
 from eden._version import __version__

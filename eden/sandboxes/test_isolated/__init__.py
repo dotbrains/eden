@@ -1,17 +1,11 @@
-"""test_isolated: in-tree filesystem-backed isolated provider for tests.
+"""Filesystem-backed isolated provider for tests.
 
-The "sandbox" is a temp directory carved per-create() call, populated
+The sandbox is a temp directory carved per-create() call, populated
 by copying the orchestrator-supplied worktree at create time. ``exec``
 runs ``/bin/sh -c`` inside the temp dir (or a stub handler if one is
 supplied). ``finalize(target)`` replays the in-sandbox state onto the
 target via :mod:`eden.providers._impl.patch_sync`, matching the
 production ``isolated`` provider.
-
-Useful for:
-
-* Exercising the orchestrator's ``IsolatedSandboxHandle.finalize`` path
-  in tests without needing Daytona / Vercel credentials.
-* External provider authors who want a compact isolated-provider example.
 """
 
 from __future__ import annotations
@@ -130,8 +124,7 @@ _IGNORED_TOP_LEVEL: tuple[str, ...] = (".git", ".eden")
 def _clone(src: Path, dst: Path) -> None:
     """Mirror ``src`` to ``dst`` excluding ``.git`` / ``.eden``.
 
-    Plain ``shutil.copytree`` — no APFS clonefile optimisation since
-    test fixtures are small.
+    Plain ``shutil.copytree`` is enough for small test fixtures.
     """
     shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*_IGNORED_TOP_LEVEL))
 
