@@ -11,8 +11,7 @@ Useful for:
 
 * Exercising the orchestrator's ``IsolatedSandboxHandle.finalize`` path
   in tests without needing Daytona / Vercel credentials.
-* External provider authors who want a worked example of an isolated
-  provider that fits in one file.
+* External provider authors who want a compact isolated-provider example.
 """
 
 from __future__ import annotations

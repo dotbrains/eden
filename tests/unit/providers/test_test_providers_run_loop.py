@@ -12,23 +12,21 @@ from pathlib import Path
 
 import pytest
 
-from eden import run, simulated_agent
+from eden.agents import simulated_agent
+from eden.orchestrator import run as eden_run
+from eden.sandboxes import test_bind_mount, test_isolated
 from eden.sandboxes.test_bind_mount import (
     CallLog,
 )
-from eden.sandboxes.test_bind_mount import (
-    provider as bind_mount_provider,
-)
-from eden.sandboxes.test_isolated import provider as isolated_provider
 
 pytestmark = pytest.mark.unit
 
 
 def test_bind_mount_drives_a_simulated_run(tmp_git_repo: Path) -> None:
     log = CallLog()
-    result = run(
+    result = eden_run(
         cwd=tmp_git_repo,
-        sandbox=bind_mount_provider(call_log=log),
+        sandbox=test_bind_mount.provider(call_log=log),
         agent=simulated_agent(
             output="hello\n<promise>COMPLETE</promise>\n",
         ),
@@ -42,9 +40,9 @@ def test_bind_mount_drives_a_simulated_run(tmp_git_repo: Path) -> None:
 
 
 def test_isolated_drives_a_simulated_run(tmp_git_repo: Path) -> None:
-    result = run(
+    result = eden_run(
         cwd=tmp_git_repo,
-        sandbox=isolated_provider(),
+        sandbox=test_isolated.provider(),
         agent=simulated_agent(
             output="hello\n<promise>COMPLETE</promise>\n",
         ),
