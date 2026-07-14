@@ -1,6 +1,6 @@
 # Development
 
-Local setup, repo layout, test markers, lint and type gates, and how to publish a release.
+Local setup, repo layout, test markers, lint and type gates.
 
 ---
 
@@ -69,47 +69,14 @@ the important coverage:
 
 The same `pre-commit` config (`.pre-commit-config.yaml`) gates every local
 commit, so format/lint/type errors fail before push instead of after CI. It
-also runs `scripts/check_loc_budget.py`: active source files under `eden/` stay
-at or below 193 lines, test files stay at or below 181 lines, active docs stay
-at or below 187 lines, source directories stay at or below 15 tracked files,
-and test directories stay at or below 11 tracked files. Historical
-`docs/superpowers/` planning archives are exempt from the active-doc line
-budget.
+also runs `scripts/check_loc_budget.py`, which owns the current source, test,
+docs, and flat-directory thresholds. Historical `docs/superpowers/` planning
+archives are exempt from the active-doc line budget.
 
 The `integration` marker runs separately because those tests touch real
 provider services and are capability-gated by the runner environment.
 
 The coverage gate is **70%**.
-
-## Releasing a new version
-
-1. Bump `pyproject.toml` `version` (semver).
-2. Commit: `chore: bump version to vX.Y.Z`.
-3. Push to `main`. CI must be green.
-4. Tag from `main`:
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   ```
-5. The `.github/workflows/release.yml` workflow runs automatically and publishes to PyPI via Trusted Publishing. No long-lived tokens are required.
-
-### First-time setup of PyPI Trusted Publishing
-
-Required once, before the first publish:
-
-1. Visit https://pypi.org/manage/project/eden-agent/settings/publishing/ (project owner only).
-2. Add a new pending publisher:
-   - Owner: `dotbrains`
-   - Repository: `eden`
-   - Workflow filename: `release.yml`
-   - Environment name: `pypi`
-3. Save. The first tag push will succeed.
-
-Repeat the steps on https://test.pypi.org for the `testpypi` environment if you want to dry-run release candidates.
-
-### Test releases
-
-Tag with a `-rc` suffix (e.g., `v0.1.0-rc1`) to publish to TestPyPI instead of production PyPI. The release workflow's tag-pattern logic routes `-rc` tags to the test repository.
 
 ## Contributing
 
@@ -120,3 +87,7 @@ Tag with a `-rc` suffix (e.g., `v0.1.0-rc1`) to publish to TestPyPI instead of p
 - New error classes belong in the hierarchy described in [errors.md](errors.md).
 - New sandbox providers should follow the Protocol described in [custom-providers.md](custom-providers.md).
 - New agents follow the one-agent-per-subpackage convention in `eden/agents/` (see [agents.md](agents.md)).
+
+## See also
+
+- [Releasing](releasing.md) — PyPI Trusted Publishing and release tags.

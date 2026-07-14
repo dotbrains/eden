@@ -37,6 +37,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 - [CLI](cli.md) — scaffold projects, run templates, and print the installed version.
 - [CLI session tools](cli-session-tools.md) — inspect costs, replay transcripts, and clean runtime artifacts.
 - [GitHub Action](github-action.md) — run an eden iteration loop in any GitHub workflow.
+- [Releasing](releasing.md) — PyPI Trusted Publishing and release tags.
 - [Configuration](configuration.md) — environment variables, `Logging`, `Timeouts`.
 - [Sandbox providers](sandbox-providers.md) — provider matrix and local provider behavior.
 - [Container sandbox providers](container-sandbox-providers.md) — Docker and Podman details.
@@ -70,6 +71,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 ## Concepts
 
 - [How it works](how-it-works.md) — branch strategies, worktrees, sandbox lifecycle, iteration loop.
+- [Iteration loop diagram](iteration-loop-diagram.md) — sequence diagram for the full run lifecycle.
 - [Custom providers](custom-providers.md) — `SandboxProvider` and handle Protocol reference.
 - [Custom provider protocols](custom-provider-protocols.md) — Protocol reference.
 - [Custom provider reference](custom-provider-reference.md) — provider types and factory helpers.
