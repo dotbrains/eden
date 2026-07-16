@@ -43,9 +43,9 @@ def test_main_py_includes_claude_code_import_for_claude_code_agent() -> None:
 
 
 def test_main_py_includes_codex_import_for_codex_agent() -> None:
-    out = _render(agent="codex", model="gpt-5")
+    out = _render(agent="codex", model="gpt-5.4")
     assert "from eden import run, codex" in out["main.py"]
-    assert 'codex("gpt-5")' in out["main.py"]
+    assert 'codex("gpt-5.4")' in out["main.py"]
 
 
 def test_main_py_includes_opencode_import_for_opencode_agent() -> None:

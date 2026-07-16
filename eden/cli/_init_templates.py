@@ -66,7 +66,7 @@ AGENTS: dict[str, AgentMetadata] = {
         label="Claude Code",
         default_model="claude-opus-4-8",
     ),
-    "codex": AgentMetadata(name="codex", label="Codex", default_model="gpt-5"),
+    "codex": AgentMetadata(name="codex", label="Codex", default_model="gpt-5.4"),
     "opencode": AgentMetadata(name="opencode", label="opencode", default_model="claude-opus-4"),
     "pi": AgentMetadata(name="pi", label="Pi", default_model="pi-3.5"),
 }

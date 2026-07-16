@@ -13,7 +13,7 @@ _VALID_APPROVALS_REVIEWERS: tuple[str, ...] = ("user", "auto_review")
 
 
 def codex(
-    model: str = "gpt-5",
+    model: str = "gpt-5.4",
     *,
     name: str = "codex",
     effort: Effort | None = None,
@@ -35,7 +35,7 @@ def codex(
     with the prompt delivered via stdin.
 
     Args:
-        model: Default ``"gpt-5"`` is illustrative — override per call site.
+        model: Default ``"gpt-5.4"`` is illustrative — override per call site.
         name: Agent identifier (default ``"codex"``).
         effort: Optional reasoning-effort level. When set, threads
             ``-c model_reasoning_effort="<level>"`` into the invocation.

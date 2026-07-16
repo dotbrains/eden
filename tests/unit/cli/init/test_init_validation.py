@@ -88,7 +88,7 @@ def test_init_non_tty_all_flags_succeeds_without_yes(
             "--agent",
             "codex",
             "--model",
-            "gpt-5",
+            "gpt-5.4",
             "--template",
             "blank",
         ],

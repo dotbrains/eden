@@ -7,14 +7,14 @@ Detailed reference for Eden's Codex factory. See [Agent CLI other factories](age
 ```python
 from eden import codex
 
-agent = codex("gpt-5")
+agent = codex("gpt-5.4")
 ```
 
 ### Signature
 
 ```python
 def codex(
-    model: str = "gpt-5",
+    model: str = "gpt-5.4",
     *,
     name: str = "codex",
     effort: Literal["low", "medium", "high", "xhigh"] | None = None,
@@ -41,7 +41,7 @@ Decodes codex JSONL events: `thread.started` → `session_id`, `item.completed`/
 
 ### What binary it wraps
 
-The `codex` CLI from OpenAI. Must be on `$PATH`. The `"gpt-5"` default is illustrative — supply whatever model identifier your installed `codex` accepts.
+The `codex` CLI from OpenAI. Must be on `$PATH`. The `"gpt-5.4"` default is illustrative — supply whatever model identifier your installed `codex` accepts.
 
 ## `opencode`
 

@@ -10,7 +10,7 @@ An agent factory returns an object satisfying the [`Agent`](python-api.md#agent-
 |---|---|---|---|---|
 | `simulated_agent` | none (in-process) | `"deterministic-1"` | no | Emits a fixed output; uses an embedded Python interpreter as the "binary". |
 | `claude_code` | `claude` CLI | required (`model` is positional) | yes (`captures_sessions=True` by default) | The only built-in agent that captures `~/.claude/projects/<slug>/<id>.jsonl`. |
-| `codex` | `codex` CLI (via `cli_agent`) | `"gpt-5"` | no | Thin wrapper over `cli_agent`. |
+| `codex` | `codex` CLI (via `cli_agent`) | `"gpt-5.4"` | no | Thin wrapper over `cli_agent`. |
 | `opencode` | `opencode` CLI (via `cli_agent`) | `"claude-opus-4"` | no | Thin wrapper over `cli_agent`. |
 | `pi` | `pi` CLI (via `cli_agent`) | `"pi-3.5"` | no | Thin wrapper over `cli_agent`. |
 | `cursor` | Cursor CLI (`agent`) | `"claude-sonnet-4-6"` | no | Stream-json wrapper for Cursor. |

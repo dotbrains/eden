@@ -50,7 +50,7 @@ def test_init_main_py_threads_codex_when_selected(
     assert result.exit_code == 0, result.output
     main_py = (repo_dir / ".eden" / "main.py").read_text(encoding="utf-8")
     assert "from eden import run, codex" in main_py
-    assert 'codex("gpt-5")' in main_py
+    assert 'codex("gpt-5.4")' in main_py
 
 
 def test_init_main_py_threads_podman_sandbox(

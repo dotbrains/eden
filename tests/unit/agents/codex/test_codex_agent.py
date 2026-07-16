@@ -49,7 +49,7 @@ def _ctx(prompt: str = "do work") -> IterationContext:
 def test_codex_default_metadata() -> None:
     a = codex()
     assert a.name == "codex"
-    assert a.model == "gpt-5"
+    assert a.model == "gpt-5.4"
 
 
 def test_codex_custom_model() -> None:
@@ -65,7 +65,7 @@ def test_codex_build_command_shape() -> None:
     assert "--json" in argv
     assert "--dangerously-bypass-approvals-and-sandbox" in argv
     assert "-m" in argv
-    assert argv[argv.index("-m") + 1] == "gpt-5"
+    assert argv[argv.index("-m") + 1] == "gpt-5.4"
     # Prompt is delivered via stdin, not argv.
     assert "hello" not in argv
 
