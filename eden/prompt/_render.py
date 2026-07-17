@@ -14,13 +14,13 @@ _KEY_RE = re.compile(r"\{\{\s*(?P<key>[A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
 def render(
     text: str,
     *,
-    args: Mapping[str, str],
+    args: Mapping[str, object],
     source_branch: str,
     target_branch: str,
 ) -> str:
     """Substitute {{KEY}} placeholders. Built-ins win over args."""
     built_ins = {"SOURCE_BRANCH": source_branch, "TARGET_BRANCH": target_branch}
-    table: dict[str, str] = {**dict(args), **built_ins}
+    table: dict[str, str] = {**_normalize_args(args), **built_ins}
     used: set[str] = set()
 
     def _sub(match: re.Match[str]) -> str:
@@ -62,3 +62,25 @@ def render_known(text: str, *, table: Mapping[str, str]) -> str:
         return match.group(0)
 
     return _KEY_RE.sub(_sub, text)
+
+
+def _normalize_args(args: Mapping[str, object]) -> dict[str, str]:
+    normalized: dict[str, str] = {}
+    for key, value in args.items():
+        if value is None:
+            raise PromptError(
+                code="prompt.missing_arg",
+                message=f"prompt_args value for {{{{{key}}}}} is missing",
+                hint=f"pass a non-empty string for prompt_args[{key!r}]",
+            )
+        if not isinstance(value, str):
+            raise PromptError(
+                code="prompt.invalid_arg",
+                message=(
+                    f"prompt_args value for {{{{{key}}}}} must be a string, "
+                    f"got {type(value).__name__}"
+                ),
+                hint=f"convert prompt_args[{key!r}] to a string before calling Eden",
+            )
+        normalized[key] = value
+    return normalized

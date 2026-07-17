@@ -58,6 +58,21 @@ def test_unknown_key_raises_prompt_error() -> None:
     assert "SOURCE_BRANCH" in excinfo.value.hint
 
 
+def test_none_arg_value_raises_prompt_error() -> None:
+    with pytest.raises(PromptError) as excinfo:
+        render("hello {{NAME}}", args={"NAME": None}, source_branch="b", target_branch="main")
+    assert excinfo.value.code == "prompt.missing_arg"
+    assert "NAME" in excinfo.value.message
+
+
+def test_non_string_arg_value_raises_prompt_error() -> None:
+    with pytest.raises(PromptError) as excinfo:
+        render("hello {{NAME}}", args={"NAME": 123}, source_branch="b", target_branch="main")
+    assert excinfo.value.code == "prompt.invalid_arg"
+    assert "NAME" in excinfo.value.message
+    assert "int" in excinfo.value.message
+
+
 def test_no_braces_returns_input() -> None:
     out = render("plain text", args={}, source_branch="b", target_branch="main")
     assert out == "plain text"

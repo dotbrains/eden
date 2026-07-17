@@ -14,7 +14,7 @@ from eden.providers._protocols import SandboxHandle
 def render_prompt(
     *,
     text: str,
-    args: Mapping[str, str],
+    args: Mapping[str, object],
     source_branch: str,
     target_branch: str,
     handle: SandboxHandle,

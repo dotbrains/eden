@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from eden.errors import PromptError
 from eden.prompt._collect import collect_missing_args, find_missing_keys
 
 pytestmark = pytest.mark.unit
@@ -17,6 +18,11 @@ def test_find_missing_keys_returns_unmapped() -> None:
 def test_find_missing_keys_filters_supplied() -> None:
     text = "hello {{NAME}} from {{PLACE}}"
     assert find_missing_keys(text, {"NAME": "alice"}) == ("PLACE",)
+
+
+def test_find_missing_keys_treats_none_as_missing() -> None:
+    text = "hello {{NAME}} from {{PLACE}}"
+    assert find_missing_keys(text, {"NAME": None, "PLACE": "Paris"}) == ("NAME",)
 
 
 def test_find_missing_keys_skips_built_ins() -> None:
@@ -55,6 +61,22 @@ def test_collect_missing_args_preserves_existing() -> None:
         prompt_fn=lambda k: f"v-{k}",
     )
     assert out == {"A": "pre", "B": "v-B"}
+
+
+def test_collect_missing_args_replaces_none_values() -> None:
+    out = collect_missing_args(
+        "{{A}} {{B}}",
+        {"A": None, "B": "pre"},
+        prompt_fn=lambda k: f"v-{k}",
+    )
+    assert out == {"A": "v-A", "B": "pre"}
+
+
+def test_collect_missing_args_rejects_non_string_existing_value() -> None:
+    with pytest.raises(PromptError) as excinfo:
+        collect_missing_args("{{A}}", {"A": 123}, prompt_fn=lambda k: f"v-{k}")
+    assert excinfo.value.code == "prompt.invalid_arg"
+    assert "A" in excinfo.value.message
 
 
 def test_collect_missing_args_noop_when_nothing_missing() -> None:

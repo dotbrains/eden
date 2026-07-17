@@ -12,12 +12,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 
+from eden.errors import PromptError
 from eden.prompt._render import _KEY_RE
 
 _BUILT_INS = frozenset({"SOURCE_BRANCH", "TARGET_BRANCH"})
 
 
-def find_missing_keys(text: str, args: Mapping[str, str]) -> tuple[str, ...]:
+def find_missing_keys(text: str, args: Mapping[str, object]) -> tuple[str, ...]:
     """Return placeholder keys referenced in ``text`` but absent from ``args``.
 
     Order matches first appearance in ``text`` and is deduplicated.
@@ -29,7 +30,9 @@ def find_missing_keys(text: str, args: Mapping[str, str]) -> tuple[str, ...]:
     out: list[str] = []
     for match in _KEY_RE.finditer(text):
         key = match.group("key")
-        if key in _BUILT_INS or key in args or key in seen:
+        if key in _BUILT_INS or key in seen:
+            continue
+        if key in args and args[key] is not None:
             continue
         seen.add(key)
         out.append(key)
@@ -47,7 +50,7 @@ def _default_prompt(key: str) -> str:
 
 def collect_missing_args(
     text: str,
-    args: Mapping[str, str],
+    args: Mapping[str, object],
     *,
     prompt_fn: Callable[[str], str] | None = None,
 ) -> dict[str, str]:
@@ -61,7 +64,20 @@ def collect_missing_args(
     keys are missing, returns ``dict(args)`` unchanged.
     """
     missing = find_missing_keys(text, args)
-    merged = dict(args)
+    merged: dict[str, str] = {}
+    for key, value in args.items():
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise PromptError(
+                code="prompt.invalid_arg",
+                message=(
+                    f"prompt_args value for {{{{{key}}}}} must be a string, "
+                    f"got {type(value).__name__}"
+                ),
+                hint=f"convert prompt_args[{key!r}] to a string before calling Eden",
+            )
+        merged[key] = value
     if not missing:
         return merged
     pf = prompt_fn if prompt_fn is not None else _default_prompt

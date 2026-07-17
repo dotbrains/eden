@@ -41,7 +41,7 @@ def test_render_github_agent_workflows_exact_github_output() -> None:
         ".env.example",
         ".gitignore",
     }
-    assert _fingerprint(files) == "bd7fefbe8a062f030609768defe94eaebee9e80201d7bb0fea2e40da5cbdc824"
+    assert _fingerprint(files) == "edf55eb643b548d5a9c55c80172f170e39a75067c402dc2f4c4f7743ee8d1ca8"
 
 
 def test_render_github_agent_workflows_exact_custom_output() -> None:

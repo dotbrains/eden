@@ -57,7 +57,7 @@ def test_render_parallel_planner_exact_output() -> None:
     )
     rendered = "".join(f"{path}\0{contents}\0" for path, contents in sorted(files.items()))
     assert sha256(rendered.encode()).hexdigest() == (
-        "2b5f47f104ead807c360ecf072485137fb87d0154f69667bc16673742a1844db"
+        "4d7074ffb6e671d72025c1a9478fb401a65e92d36d4284fea037756e3be0d5d5"
     )
 
 
