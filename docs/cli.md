@@ -23,6 +23,7 @@ On an interactive terminal, any flag you omit is collected via a prompt (with se
 | `--backlog` | `github` (when template needs one) | `github`, `beads`, `linear`, `jira` | Backlog manager that the tracker-aware templates target; ignored for `blank`. |
 | `--image-name` | `eden:<cwd-basename-lowercase>` | any string | Container image tag referenced from the generated `.eden/main.py` and the suggested `docker build` command. |
 | `--build-image` | `false` | flag | Build the scaffolded container image after writing `.eden/`. |
+| `--create-label` | `false` | flag | Create or update the GitHub Issues `eden` label for GitHub-backed templates. |
 | `--yes` | `false` | flag | Accept all defaults; skip interactive prompts. |
 
 ### Per-agent default models

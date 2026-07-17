@@ -10,6 +10,7 @@ import typer
 from rich.console import Console
 
 from eden.cli._image import build_image as _build_image
+from eden.cli._init_github import create_github_label as _create_github_label
 from eden.cli._init_scaffold import scaffold_init_files as _scaffold_init_files
 from eden.cli._init_templates import (
     TEMPLATES_REQUIRING_BACKLOG as _TEMPLATES_REQUIRING_BACKLOG,
@@ -70,14 +71,10 @@ def init_command(
         ),
     ),
     image_name: str | None = typer.Option(None, "--image-name", help="Docker image tag"),
-    build_image: bool = typer.Option(
-        False,
-        "--build-image",
-        help="Build the scaffolded container image after writing .eden/.",
-    ),
+    build_image: bool = typer.Option(False, "--build-image", help="Build the image"),
+    create_label: bool = typer.Option(False, "--create-label", help="Create the GitHub label"),
     yes: bool = typer.Option(False, "--yes", help="Accept all defaults"),
 ) -> None:
-    """Scaffold .eden/ in the current repo."""
     target = Path.cwd() / ".eden"
     if target.exists():
         console.print(f"[red]refusing to overwrite existing {target}[/red]")
@@ -136,6 +133,11 @@ def init_command(
         template=template,
         backlog=backlog,
     )
+    if create_label and backlog != "github":
+        raise typer.BadParameter(
+            "--create-label requires a GitHub-backed template",
+            param_hint="--create-label",
+        )
 
     files = _render_template(
         template=template,
@@ -154,5 +156,7 @@ def init_command(
         sandbox=sandbox,
         image_name=image_name,
     )
+    if create_label:
+        _create_github_label()
     if build_image:
         _build_image(binary=sandbox, image_name=image_name)
