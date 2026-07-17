@@ -103,7 +103,8 @@ def test_docker_remove_image_invokes_docker(runner: CliRunner, tmp_path: Path) -
 
 
 def test_podman_build_image_invokes_podman(runner: CliRunner, tmp_path: Path) -> None:
-    _seed_dockerfile(tmp_path)
+    (tmp_path / ".eden").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ".eden" / "Containerfile").write_text("FROM scratch\n", encoding="utf-8")
     completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
         args=[], returncode=0
     )
@@ -117,7 +118,9 @@ def test_podman_build_image_invokes_podman(runner: CliRunner, tmp_path: Path) ->
     argv = run_mock.call_args[0][0]
     assert argv[0] == "/usr/bin/podman"
     assert "-t" in argv
-    # Default image name uses the resolved cwd directory.
+    assert "-f" in argv
+    build_file = argv[argv.index("-f") + 1]
+    assert build_file.endswith(str(Path(".eden") / "Containerfile"))
     tag = argv[argv.index("-t") + 1]
     assert tag.startswith("eden:")
 

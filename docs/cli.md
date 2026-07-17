@@ -43,7 +43,7 @@ When `--model` is omitted, the default depends on `--agent`:
 
 `eden init` creates `.eden/` with five files (see [templates.md](templates.md) for the literal contents):
 
-- `.eden/Dockerfile` — minimal Python 3.13-slim image with `git`.
+- `.eden/Dockerfile` or `.eden/Containerfile` for `--sandbox podman` — minimal Python 3.13-slim image with `git`.
 - `.eden/prompt.md` — placeholder prompt body. Edit this for your task.
 - `.eden/main.py` — entry point that calls `eden.run(...)` with the chosen sandbox and agent factory.
 - `.eden/.env.example` — sample environment variables for the chosen agent (e.g. `ANTHROPIC_API_KEY`).
@@ -62,9 +62,9 @@ Read source: `eden/cli/init.py`, `eden/cli/_templates/blank.py`, `eden/cli/_temp
 ## Image Commands
 
 Build or remove the container image referenced by scaffolded `.eden/main.py`.
-Builds default to `.eden/Dockerfile`, pass UID/GID build args for the
-scaffolded `agent` user, and use the current directory as context for custom
-build files.
+Docker builds default to `.eden/Dockerfile`; Podman builds default to
+`.eden/Containerfile`. Both pass UID/GID build args for the scaffolded `agent`
+user and use the current directory as context for custom build files.
 
 ```bash
 eden docker build-image

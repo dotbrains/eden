@@ -89,6 +89,17 @@ def test_init_main_py_threads_podman_sandbox(
     assert "from eden.sandboxes import podman as sandbox_provider" in main_py
 
 
+def test_init_podman_writes_containerfile(
+    runner: CliRunner,
+    repo_dir: Path,
+) -> None:
+    result = runner.invoke(app, ["init", "--yes", "--sandbox", "podman"])
+    assert result.exit_code == 0, result.output
+    eden_dir = repo_dir / ".eden"
+    assert (eden_dir / "Containerfile").is_file()
+    assert not (eden_dir / "Dockerfile").exists()
+
+
 def test_init_image_name_default_uses_repo_basename(
     runner: CliRunner,
     repo_dir: Path,
@@ -122,6 +133,7 @@ def test_init_prints_template_metadata_and_matching_build_tool(
     assert result.exit_code == 0, result.output
     assert "Template: blank - Bare scaffold" in result.output
     assert "podman build --build-arg AGENT_UID=$(id -u)" in result.output
+    assert "-f .eden/Containerfile" in result.output
 
 
 def test_init_gitignore_includes_runtime_dirs(

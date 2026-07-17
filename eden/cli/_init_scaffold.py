@@ -30,6 +30,7 @@ def scaffold_init_files(
     sandbox: str,
     image_name: str,
 ) -> None:
+    files = _build_file_names_for_sandbox(files, sandbox=sandbox)
     outputs: list[tuple[Path, str]] = []
     for name, contents in files.items():
         out = (target / name).resolve()
@@ -50,6 +51,14 @@ def scaffold_init_files(
     _print_next_steps(repo=repo, template=template, sandbox=sandbox, image_name=image_name)
 
 
+def _build_file_names_for_sandbox(files: dict[str, str], *, sandbox: str) -> dict[str, str]:
+    if sandbox != "podman" or "Dockerfile" not in files:
+        return files
+    renamed = dict(files)
+    renamed["Containerfile"] = renamed.pop("Dockerfile")
+    return renamed
+
+
 def _print_next_steps(*, repo: Path, template: str, sandbox: str, image_name: str) -> None:
     meta = _TEMPLATE_METADATA[template]
     typer.echo(f"Template: {meta.name} - {meta.description}")
@@ -62,10 +71,11 @@ def _print_next_steps(*, repo: Path, template: str, sandbox: str, image_name: st
         for dependency in dependencies:
             typer.echo(f"  {step}. {_add_dependency_command(package_manager, dependency)}")
             step += 1
+    build_file = "Containerfile" if sandbox == "podman" else "Dockerfile"
     typer.echo(
         f"  {step}. {sandbox} build "
         f"--build-arg AGENT_UID=$(id -u) --build-arg AGENT_GID=$(id -g) "
-        f"-t {image_name} -f .eden/Dockerfile ."
+        f"-t {image_name} -f .eden/{build_file} ."
     )
     step += 1
     typer.echo(f"  {step}. python .eden/main.py")

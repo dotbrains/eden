@@ -1,8 +1,8 @@
 """Shared image-lifecycle commands for the ``eden docker`` / ``eden podman``
 Typer sub-apps.
 
-Both subcommands default to the Dockerfile that ``eden init`` scaffolds at
-``.eden/Dockerfile``; ``--image-name`` overrides the default
+Docker builds default to ``.eden/Dockerfile`` and Podman builds default to
+``.eden/Containerfile``; ``--image-name`` overrides the default
 ``eden:<repo-dir-name>`` tag.
 """
 
@@ -32,10 +32,11 @@ def _resolve_binary(binary: str) -> str:
     return resolved
 
 
-def _dockerfile_path() -> Path:
-    path = Path.cwd() / ".eden" / "Dockerfile"
+def _default_build_file_path(binary: str) -> Path:
+    filename = "Containerfile" if binary == "podman" else "Dockerfile"
+    path = Path.cwd() / ".eden" / filename
     if not path.is_file():
-        _console.print(f"[red]no .eden/Dockerfile at {path}[/red] — run `eden init` first.")
+        _console.print(f"[red]no .eden/{filename} at {path}[/red] — run `eden init` first.")
         raise typer.Exit(code=1)
     return path
 
@@ -63,7 +64,7 @@ def build_image(*, binary: str, image_name: str | None, build_file: Path | None 
     dockerfile = (
         _custom_build_file(build_file, flag=build_file_flag)
         if build_file is not None
-        else _dockerfile_path()
+        else _default_build_file_path(binary)
     )
     tag = image_name or _default_image_name()
     uid, gid = _build_uid_gid()
@@ -112,7 +113,10 @@ def make_image_app(*, binary: str) -> typer.Typer:
 
     @app.command(
         name="build-image",
-        help=f"Build the {binary} image from .eden/Dockerfile.",
+        help=(
+            f"Build the {binary} image from "
+            f".eden/{'Containerfile' if binary == 'podman' else 'Dockerfile'}."
+        ),
     )
     def _build(
         image_name: str | None = typer.Option(
