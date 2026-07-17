@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from eden.cli._templates._common import render_agent_install
+
 BLANK_DOCKERFILE = """\
 FROM python:3.13-slim
 
@@ -12,15 +14,19 @@ ARG AGENT_UID=1000
 ARG AGENT_GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \\
-    git \\
+    ca-certificates curl git gnupg nodejs npm \\
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd --gid ${AGENT_GID} agent \\
-    && useradd --uid ${AGENT_UID} --gid ${AGENT_GID} \\
+RUN groupadd --gid ${{AGENT_GID}} agent \\
+    && useradd --uid ${{AGENT_UID}} --gid ${{AGENT_GID}} \\
        --create-home --home-dir /home/agent --shell /bin/sh agent
 
 WORKDIR /workspace
-USER ${AGENT_UID}:${AGENT_GID}
+USER ${{AGENT_UID}}:${{AGENT_GID}}
+ENV NPM_CONFIG_PREFIX=/home/agent/.npm-global
+ENV PATH="/home/agent/.local/bin:/home/agent/.npm-global/bin:${{PATH}}"
+
+{agent_install}
 
 CMD ["sleep", "infinity"]
 """
@@ -109,7 +115,7 @@ def render_blank(
     else:
         image_arg = ""
     return {
-        "Dockerfile": BLANK_DOCKERFILE,
+        "Dockerfile": BLANK_DOCKERFILE.format(agent_install=render_agent_install(agent)),
         "prompt.md": BLANK_PROMPT_MD,
         "main.py": BLANK_MAIN_PY.format(
             agent_import=agent_import,

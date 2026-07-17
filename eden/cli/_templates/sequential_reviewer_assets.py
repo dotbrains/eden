@@ -9,7 +9,7 @@ ARG AGENT_UID=1000
 ARG AGENT_GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \\
-    git gnupg \\
+    ca-certificates curl git gnupg nodejs npm \\
     && rm -rf /var/lib/apt/lists/*
 
 {backlog_install}
@@ -20,6 +20,10 @@ RUN groupadd --gid ${{AGENT_GID}} agent \\
 
 WORKDIR /workspace
 USER ${{AGENT_UID}}:${{AGENT_GID}}
+ENV NPM_CONFIG_PREFIX=/home/agent/.npm-global
+ENV PATH="/home/agent/.local/bin:/home/agent/.npm-global/bin:${{PATH}}"
+
+{agent_install}
 
 CMD ["sleep", "infinity"]
 """

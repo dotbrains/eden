@@ -52,7 +52,7 @@ def render_github_agent_workflows(
             REVIEW_WORKFLOW,
             image_name=image_name,
         ),
-        "Dockerfile": render_backlog_dockerfile(backlog),
+        "Dockerfile": render_backlog_dockerfile(backlog, agent=agent),
         "github/implement_issue.py": IMPLEMENT_SCRIPT.format(**script_args),
         "github/review_pr.py": REVIEW_SCRIPT.format(**script_args),
         "github/factory.py": FACTORY_SCRIPT.format(

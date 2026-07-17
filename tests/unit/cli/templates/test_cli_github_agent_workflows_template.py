@@ -41,7 +41,7 @@ def test_render_github_agent_workflows_exact_github_output() -> None:
         ".env.example",
         ".gitignore",
     }
-    assert _fingerprint(files) == "85e789f7479b625b4159f5b7812cc3508f9d20b07ca7fb8ed1edd445341fffc2"
+    assert _fingerprint(files) == "bd7fefbe8a062f030609768defe94eaebee9e80201d7bb0fea2e40da5cbdc824"
 
 
 def test_render_github_agent_workflows_exact_custom_output() -> None:
@@ -53,4 +53,4 @@ def test_render_github_agent_workflows_exact_custom_output() -> None:
         backlog=get_backlog_manager("custom"),
     )
 
-    assert _fingerprint(files) == "de8420965d803550f964e3ecde7ef8d9f6cc127d3062de5ccc1ecf2ae01700fe"
+    assert _fingerprint(files) == "ff43e9659b52a3d1fca022e755e24d147f738826c5c62b80ac88b38b354e7a98"

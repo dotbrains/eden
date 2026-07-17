@@ -18,7 +18,7 @@ The blank template writes five files into `.eden/`. The exact contents of `main.
 
 ### `.eden/Dockerfile`
 
-Python 3.13-slim base with `git` installed and `/workspace` as the working directory:
+Python 3.13-slim base with `git`, Node/npm, and the selected agent CLI installed:
 
 ```dockerfile
 FROM python:3.13-slim

@@ -11,7 +11,7 @@ ARG AGENT_UID=1000
 ARG AGENT_GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \\
-    git gnupg \\
+    ca-certificates curl git gnupg nodejs npm \\
     && rm -rf /var/lib/apt/lists/*
 
 {backlog_install}
@@ -22,6 +22,10 @@ RUN groupadd --gid ${{AGENT_GID}} agent \\
 
 WORKDIR /workspace
 USER ${{AGENT_UID}}:${{AGENT_GID}}
+ENV NPM_CONFIG_PREFIX=/home/agent/.npm-global
+ENV PATH="/home/agent/.local/bin:/home/agent/.npm-global/bin:${{PATH}}"
+
+{agent_install}
 
 CMD ["sleep", "infinity"]
 """
@@ -53,6 +57,15 @@ AGENT_CALL: dict[str, str] = {
     "copilot": 'copilot("{model}")',
 }
 
+AGENT_INSTALL: dict[str, str] = {
+    "claude-code": "RUN curl -fsSL https://claude.ai/install.sh | bash",
+    "codex": "RUN npm install -g @openai/codex",
+    "opencode": "RUN npm install -g opencode-ai@latest",
+    "pi": "RUN npm install -g @mariozechner/pi-coding-agent",
+    "cursor": "RUN curl https://cursor.com/install -fsS | bash",
+    "copilot": "RUN npm install -g @github/copilot",
+}
+
 
 def render_agent_call(*, template: str, agent: str, model: str) -> tuple[str, str]:
     if agent not in AGENT_IMPORT:
@@ -64,8 +77,15 @@ def render_image_arg(*, sandbox: str, image_name: str) -> str:
     return f'image="{image_name}"' if sandbox in ("docker", "podman") else ""
 
 
-def render_backlog_dockerfile(backlog: BacklogManager) -> str:
-    return DOCKERFILE.format(backlog_install=backlog.dockerfile_install)
+def render_agent_install(agent: str) -> str:
+    return AGENT_INSTALL[agent]
+
+
+def render_backlog_dockerfile(backlog: BacklogManager, *, agent: str) -> str:
+    return DOCKERFILE.format(
+        agent_install=render_agent_install(agent),
+        backlog_install=backlog.dockerfile_install,
+    )
 
 
 def render_task_view_command(backlog: BacklogManager) -> str:
@@ -75,9 +95,11 @@ def render_task_view_command(backlog: BacklogManager) -> str:
 __all__ = [
     "AGENT_CALL",
     "AGENT_IMPORT",
+    "AGENT_INSTALL",
     "DOCKERFILE",
     "GITIGNORE",
     "render_agent_call",
+    "render_agent_install",
     "render_backlog_dockerfile",
     "render_image_arg",
     "render_task_view_command",

@@ -49,7 +49,7 @@ def render_parallel_planner(
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
     view_subbed = render_task_view_command(backlog)
     return {
-        "Dockerfile": render_backlog_dockerfile(backlog),
+        "Dockerfile": render_backlog_dockerfile(backlog, agent=agent),
         "plan-prompt.md": PARALLEL_PLAN_PROMPT.format(
             branch_prefix="eden/p",
             list_tasks_command=backlog.list_tasks_command,

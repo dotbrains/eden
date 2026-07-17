@@ -34,6 +34,23 @@ def test_render_blank_returns_five_files() -> None:
 def test_dockerfile_uses_python_3_13_slim() -> None:
     out = _render()
     assert "FROM python:3.13-slim" in out["Dockerfile"]
+    assert "nodejs npm" in out["Dockerfile"]
+
+
+@pytest.mark.parametrize(
+    ("agent", "install"),
+    [
+        ("claude-code", "https://claude.ai/install.sh"),
+        ("codex", "@openai/codex"),
+        ("opencode", "opencode-ai@latest"),
+        ("pi", "@mariozechner/pi-coding-agent"),
+        ("cursor", "https://cursor.com/install"),
+        ("copilot", "@github/copilot"),
+    ],
+)
+def test_dockerfile_installs_selected_agent(agent: str, install: str) -> None:
+    out = _render(agent=agent)
+    assert install in out["Dockerfile"]
 
 
 def test_main_py_includes_claude_code_import_for_claude_code_agent() -> None:

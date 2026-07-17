@@ -9,7 +9,7 @@ working tree directly.
 from __future__ import annotations
 
 from eden.cli._templates._backlog import BacklogManager
-from eden.cli._templates._common import render_agent_call
+from eden.cli._templates._common import render_agent_call, render_agent_install
 from eden.cli._templates._env import render_env_example
 from eden.cli._templates.sequential_reviewer_assets import (
     DOCKERFILE,
@@ -136,7 +136,10 @@ def render_sequential_reviewer(
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
 
     return {
-        "Dockerfile": DOCKERFILE.format(backlog_install=backlog.dockerfile_install),
+        "Dockerfile": DOCKERFILE.format(
+            agent_install=render_agent_install(agent),
+            backlog_install=backlog.dockerfile_install,
+        ),
         "implement-prompt.md": IMPLEMENT_PROMPT.format(
             list_tasks_command=backlog.list_tasks_command,
             close_task_command=backlog.close_task_command,

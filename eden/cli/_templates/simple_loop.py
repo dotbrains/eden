@@ -10,7 +10,7 @@ on every loop turn.
 from __future__ import annotations
 
 from eden.cli._templates._backlog import BacklogManager
-from eden.cli._templates._common import render_agent_call
+from eden.cli._templates._common import render_agent_call, render_agent_install
 from eden.cli._templates._env import render_env_example
 from eden.cli._templates._simple_loop.prompt import PROMPT_MD
 
@@ -24,7 +24,7 @@ ARG AGENT_UID=1000
 ARG AGENT_GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \\
-    git gnupg \\
+    ca-certificates curl git gnupg nodejs npm \\
     && rm -rf /var/lib/apt/lists/*
 
 {backlog_install}
@@ -35,6 +35,10 @@ RUN groupadd --gid ${{AGENT_GID}} agent \\
 
 WORKDIR /workspace
 USER ${{AGENT_UID}}:${{AGENT_GID}}
+ENV NPM_CONFIG_PREFIX=/home/agent/.npm-global
+ENV PATH="/home/agent/.local/bin:/home/agent/.npm-global/bin:${{PATH}}"
+
+{agent_install}
 
 CMD ["sleep", "infinity"]
 """
@@ -92,7 +96,10 @@ def render_simple_loop(
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
 
     return {
-        "Dockerfile": _DOCKERFILE.format(backlog_install=backlog.dockerfile_install),
+        "Dockerfile": _DOCKERFILE.format(
+            agent_install=render_agent_install(agent),
+            backlog_install=backlog.dockerfile_install,
+        ),
         "prompt.md": PROMPT_MD.format(
             list_tasks_command=backlog.list_tasks_command,
             view_task_command=backlog.view_task_command,

@@ -126,7 +126,7 @@ def render_plan_implement_review(
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
 
     return {
-        "Dockerfile": render_backlog_dockerfile(backlog),
+        "Dockerfile": render_backlog_dockerfile(backlog, agent=agent),
         "plan-prompt.md": PLAN_PROMPT.format(
             list_tasks_command=backlog.list_tasks_command,
         ),
