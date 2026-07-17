@@ -129,6 +129,7 @@ def test_gitignore_ignores_eden_runtime_dirs() -> None:
 def test_env_example_documents_anthropic_and_openai_keys() -> None:
     out = _render()
     env = out[".env.example"]
+    assert "CLAUDE_CODE_OAUTH_TOKEN" in env
     assert "ANTHROPIC_API_KEY" in env
     assert "OPENAI_API_KEY" in env
 

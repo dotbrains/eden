@@ -30,13 +30,13 @@ A collision between `.eden/.env` and a provider's fixed env still raises `EnvMer
 
 Escape sequences in double-quoted values (`\n`, `\r`, `\t`, `\\`) are unescaped via [`python-dotenv`](https://pypi.org/project/python-dotenv/), so gateway tokens with embedded newlines forward into the container correctly. Single-quoted values are literal.
 
-The `eden init` blank template seeds `.eden/.env.example` listing the variables the chosen agent expects (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, …). Copy it to `.eden/.env` and fill in your keys.
+The `eden init` blank template seeds `.eden/.env.example` listing the variables the chosen agent expects (`CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, …). Copy it to `.eden/.env` and fill in your keys.
 
 Read source: `eden/env/_dotenv.py`, `eden/orchestrator/_setup.py`.
 
 ### Variables Eden does not read
 
-The agent CLIs that Eden orchestrates (e.g. `claude-code`, `codex`) read their own env vars — `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Those are the agent's contract, not Eden's.
+The agent CLIs that Eden orchestrates (e.g. `claude-code`, `codex`) read their own env vars — `CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. Those are the agent's contract, not Eden's.
 
 When `run()` invokes a hook or an agent process, it merges the host process environment with any per-run / per-hook `env=` mapping (which already includes the `.eden/.env` values described above). Eden does not interpret the merged environment beyond passing it through.
 

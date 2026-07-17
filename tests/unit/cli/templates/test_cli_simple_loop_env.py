@@ -21,6 +21,7 @@ def test_render_simple_loop_env_example_includes_backlog_lines() -> None:
     )
     env_ex = files[".env.example"]
     assert "GH_TOKEN" in env_ex
+    assert "CLAUDE_CODE_OAUTH_TOKEN" in env_ex
     assert "ANTHROPIC_API_KEY" in env_ex
 
 

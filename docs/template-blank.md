@@ -71,7 +71,9 @@ A starter `.env` template with commented-out keys for the agent CLIs Eden orches
 ```bash
 # Copy this file to .env and fill in the values your agent needs.
 
-# Anthropic API key (required for claude-code)
+# Claude Code OAuth token (run `claude setup-token` on your host)
+# CLAUDE_CODE_OAUTH_TOKEN=
+# Or use an Anthropic API key instead
 # ANTHROPIC_API_KEY=sk-ant-...
 
 # OpenAI API key (required for codex)

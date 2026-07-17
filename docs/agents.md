@@ -91,7 +91,7 @@ Moved to [Agent Flox runtime](agent-flox-runtime.md).
 
 ## Authentication
 
-Each agent reads its own credentials from environment variables, per its own documentation (`ANTHROPIC_API_KEY` for `claude-code`, `OPENAI_API_KEY` for `codex`, etc.). Eden does not manage agent auth — the host environment is forwarded into the agent process via `subprocess`/`exec`. See [configuration.md](configuration.md#variables-eden-does-not-read) for the variables Eden does *not* read.
+Each agent reads its own credentials from environment variables, per its own documentation (`CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` for `claude-code`, `OPENAI_API_KEY` for `codex`, etc.). Eden does not manage agent auth — the host environment is forwarded into the agent process via `subprocess`/`exec`. See [configuration.md](configuration.md#variables-eden-does-not-read) for the variables Eden does *not* read.
 
 ## See also
 

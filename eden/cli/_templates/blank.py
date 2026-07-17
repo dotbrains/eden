@@ -64,7 +64,9 @@ if __name__ == "__main__":
 BLANK_ENV_EXAMPLE = """\
 # Copy this file to .env and fill in the values your agent needs.
 
-# Anthropic API key (required for claude-code)
+# Claude Code OAuth token (run `claude setup-token` on your host)
+# CLAUDE_CODE_OAUTH_TOKEN=
+# Or use an Anthropic API key instead
 # ANTHROPIC_API_KEY=sk-ant-...
 
 # OpenAI API key (required for codex)

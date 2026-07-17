@@ -14,7 +14,10 @@ from __future__ import annotations
 
 AGENT_ENV_EXAMPLE: dict[str, str] = {
     "claude-code": (
-        "# Anthropic API key (required for claude-code)\n# ANTHROPIC_API_KEY=sk-ant-...\n"
+        "# Claude Code OAuth token (run `claude setup-token` on your host)\n"
+        "# CLAUDE_CODE_OAUTH_TOKEN=\n"
+        "# Or use an Anthropic API key instead\n"
+        "# ANTHROPIC_API_KEY=sk-ant-...\n"
     ),
     "codex": "# OpenAI API key (required for codex)\n# OPENAI_API_KEY=sk-...\n",
     "opencode": "# Provider key for the model you've configured opencode to use\n",

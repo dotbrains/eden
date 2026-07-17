@@ -46,7 +46,7 @@ When `--model` is omitted, the default depends on `--agent`:
 - `.eden/Dockerfile` or `.eden/Containerfile` for `--sandbox podman` — minimal Python 3.13-slim image with `git`.
 - `.eden/prompt.md` — placeholder prompt body. Edit this for your task.
 - `.eden/main.py` — entry point that calls `eden.run(...)` with the chosen sandbox and agent factory.
-- `.eden/.env.example` — sample environment variables for the chosen agent (e.g. `ANTHROPIC_API_KEY`).
+- `.eden/.env.example` — sample environment variables for the chosen agent (e.g. `CLAUDE_CODE_OAUTH_TOKEN`).
 - `.eden/.gitignore` — excludes `.env` and runtime artifacts (`logs/`, `sessions/`, `worktrees/`, `isolated/`).
 
 After scaffolding, `eden init` prints the next steps it expects you to run:
