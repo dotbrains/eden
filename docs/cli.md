@@ -2,8 +2,6 @@
 
 Eden ships a small CLI primarily for project scaffolding. The orchestrator itself is invoked from Python — see [python-api.md](python-api.md).
 
----
-
 ## `eden init`
 
 Scaffold a fresh `.eden/` directory in the current working directory. Refuses to overwrite an existing `.eden/`.
@@ -24,6 +22,7 @@ On an interactive terminal, any flag you omit is collected via a prompt (with se
 | `--template` | `blank` | `blank`, `simple-loop`, `sequential-reviewer`, `parallel-planner` | Scaffold template — see [templates.md](templates.md). |
 | `--backlog` | `github` (when template needs one) | `github`, `beads`, `linear`, `jira` | Backlog manager that the tracker-aware templates target; ignored for `blank`. |
 | `--image-name` | `eden:<cwd-basename-lowercase>` | any string | Container image tag referenced from the generated `.eden/main.py` and the suggested `docker build` command. |
+| `--build-image` | `false` | flag | Build the scaffolded container image after writing `.eden/`. |
 | `--yes` | `false` | flag | Accept all defaults; skip interactive prompts. |
 
 ### Per-agent default models

@@ -9,15 +9,7 @@ from typing import cast
 import typer
 from rich.console import Console
 
-from eden.cli._init_dependencies import (
-    add_dependency_command as _add_dependency_command,
-)
-from eden.cli._init_dependencies import (
-    detect_package_manager as _detect_package_manager,
-)
-from eden.cli._init_dependencies import (
-    has_host_dependency as _has_host_dependency,
-)
+from eden.cli._image import build_image as _build_image
 from eden.cli._init_scaffold import scaffold_init_files as _scaffold_init_files
 from eden.cli._init_templates import (
     TEMPLATES_REQUIRING_BACKLOG as _TEMPLATES_REQUIRING_BACKLOG,
@@ -31,13 +23,6 @@ from eden.cli._init_templates import (
 from eden.cli._init_validation import validate_init_options as _validate_init_options
 
 console = Console(stderr=True)
-
-__all__ = [
-    "_add_dependency_command",
-    "_detect_package_manager",
-    "_has_host_dependency",
-    "init_command",
-]
 
 
 def _resolve_option(
@@ -85,6 +70,11 @@ def init_command(
         ),
     ),
     image_name: str | None = typer.Option(None, "--image-name", help="Docker image tag"),
+    build_image: bool = typer.Option(
+        False,
+        "--build-image",
+        help="Build the scaffolded container image after writing .eden/.",
+    ),
     yes: bool = typer.Option(False, "--yes", help="Accept all defaults"),
 ) -> None:
     """Scaffold .eden/ in the current repo."""
@@ -93,7 +83,6 @@ def init_command(
         console.print(f"[red]refusing to overwrite existing {target}[/red]")
         raise typer.Exit(code=1)
 
-    # Resolve each option from a flag, prompt, or default; non-TTY stdin fails fast.
     interactive = sys.stdin.isatty() and not yes
     sandbox = _resolve_option(
         sandbox,
@@ -165,3 +154,5 @@ def init_command(
         sandbox=sandbox,
         image_name=image_name,
     )
+    if build_image:
+        _build_image(binary=sandbox, image_name=image_name)
