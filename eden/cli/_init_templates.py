@@ -9,6 +9,7 @@ from typing import cast
 import typer
 
 from eden.cli._templates._backlog import (
+    BacklogManager,
     BacklogName,
     get_backlog_manager,
     list_backlog_managers,
@@ -44,6 +45,7 @@ TEMPLATES_REQUIRING_BACKLOG = {
 }
 VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
 TemplateRenderer = Callable[..., dict[str, str]]
+BM = BacklogManager
 
 
 @dataclass(frozen=True)
@@ -126,6 +128,20 @@ def default_model(agent: str) -> str:
         ) from exc
 
 
+def _add_custom_backlog_setup(
+    files: dict[str, str], *, backlog: BM, sandbox: str
+) -> dict[str, str]:
+    if backlog.name != "custom" or any(path.endswith("SETUP_TRACKER.md") for path in files):
+        return files
+    setup = (
+        "# Custom Backlog Setup\n\nGenerated with `--backlog custom`; replace every `<TODO: ...>` command before running Eden.\n\n"  # noqa: E501
+        "Update `prompt.md`, `main.py`, `.env.example`, and `Dockerfile` or `Containerfile`.\n"
+        "Tracker commands must list, view, and close tasks. The list command should print JSON objects with `id`, `title`, and optional `body`.\n\n"  # noqa: E501
+        f"Build and run with `eden {sandbox} build-image` and `python .eden/main.py`.\n"
+    )
+    return {**files, "SETUP_BACKLOG.md": setup}
+
+
 def render_template(
     *,
     template: str,
@@ -145,7 +161,6 @@ def render_template(
     if template not in TEMPLATES_REQUIRING_BACKLOG:
         return renderer(**common)
     assert backlog is not None
-    return renderer(
-        **common,
-        backlog=get_backlog_manager(cast(BacklogName, backlog)),
-    )
+    manager = get_backlog_manager(cast(BacklogName, backlog))
+    files = renderer(**common, backlog=manager)
+    return _add_custom_backlog_setup(files, backlog=manager, sandbox=sandbox)

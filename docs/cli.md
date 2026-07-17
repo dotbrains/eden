@@ -41,7 +41,7 @@ When `--model` is omitted, the default depends on `--agent`:
 
 ### Files written
 
-`eden init` creates `.eden/` with five files (see [templates.md](templates.md) for the literal contents):
+`eden init` creates `.eden/` with five core files (plus custom-backlog setup notes when requested):
 
 - `.eden/Dockerfile` or `.eden/Containerfile` for `--sandbox podman` — minimal Python 3.13-slim image with `git`.
 - `.eden/prompt.md` — placeholder prompt body. Edit this for your task.
