@@ -53,6 +53,29 @@ def test_init_main_py_threads_codex_when_selected(
     assert 'codex("gpt-5.4")' in main_py
 
 
+@pytest.mark.parametrize(
+    ("agent", "default_model"),
+    [
+        ("cursor", "claude-sonnet-4-6"),
+        ("copilot", "claude-sonnet-4"),
+    ],
+)
+def test_init_main_py_threads_editor_agents_when_selected(
+    runner: CliRunner,
+    repo_dir: Path,
+    agent: str,
+    default_model: str,
+) -> None:
+    result = runner.invoke(
+        app,
+        ["init", "--yes", "--agent", agent],
+    )
+    assert result.exit_code == 0, result.output
+    main_py = (repo_dir / ".eden" / "main.py").read_text(encoding="utf-8")
+    assert f"from eden import run, {agent}" in main_py
+    assert f'{agent}("{default_model}")' in main_py
+
+
 def test_init_main_py_threads_podman_sandbox(
     runner: CliRunner,
     repo_dir: Path,

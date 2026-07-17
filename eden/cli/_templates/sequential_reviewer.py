@@ -9,6 +9,7 @@ working tree directly.
 from __future__ import annotations
 
 from eden.cli._templates._backlog import BacklogManager
+from eden.cli._templates._common import render_agent_call
 from eden.cli._templates._env import render_env_example
 from eden.cli._templates.sequential_reviewer_assets import (
     DOCKERFILE,
@@ -116,20 +117,6 @@ These are the standards the reviewer agent enforces. Edit to fit your project.
 - Body explains *why*, not *what*.
 """
 
-_AGENT_IMPORT: dict[str, str] = {
-    "claude-code": "claude_code",
-    "codex": "codex",
-    "opencode": "opencode",
-    "pi": "pi",
-}
-
-_AGENT_CALL: dict[str, str] = {
-    "claude-code": 'claude_code("{model}")',
-    "codex": 'codex("{model}")',
-    "opencode": 'opencode("{model}")',
-    "pi": 'pi("{model}")',
-}
-
 
 def render_sequential_reviewer(
     *,
@@ -140,12 +127,14 @@ def render_sequential_reviewer(
     backlog: BacklogManager,
 ) -> dict[str, str]:
     """Return ``{filename: contents}`` for the sequential-reviewer files."""
-    if agent not in _AGENT_IMPORT:
-        raise ValueError(f"unsupported agent for sequential-reviewer: {agent!r}")
+    agent_import, agent_call = render_agent_call(
+        template="sequential-reviewer",
+        agent=agent,
+        model=model,
+    )
     image_arg = f'image="{image_name}"' if sandbox in ("docker", "podman") else ""
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
 
-    agent_call = _AGENT_CALL[agent].format(model=model)
     return {
         "Dockerfile": DOCKERFILE.format(backlog_install=backlog.dockerfile_install),
         "implement-prompt.md": IMPLEMENT_PROMPT.format(
@@ -155,6 +144,7 @@ def render_sequential_reviewer(
         "review-prompt.md": REVIEW_PROMPT,
         "CODING_STANDARDS.md": CODING_STANDARDS,
         "main.py": MAIN_PY.format(
+            agent_import=agent_import,
             sandbox=sandbox,
             image_arg=image_arg,
             agent_call=agent_call,

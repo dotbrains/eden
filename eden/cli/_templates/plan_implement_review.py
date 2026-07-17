@@ -55,7 +55,7 @@ Run with: python .eden/main.py
 
 import time
 
-from eden import Output, claude_code, create_sandbox
+from eden import Output, {agent_import}, create_sandbox
 from eden.providers._types import BranchStrategy
 from eden.sandboxes import {sandbox} as sandbox_provider
 
@@ -117,7 +117,7 @@ def render_plan_implement_review(
     backlog: BacklogManager,
 ) -> dict[str, str]:
     """Return ``{filename: contents}`` for the plan-implement-review files."""
-    _, agent_call = render_agent_call(
+    agent_import, agent_call = render_agent_call(
         template="plan-implement-review",
         agent=agent,
         model=model,
@@ -136,6 +136,7 @@ def render_plan_implement_review(
         "review-prompt.md": REVIEW_PROMPT,
         "CODING_STANDARDS.md": _CODING_STANDARDS,
         "main.py": _MAIN_PY.format(
+            agent_import=agent_import,
             sandbox=sandbox,
             image_arg=image_arg,
             agent_call=agent_call,

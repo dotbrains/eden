@@ -10,6 +10,7 @@ on every loop turn.
 from __future__ import annotations
 
 from eden.cli._templates._backlog import BacklogManager
+from eden.cli._templates._common import render_agent_call
 from eden.cli._templates._env import render_env_example
 from eden.cli._templates._simple_loop.prompt import PROMPT_MD
 
@@ -73,21 +74,6 @@ _GITIGNORE = """\
 """
 
 
-_AGENT_IMPORT: dict[str, str] = {
-    "claude-code": "claude_code",
-    "codex": "codex",
-    "opencode": "opencode",
-    "pi": "pi",
-}
-
-_AGENT_CALL: dict[str, str] = {
-    "claude-code": 'claude_code("{model}")',
-    "codex": 'codex("{model}")',
-    "opencode": 'opencode("{model}")',
-    "pi": 'pi("{model}")',
-}
-
-
 def render_simple_loop(
     *,
     sandbox: str,
@@ -97,8 +83,11 @@ def render_simple_loop(
     backlog: BacklogManager,
 ) -> dict[str, str]:
     """Return ``{filename: contents}`` for the simple-loop template files."""
-    agent_import = _AGENT_IMPORT[agent]
-    agent_call = _AGENT_CALL[agent].format(model=model)
+    agent_import, agent_call = render_agent_call(
+        template="simple-loop",
+        agent=agent,
+        model=model,
+    )
     image_arg = f'image="{image_name}"' if sandbox in ("docker", "podman") else ""
     env_example = render_env_example(agent=agent, backlog_lines=backlog.env_example_lines)
 

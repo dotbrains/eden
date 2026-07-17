@@ -19,6 +19,8 @@ AGENT_ENV_EXAMPLE: dict[str, str] = {
     "codex": "# OpenAI API key (required for codex)\n# OPENAI_API_KEY=sk-...\n",
     "opencode": "# Provider key for the model you've configured opencode to use\n",
     "pi": "# pi credentials\n",
+    "cursor": "# Cursor CLI credentials\n# CURSOR_API_KEY=...\n",
+    "copilot": "# GitHub Copilot CLI credentials\n# GITHUB_TOKEN=ghp_...\n",
 }
 
 ENV_EXAMPLE_HEADER = "# Copy this file to .env and fill in the values your agent needs.\n\n"

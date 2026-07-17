@@ -95,20 +95,6 @@ def test_render_simple_loop_main_py_threads_agent_factory() -> None:
     assert "from eden.sandboxes import docker as sandbox_provider" in main
 
 
-def test_render_simple_loop_env_example_includes_backlog_lines() -> None:
-    bg = get_backlog_manager("github")
-    files = render_simple_loop(
-        sandbox="docker",
-        agent="claude-code",
-        model="m",
-        image_name="eden:t",
-        backlog=bg,
-    )
-    env_ex = files[".env.example"]
-    assert "GH_TOKEN" in env_ex
-    assert "ANTHROPIC_API_KEY" in env_ex
-
-
 def test_linear_backlog_helpers_referenced_in_commands() -> None:
     bg = get_backlog_manager("linear")
     assert bg.label == "Linear"

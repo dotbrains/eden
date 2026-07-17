@@ -13,32 +13,37 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
-import eden
+from eden import Agent, claude_code, codex, copilot, cursor, opencode, pi
 from eden.cli._templates._backlog import (
     get_backlog_manager,
     list_backlog_managers,
 )
 from eden.cli._templates.simple_loop import render_simple_loop_prompt
+from eden.orchestrator import run as eden_run
 from eden.providers._protocols import SandboxProvider
 
 console = Console(stderr=True)
 
 
 _VALID_SANDBOXES = ("docker", "podman", "no-sandbox")
-_VALID_AGENTS = ("claude-code", "codex", "opencode", "pi")
+_VALID_AGENTS = ("claude-code", "codex", "opencode", "pi", "cursor", "copilot")
 _VALID_TEMPLATES = ("simple-loop",)
 _VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
 
 
-def _build_agent(agent: str, model: str) -> eden.Agent:
+def _build_agent(agent: str, model: str) -> Agent:
     if agent == "claude-code":
-        return eden.claude_code(model)
+        return claude_code(model)
     if agent == "codex":
-        return eden.codex(model)
+        return codex(model)
     if agent == "opencode":
-        return eden.opencode(model)
+        return opencode(model)
     if agent == "pi":
-        return eden.pi(model)
+        return pi(model)
+    if agent == "cursor":
+        return cursor(model)
+    if agent == "copilot":
+        return copilot(model)
     raise typer.BadParameter(
         f"agent must be one of {list(_VALID_AGENTS)}, got {agent!r}",
     )
@@ -122,6 +127,8 @@ def run_command(
         "codex": "gpt-5.4",
         "opencode": "claude-opus-4",
         "pi": "pi-3.5",
+        "cursor": "claude-sonnet-4-6",
+        "copilot": "claude-sonnet-4",
     }
     resolved_model = model or default_models[agent]
 
@@ -135,7 +142,7 @@ def run_command(
         f"agent={agent} model={resolved_model} backlog={backlog}"
     )
 
-    result = eden.run(
+    result = eden_run(
         agent=agent_factory,
         sandbox=sandbox_provider,
         prompt=prompt,

@@ -33,7 +33,7 @@ Run with: python .eden/main.py
 
 import time
 
-from eden import claude_code, create_sandbox
+from eden import {agent_import}, create_sandbox
 from eden.providers._types import BranchStrategy
 from eden.sandboxes import {sandbox} as sandbox_provider
 

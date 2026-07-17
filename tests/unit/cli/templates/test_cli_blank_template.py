@@ -60,6 +60,19 @@ def test_main_py_includes_pi_import_for_pi_agent() -> None:
     assert 'pi("pi-3.5")' in out["main.py"]
 
 
+@pytest.mark.parametrize(
+    ("agent", "model"),
+    [
+        ("cursor", "claude-sonnet-4-6"),
+        ("copilot", "claude-sonnet-4"),
+    ],
+)
+def test_main_py_includes_editor_agent_imports(agent: str, model: str) -> None:
+    out = _render(agent=agent, model=model)
+    assert f"from eden import run, {agent}" in out["main.py"]
+    assert f'{agent}("{model}")' in out["main.py"]
+
+
 def test_main_py_threads_docker_sandbox() -> None:
     out = _render(sandbox="docker")
     assert "from eden.sandboxes import docker as sandbox_provider" in out["main.py"]

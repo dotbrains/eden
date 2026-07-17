@@ -33,7 +33,7 @@ def fake_run(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     fake_result.iterations = [MagicMock()]
     fake_result.branch = "eden/test-branch"
     mock = MagicMock(return_value=fake_result)
-    monkeypatch.setattr("eden.cli.run.eden.run", mock)
+    monkeypatch.setattr("eden.cli.run.eden_run", mock)
     return mock
 
 
@@ -68,6 +68,35 @@ def test_run_invokes_eden_run_with_simple_loop_prompt(
     assert kw["max_iterations"] == 3
     assert kw["idle_timeout"] == 600.0
     assert kw["completion_timeout"] == 60.0
+
+
+@pytest.mark.parametrize(
+    "agent",
+    [
+        "cursor",
+        "copilot",
+    ],
+)
+def test_run_accepts_editor_agents(
+    runner: CliRunner,
+    fake_run: MagicMock,
+    agent: str,
+) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--template",
+            "simple-loop",
+            "--sandbox",
+            "no-sandbox",
+            "--agent",
+            agent,
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    kw = _kwargs(fake_run.call_args)
+    assert isinstance(kw["agent"], eden.Agent)
 
 
 def test_run_rejects_unknown_template(runner: CliRunner, fake_run: MagicMock) -> None:

@@ -19,7 +19,7 @@ On an interactive terminal, any flag you omit is collected via a prompt (with se
 | Flag | Default | Valid values | Description |
 |---|---|---|---|
 | `--sandbox` | `docker` (interactive prompt default) | `docker`, `podman` | Container runtime for the generated `.eden/main.py`. |
-| `--agent` | `claude-code` (interactive prompt default) | `claude-code`, `codex`, `opencode`, `pi` | Agent factory imported in the generated `.eden/main.py`. |
+| `--agent` | `claude-code` (interactive prompt default) | `claude-code`, `codex`, `opencode`, `pi`, `cursor`, `copilot` | Agent factory imported in the generated `.eden/main.py`. |
 | `--model` | per-agent default (see below) | any string | Model identifier passed to the agent factory. |
 | `--template` | `blank` | `blank`, `simple-loop`, `sequential-reviewer`, `parallel-planner` | Scaffold template — see [templates.md](templates.md). |
 | `--backlog` | `github` (when template needs one) | `github`, `beads`, `linear`, `jira` | Backlog manager that the tracker-aware templates target; ignored for `blank`. |
@@ -36,6 +36,8 @@ When `--model` is omitted, the default depends on `--agent`:
 | `codex` | `gpt-5.4` |
 | `opencode` | `claude-opus-4` |
 | `pi` | `pi-3.5` |
+| `cursor` | `claude-sonnet-4-6` |
+| `copilot` | `claude-sonnet-4` |
 
 ### Files written
 
@@ -73,7 +75,7 @@ For docker/podman sandboxes, supply `--image-name` (the image must already be bu
 |---|---|---|---|
 | `--template` | `simple-loop` | `simple-loop` | Template to run. Currently only `simple-loop` is supported in-process. |
 | `--sandbox` | `docker` | `docker`, `podman`, `no-sandbox` | Sandbox provider. `no-sandbox` runs commands directly on the host. |
-| `--agent` | `claude-code` | `claude-code`, `codex`, `opencode`, `pi` | Agent factory. |
+| `--agent` | `claude-code` | `claude-code`, `codex`, `opencode`, `pi`, `cursor`, `copilot` | Agent factory. |
 | `--model` | per-agent default | any string | Model identifier passed to the agent factory. |
 | `--backlog` | `github` | `github`, `beads`, `linear`, `jira` | Backlog manager whose `list-tasks`/`view-task`/`close-task` commands get embedded in the prompt. |
 | `--image-name` | _(none)_ | any string | Container image tag — required for `--sandbox docker` / `podman`. |

@@ -24,7 +24,7 @@ from eden.cli._templates.sequential_reviewer import render_sequential_reviewer
 from eden.cli._templates.simple_loop import render_simple_loop
 
 VALID_SANDBOXES = ("docker", "podman")
-VALID_AGENTS = ("claude-code", "codex", "opencode", "pi")
+VALID_AGENTS = ("claude-code", "codex", "opencode", "pi", "cursor", "copilot")
 VALID_TEMPLATES = (
     "blank",
     "simple-loop",
@@ -69,6 +69,10 @@ AGENTS: dict[str, AgentMetadata] = {
     "codex": AgentMetadata(name="codex", label="Codex", default_model="gpt-5.4"),
     "opencode": AgentMetadata(name="opencode", label="opencode", default_model="claude-opus-4"),
     "pi": AgentMetadata(name="pi", label="Pi", default_model="pi-3.5"),
+    "cursor": AgentMetadata(name="cursor", label="Cursor", default_model="claude-sonnet-4-6"),
+    "copilot": AgentMetadata(
+        name="copilot", label="GitHub Copilot", default_model="claude-sonnet-4"
+    ),
 }
 
 TEMPLATE_METADATA: dict[str, TemplateMetadata] = {

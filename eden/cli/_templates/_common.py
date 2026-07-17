@@ -40,6 +40,8 @@ AGENT_IMPORT: dict[str, str] = {
     "codex": "codex",
     "opencode": "opencode",
     "pi": "pi",
+    "cursor": "cursor",
+    "copilot": "copilot",
 }
 
 AGENT_CALL: dict[str, str] = {
@@ -47,6 +49,8 @@ AGENT_CALL: dict[str, str] = {
     "codex": 'codex("{model}")',
     "opencode": 'opencode("{model}")',
     "pi": 'pi("{model}")',
+    "cursor": 'cursor("{model}")',
+    "copilot": 'copilot("{model}")',
 }
 
 
