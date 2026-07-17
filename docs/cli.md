@@ -59,6 +59,24 @@ python .eden/main.py
 
 Read source: `eden/cli/init.py`, `eden/cli/_templates/blank.py`, `eden/cli/_templates/simple_loop.py`, `eden/cli/_templates/_backlog.py`.
 
+## Image Commands
+
+Build or remove the container image referenced by scaffolded `.eden/main.py`.
+Builds default to `.eden/Dockerfile`, pass UID/GID build args for the
+scaffolded `agent` user, and use the current directory as context for custom
+build files.
+
+```bash
+eden docker build-image
+eden docker build-image --dockerfile Dockerfile.agent --image-name eden:agent
+eden docker remove-image --image-name eden:agent
+eden podman build-image
+eden podman build-image --containerfile Containerfile.agent
+eden podman remove-image
+```
+
+Read source: `eden/cli/_image.py`.
+
 ## `eden run`
 
 Run a template's iteration loop **in-process** via `eden.run()` — no files scaffolded. Useful for quick experiments and CI pipelines where committing a generated `.eden/` directory adds no value.

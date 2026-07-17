@@ -1,9 +1,9 @@
 """Shared image-lifecycle commands for the ``eden docker`` / ``eden podman``
 Typer sub-apps.
 
-Both subcommands operate on the Dockerfile that
-``eden init`` scaffolds at ``.eden/Dockerfile``; ``--image-name`` overrides
-the default ``eden:<repo-dir-name>`` tag.
+Both subcommands default to the Dockerfile that ``eden init`` scaffolds at
+``.eden/Dockerfile``; ``--image-name`` overrides the default
+``eden:<repo-dir-name>`` tag.
 """
 
 from __future__ import annotations
@@ -40,6 +40,14 @@ def _dockerfile_path() -> Path:
     return path
 
 
+def _custom_build_file(path: Path, *, flag: str) -> Path:
+    resolved = path.expanduser()
+    if not resolved.is_file():
+        _console.print(f"[red]{flag} path is not a file: {resolved}[/red]")
+        raise typer.Exit(code=1)
+    return resolved
+
+
 def _build_uid_gid() -> tuple[int, int]:
     # Windows lacks os.getuid/getgid; the scaffolded Dockerfile defaults its
     # ARG AGENT_UID/AGENT_GID anyway, so a sentinel matching the scaffold
@@ -49,9 +57,14 @@ def _build_uid_gid() -> tuple[int, int]:
     return os.getuid(), os.getgid()
 
 
-def build_image(*, binary: str, image_name: str | None) -> None:
+def build_image(*, binary: str, image_name: str | None, build_file: Path | None = None) -> None:
     bin_path = _resolve_binary(binary)
-    dockerfile = _dockerfile_path()
+    build_file_flag = "--dockerfile" if binary == "docker" else "--containerfile"
+    dockerfile = (
+        _custom_build_file(build_file, flag=build_file_flag)
+        if build_file is not None
+        else _dockerfile_path()
+    )
     tag = image_name or _default_image_name()
     uid, gid = _build_uid_gid()
     # Inherit caller UID/GID into the build args so the scaffolded
@@ -107,8 +120,17 @@ def make_image_app(*, binary: str) -> typer.Typer:
             "--image-name",
             help="Image tag to build (default: eden:<repo-dir-name>)",
         ),
+        build_file: Path | None = typer.Option(  # noqa: B008
+            None,
+            "--dockerfile" if binary == "docker" else "--containerfile",
+            help=(
+                "Custom Dockerfile to build with the current directory as context."
+                if binary == "docker"
+                else "Custom Containerfile to build with the current directory as context."
+            ),
+        ),
     ) -> None:
-        build_image(binary=binary, image_name=image_name)
+        build_image(binary=binary, image_name=image_name, build_file=build_file)
 
     @app.command(
         name="remove-image",

@@ -60,6 +60,33 @@ def test_docker_build_image_invokes_docker(
     assert dockerfile_arg.endswith(str(Path(".eden") / "Dockerfile"))
 
 
+def test_docker_build_image_accepts_custom_dockerfile(
+    runner: CliRunner,
+    tmp_path: Path,
+) -> None:
+    custom = tmp_path / "Dockerfile.custom"
+    custom.write_text("FROM scratch\n", encoding="utf-8")
+    completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
+        args=[], returncode=0
+    )
+    with (
+        patch("eden.cli._image.Path.cwd", return_value=tmp_path),
+        patch("eden.cli._image.shutil.which", return_value="/usr/bin/docker"),
+        patch("eden.cli._image.subprocess.run", return_value=completed) as run_mock,
+    ):
+        result = runner.invoke(
+            app,
+            ["docker", "build-image", "--dockerfile", str(custom)],
+        )
+    assert result.exit_code == 0, result.output
+    argv = run_mock.call_args[0][0]
+    assert argv[0] == "/usr/bin/docker"
+    assert argv[1] == "build"
+    assert "-f" in argv
+    assert argv[argv.index("-f") + 1] == str(custom)
+    assert argv[-1] == str(tmp_path)
+
+
 def test_docker_remove_image_invokes_docker(runner: CliRunner, tmp_path: Path) -> None:
     completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
         args=[], returncode=0
@@ -93,6 +120,33 @@ def test_podman_build_image_invokes_podman(runner: CliRunner, tmp_path: Path) ->
     # Default image name uses the resolved cwd directory.
     tag = argv[argv.index("-t") + 1]
     assert tag.startswith("eden:")
+
+
+def test_podman_build_image_accepts_custom_containerfile(
+    runner: CliRunner,
+    tmp_path: Path,
+) -> None:
+    custom = tmp_path / "Containerfile.custom"
+    custom.write_text("FROM scratch\n", encoding="utf-8")
+    completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
+        args=[], returncode=0
+    )
+    with (
+        patch("eden.cli._image.Path.cwd", return_value=tmp_path),
+        patch("eden.cli._image.shutil.which", return_value="/usr/bin/podman"),
+        patch("eden.cli._image.subprocess.run", return_value=completed) as run_mock,
+    ):
+        result = runner.invoke(
+            app,
+            ["podman", "build-image", "--containerfile", str(custom)],
+        )
+    assert result.exit_code == 0, result.output
+    argv = run_mock.call_args[0][0]
+    assert argv[0] == "/usr/bin/podman"
+    assert argv[1] == "build"
+    assert "-f" in argv
+    assert argv[argv.index("-f") + 1] == str(custom)
+    assert argv[-1] == str(tmp_path)
 
 
 def test_docker_build_image_binary_missing(runner: CliRunner, tmp_path: Path) -> None:
