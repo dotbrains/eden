@@ -14,6 +14,7 @@ class FakeHandle:
     def __init__(self, results: dict[str, ExecResult]) -> None:
         self._results = results
         self.calls: list[str] = []
+        self.timeouts: list[float | None] = []
 
     def exec(
         self,
@@ -26,6 +27,7 @@ class FakeHandle:
         stdin: str | None = None,
     ) -> ExecResult:
         self.calls.append(cmd)
+        self.timeouts.append(timeout)
         return self._results[cmd]
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None: ...

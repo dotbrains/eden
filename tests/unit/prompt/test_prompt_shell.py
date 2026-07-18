@@ -11,6 +11,7 @@ import pytest
 from eden.errors import PromptError
 from eden.prompt._shell import expand_shell_blocks
 from eden.providers._types import ExecResult
+from eden.sandboxes.errors import ExecTimeout
 
 from ._shell_helpers import FakeHandle
 
@@ -40,6 +41,7 @@ def test_multiple_blocks_spliced_in_source_order() -> None:
     out = expand_shell_blocks("!`echo a`-!`echo b`", handle=h)
     assert out == "A-B"
     assert set(h.calls) == {"echo a", "echo b"}
+    assert h.timeouts == [30.0, 30.0]
 
 
 def test_multiple_blocks_run_concurrently() -> None:
@@ -87,6 +89,37 @@ def test_failure_surfaces_exit_code_as_attribute() -> None:
     with pytest.raises(PromptError) as excinfo:
         expand_shell_blocks("!`x`", handle=h)
     assert excinfo.value.exit_code == 127
+
+
+def test_timeout_raises_prompt_error() -> None:
+    class _TimeoutHandle(FakeHandle):
+        def exec(
+            self,
+            cmd: str,
+            *,
+            on_line: Callable[[str], None] | None = None,
+            cwd: Path | None = None,
+            env: Mapping[str, str] | None = None,
+            timeout: float | None = None,
+            stdin: str | None = None,
+        ) -> ExecResult:
+            self.calls.append(cmd)
+            self.timeouts.append(timeout)
+            raise ExecTimeout(
+                cmd=cmd,
+                timeout=timeout or 0.0,
+                partial_stdout="working",
+                partial_stderr="still running",
+            )
+
+    h = _TimeoutHandle({})
+    with pytest.raises(PromptError) as excinfo:
+        expand_shell_blocks("!`sleep 60`", handle=h)
+    assert excinfo.value.code == "prompt.shell_block_timeout"
+    assert excinfo.value.cause is not None
+    assert "30s" in excinfo.value.message
+    assert excinfo.value.hint == "still running"
+    assert h.timeouts == [30.0]
 
 
 def test_non_exec_prompt_error_has_no_exit_code() -> None:

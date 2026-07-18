@@ -19,12 +19,13 @@ arguments to `run(...)` (for example, supplying both `prompt` and `prompt_file`)
 
 ## `PromptError`
 
-Raised when prompt rendering fails: missing `{name}` arg substitution, malformed
-`!\`shell\`` block, unreadable `prompt_file`, etc. Carries `code`, `message`,
-`hint`, `cause`.
+Raised when prompt rendering fails: missing `{name}` arg substitution, failed or
+timed-out `!\`shell\`` block, unreadable `prompt_file`, etc. Carries `code`,
+`message`, `hint`, `cause`.
 
 **Recovery:** inspect `e.code` (for example, `prompt.missing_arg`,
-`prompt.shell_failed`) and fix the prompt source.
+`prompt.shell_block_failed`, or `prompt.shell_block_timeout`) and fix the prompt
+source. Shell blocks have a 30s per-command budget.
 
 ## `EnvMergeError`
 
