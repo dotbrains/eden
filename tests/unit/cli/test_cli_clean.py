@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import time
 from pathlib import Path
 
@@ -74,3 +75,51 @@ def test_clean_does_not_touch_scaffolded_files(runner: CliRunner, tmp_path: Path
     assert (eden_dir / "Dockerfile").exists()
     assert (eden_dir / "prompt.md").exists()
     assert not (eden_dir / "logs").exists()
+
+
+def test_clean_prunes_orphan_worktree_dirs(runner: CliRunner, tmp_git_repo: Path) -> None:
+    worktrees_dir = tmp_git_repo / ".eden" / "worktrees"
+    orphan = worktrees_dir / "orphan"
+    orphan.mkdir(parents=True)
+    (orphan / "file.txt").write_text("orphan", encoding="utf-8")
+
+    result = runner.invoke(app, ["clean", "--cwd", str(tmp_git_repo), "--all"])
+
+    assert result.exit_code == 0, result.output
+    assert not orphan.exists()
+
+
+def test_clean_preserves_active_worktree_by_age(runner: CliRunner, tmp_git_repo: Path) -> None:
+    worktrees_dir = tmp_git_repo / ".eden" / "worktrees"
+    active = worktrees_dir / "active"
+    worktrees_dir.mkdir(parents=True)
+    subprocess.run(
+        ["git", "worktree", "add", "-b", "active", str(active), "HEAD"],
+        cwd=tmp_git_repo,
+        check=True,
+        capture_output=True,
+    )
+    old_ts = time.time() - (30 * 86400)
+    os.utime(active, (old_ts, old_ts))
+
+    result = runner.invoke(app, ["clean", "--cwd", str(tmp_git_repo), "--days", "7"])
+
+    assert result.exit_code == 0, result.output
+    assert active.exists()
+
+
+def test_clean_all_preserves_active_worktree(runner: CliRunner, tmp_git_repo: Path) -> None:
+    worktrees_dir = tmp_git_repo / ".eden" / "worktrees"
+    active = worktrees_dir / "active"
+    worktrees_dir.mkdir(parents=True)
+    subprocess.run(
+        ["git", "worktree", "add", "-b", "active-all", str(active), "HEAD"],
+        cwd=tmp_git_repo,
+        check=True,
+        capture_output=True,
+    )
+
+    result = runner.invoke(app, ["clean", "--cwd", str(tmp_git_repo), "--all"])
+
+    assert result.exit_code == 0, result.output
+    assert active.exists()

@@ -21,6 +21,8 @@ Read source: `eden/cli/cost.py`.
 ## `eden clean`
 
 Delete stale runtime artifacts under `.eden/{logs,sessions,worktrees,isolated}`. Refuses to touch the scaffolded files (`Dockerfile`, `prompt.md`, `main.py`, `.env.example`, `.gitignore`).
+For `.eden/worktrees`, Eden first asks Git to prune stale worktree metadata and
+then skips any directory still listed as an active worktree, even with `--all`.
 
 ```bash
 eden clean                 # delete artifacts older than 7 days

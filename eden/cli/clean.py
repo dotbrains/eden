@@ -16,6 +16,8 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from eden.cli.cleaning.worktrees import active_worktree_paths
+
 console = Console(stderr=True)
 
 # Subdirectories under ``.eden/`` that hold runtime artifacts (always safe to
@@ -44,7 +46,12 @@ def _dir_size(path: Path) -> int:
     return total
 
 
-def _delete_old(path: Path, *, cutoff: float) -> tuple[int, int]:
+def _delete_old(
+    path: Path,
+    *,
+    cutoff: float,
+    protected_paths: set[Path] | None = None,
+) -> tuple[int, int]:
     """Delete files/dirs under ``path`` whose mtime is older than ``cutoff``.
 
     Returns ``(files_deleted, bytes_freed)``. The directory itself is left in
@@ -52,7 +59,10 @@ def _delete_old(path: Path, *, cutoff: float) -> tuple[int, int]:
     """
     files_deleted = 0
     bytes_freed = 0
+    protected = protected_paths or set()
     for child in sorted(path.iterdir(), key=lambda p: p.name):
+        if child.resolve() in protected:
+            continue
         try:
             mtime = child.stat().st_mtime
         except OSError:
@@ -75,9 +85,30 @@ def _delete_old(path: Path, *, cutoff: float) -> tuple[int, int]:
     return files_deleted, bytes_freed
 
 
-def _delete_all(path: Path) -> tuple[int, int]:
+def _delete_all(path: Path, *, protected_paths: set[Path] | None = None) -> tuple[int, int]:
     if not path.is_dir():
         return 0, 0
+    protected = protected_paths or set()
+    if protected:
+        files_deleted = 0
+        bytes_freed = 0
+        for child in sorted(path.iterdir(), key=lambda p: p.name):
+            if child.resolve() in protected:
+                continue
+            if child.is_dir() and not child.is_symlink():
+                size = _dir_size(child)
+                shutil.rmtree(child, ignore_errors=True)
+                bytes_freed += size
+                files_deleted += 1
+            else:
+                try:
+                    size = child.stat().st_size
+                    child.unlink()
+                    bytes_freed += size
+                    files_deleted += 1
+                except OSError:
+                    continue
+        return files_deleted, bytes_freed
     size = _dir_size(path)
     count = sum(1 for _ in path.rglob("*"))
     shutil.rmtree(path, ignore_errors=True)
@@ -111,16 +142,18 @@ def clean_command(
             return str(path)
 
     cutoff = time.time() - (days * 86400)
+    active_worktrees = active_worktree_paths(repo)
     total_files = 0
     total_bytes = 0
     for sub in _RUNTIME_DIRS:
         target = eden_dir / sub
         if not target.is_dir():
             continue
+        protected_paths = active_worktrees if sub == "worktrees" else None
         if all_:
-            files, freed = _delete_all(target)
+            files, freed = _delete_all(target, protected_paths=protected_paths)
         else:
-            files, freed = _delete_old(target, cutoff=cutoff)
+            files, freed = _delete_old(target, cutoff=cutoff, protected_paths=protected_paths)
         if files > 0:
             scope = "all" if all_ else f">{days}d"
             console.print(f"  {_display(target)}: {files} entries, {_human_size(freed)} ({scope})")
