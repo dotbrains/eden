@@ -52,7 +52,7 @@ When `--model` is omitted, the default depends on `--agent`:
 After scaffolding, `eden init` prints the next steps it expects you to run:
 
 ```bash
-cp .eden/.env.example .env  # then fill in your API keys
+cp .eden/.env.example .eden/.env  # then fill in your API keys
 docker build -t <image-name> -f .eden/Dockerfile .
 python .eden/main.py
 ```

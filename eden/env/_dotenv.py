@@ -13,6 +13,7 @@ forward correctly into the container.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -25,6 +26,9 @@ def load_dotenv_file(path: Path) -> dict[str, str]:
 
     Skips entries whose values are ``None`` (bare ``KEY`` lines with no
     ``=value``) since those carry no payload to forward into the sandbox.
+    Empty values (``KEY=`` or ``KEY=""``) fall back to ``os.environ[KEY]``
+    when present, letting projects declare required secret names without
+    writing the secret into ``.eden/.env``.
     Raises :class:`InvalidOptions` if the file cannot be read as text.
     """
     try:
@@ -35,7 +39,17 @@ def load_dotenv_file(path: Path) -> dict[str, str]:
             message=f"failed to read env file {path}: {exc}",
             hint="check the file is readable and uses UTF-8 encoding",
         ) from exc
-    return {k: v for k, v in raw.items() if v is not None}
+    values: dict[str, str] = {}
+    for key, value in raw.items():
+        if value is None:
+            continue
+        if value == "":
+            fallback = os.environ.get(key)
+            if fallback:
+                values[key] = fallback
+            continue
+        values[key] = value
+    return values
 
 
 def load_eden_env(host_repo_path: Path) -> dict[str, str]:

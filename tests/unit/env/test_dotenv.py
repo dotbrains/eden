@@ -43,6 +43,51 @@ def test_load_dotenv_file_skips_bare_keys(tmp_path: Path) -> None:
     assert load_dotenv_file(f) == {"SET": "ok"}
 
 
+def test_load_dotenv_file_empty_value_falls_back_to_process_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    f = tmp_path / ".env"
+    f.write_text("TOKEN=\n")
+    monkeypatch.setenv("TOKEN", "from-process")
+    assert load_dotenv_file(f) == {"TOKEN": "from-process"}
+
+
+def test_load_dotenv_file_empty_quoted_value_falls_back_to_process_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    f = tmp_path / ".env"
+    f.write_text('TOKEN=""\n')
+    monkeypatch.setenv("TOKEN", "from-process")
+    assert load_dotenv_file(f) == {"TOKEN": "from-process"}
+
+
+def test_load_dotenv_file_empty_value_without_process_env_is_skipped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    f = tmp_path / ".env"
+    f.write_text("TOKEN=\n")
+    monkeypatch.delenv("TOKEN", raising=False)
+    assert load_dotenv_file(f) == {}
+
+
+def test_load_dotenv_file_file_value_wins_over_process_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    f = tmp_path / ".env"
+    f.write_text("TOKEN=from-file\n")
+    monkeypatch.setenv("TOKEN", "from-process")
+    assert load_dotenv_file(f) == {"TOKEN": "from-file"}
+
+
+def test_load_dotenv_file_does_not_import_undeclared_process_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    f = tmp_path / ".env"
+    f.write_text("DECLARED=value\n")
+    monkeypatch.setenv("TOKEN", "from-process")
+    assert load_dotenv_file(f) == {"DECLARED": "value"}
+
+
 def test_load_dotenv_file_missing_raises(tmp_path: Path) -> None:
     # dotenv_values silently returns {} for missing files; load_dotenv_file
     # is the lower-level helper for callers that have a known path — we let

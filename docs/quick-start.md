@@ -60,7 +60,7 @@ eden init --sandbox docker --agent claude-code --yes
 This writes `.eden/Dockerfile`, `.eden/prompt.md`, `.eden/main.py`, `.eden/.env.example`, and `.eden/.gitignore`. Edit `prompt.md` for your task, then follow the next steps `eden init` prints:
 
 ```bash
-cp .eden/.env.example .env  # then fill in agent credentials
+cp .eden/.env.example .eden/.env  # then fill in agent credentials
 docker build -t eden:<repo-name> -f .eden/Dockerfile .
 python .eden/main.py
 ```

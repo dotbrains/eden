@@ -63,7 +63,7 @@ def _print_next_steps(*, repo: Path, template: str, sandbox: str, image_name: st
     meta = _TEMPLATE_METADATA[template]
     typer.echo(f"Template: {meta.name} - {meta.description}")
     typer.echo("Next steps:")
-    typer.echo("  1. cp .eden/.env.example .env  # then fill in your API keys")
+    typer.echo("  1. cp .eden/.env.example .eden/.env  # then fill in your API keys")
     step = 2
     dependencies = tuple(dep for dep in meta.dependencies if not _has_host_dependency(repo, dep))
     if dependencies:

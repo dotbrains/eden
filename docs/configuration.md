@@ -26,11 +26,15 @@ If `<cwd>/.eden/.env` exists, `run()`, `create_sandbox()`, and `interactive()` p
 1. `.eden/.env` (lowest) — declared values flow in.
 2. `env={...}` keyword argument on the call (highest) — silently overrides keys also set in the file.
 
+Use `KEY=` or `KEY=""` to declare a variable name while taking the actual value
+from the host process environment. Eden only reads host env vars for keys
+declared in `.eden/.env`; undeclared variables are not imported automatically.
+
 A collision between `.eden/.env` and a provider's fixed env still raises `EnvMergeError`, so a mis-wired provider is loud, not silent.
 
 Escape sequences in double-quoted values (`\n`, `\r`, `\t`, `\\`) are unescaped via [`python-dotenv`](https://pypi.org/project/python-dotenv/), so gateway tokens with embedded newlines forward into the container correctly. Single-quoted values are literal.
 
-The `eden init` blank template seeds `.eden/.env.example` listing the variables the chosen agent expects (`CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, …). Copy it to `.eden/.env` and fill in your keys.
+The `eden init` blank template seeds `.eden/.env.example` listing the variables the chosen agent expects (`CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, ...). Copy it to `.eden/.env` and fill in your keys.
 
 Read source: `eden/env/_dotenv.py`, `eden/orchestrator/_setup.py`.
 

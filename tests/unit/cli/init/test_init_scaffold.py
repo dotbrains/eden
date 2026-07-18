@@ -132,6 +132,7 @@ def test_init_prints_template_metadata_and_matching_build_tool(
     result = runner.invoke(app, ["init", "--yes", "--sandbox", "podman"])
     assert result.exit_code == 0, result.output
     assert "Template: blank - Bare scaffold" in result.output
+    assert "cp .eden/.env.example .eden/.env" in result.output
     assert "podman build --build-arg AGENT_UID=$(id -u)" in result.output
     assert "-f .eden/Containerfile" in result.output
 
