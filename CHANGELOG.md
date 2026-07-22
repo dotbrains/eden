@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **Container mount host paths expand `~`** — Docker and Podman mounts now
+  resolve `Mount(host=Path("~/..."))` before building bind-mount argv, so user
+  home paths work without manual `Path.expanduser()`.
 - **`cwd=` setup paths are normalized** — relative repository paths now resolve
   to absolute paths before Eden stores them on run setup/results or uses them
   for downstream session, env, and worktree handling.

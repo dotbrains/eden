@@ -35,8 +35,9 @@ def provider(
   build). Defaults to `eden:<repo-dir>`, lowercased and sanitized from the host
   repository directory name.
 - `mounts` — extra bind mounts beyond the worktree itself. See
-  [`Mount`](python-api.md#mount). `Mount.sandbox` paths starting with `~`
-  expand to `/home/agent`; relative paths resolve under `/workspace`.
+  [`Mount`](python-api.md#mount). `Mount.host` paths starting with `~` expand
+  to the host home directory. `Mount.sandbox` paths starting with `~` expand to
+  `/home/agent`; relative paths resolve under `/workspace`.
 - `env` — environment variables propagated into the container.
 - `network` — Docker `--network` value such as `"host"` or `"none"`, or a tuple
   emitted as multiple flags. `None` keeps Docker's default bridge.

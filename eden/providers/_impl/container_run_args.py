@@ -33,10 +33,14 @@ def build_mount_map(
         Path("/workspace"): Mount(host=worktree_path, sandbox=Path("/workspace"))
     }
     for mount in opts_mounts:
-        mount_map[mount.sandbox] = mount
+        mount_map[mount.sandbox] = _expand_host_path(mount)
     for mount in provider_mounts:
-        mount_map[mount.sandbox] = mount
+        mount_map[mount.sandbox] = _expand_host_path(mount)
     return mount_map
+
+
+def _expand_host_path(mount: Mount) -> Mount:
+    return Mount(host=mount.host.expanduser(), sandbox=mount.sandbox, read_only=mount.read_only)
 
 
 def container_name(*, branch: str, name_hint: str | None) -> str:

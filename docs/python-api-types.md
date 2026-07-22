@@ -48,9 +48,10 @@ class Mount:
     read_only: bool = False
 ```
 
-Container providers resolve `sandbox` paths before launching the runtime:
-absolute paths are used as-is, paths beginning with `~` expand under
-`/home/agent`, and relative paths resolve under `/workspace`.
+Container providers expand `~` in `host` paths before launching the runtime.
+They also resolve `sandbox` paths: absolute paths are used as-is, paths
+beginning with `~` expand under `/home/agent`, and relative paths resolve under
+`/workspace`.
 
 ### `BranchStrategy`
 

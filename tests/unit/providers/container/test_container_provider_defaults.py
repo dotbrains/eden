@@ -8,6 +8,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from eden.providers._impl.container import make_container_provider
+from eden.providers._impl.container_run_args import build_mount_map
+from eden.providers._types import Mount
 from eden.sandboxes.errors import ContainerStartFailed
 from tests.unit.providers.container.container_provider_helpers import find_run, opts
 
@@ -42,6 +44,16 @@ def test_image_defaults_from_repo_directory(
     run_cmd = find_run(captured)
     assert inspect_cmd[:4] == [binary, "image", "inspect", "eden:my-repo"]
     assert "eden:my-repo" in run_cmd
+
+
+def test_build_mount_map_expands_user_mount_host_tilde(tmp_path: Path) -> None:
+    mount_map = build_mount_map(
+        worktree_path=tmp_path / "repo",
+        opts_mounts=(Mount(host=Path("~/cache"), sandbox=Path("/cache")),),
+        provider_mounts=(),
+    )
+
+    assert mount_map[Path("/cache")].host == Path.home() / "cache"
 
 
 @pytest.mark.parametrize("binary", ["docker", "podman"])
