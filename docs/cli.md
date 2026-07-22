@@ -54,7 +54,7 @@ After scaffolding, `eden init` prints the next steps it expects you to run. If t
 
 ```bash
 cp .eden/.env.example .eden/.env  # then fill in your API keys
-docker build -t <image-name> -f .eden/Dockerfile .
+eden docker build-image
 python .eden/main.py
 ```
 

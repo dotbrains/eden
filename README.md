@@ -57,7 +57,7 @@ For a real agent, scaffold a project:
 ```bash
 eden init --sandbox docker --agent claude-code --yes
 cp .eden/.env.example .eden/.env  # then fill in API keys
-docker build -t eden:$(basename $(pwd)) -f .eden/Dockerfile .
+eden docker build-image
 python .eden/main.py
 ```
 

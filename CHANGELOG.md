@@ -14,6 +14,8 @@ ships.
 - Prompt docs now describe the actual shell-block render order: built-ins
   resolve before shell expansion, while user `prompt_args` remain inert until
   after shell expansion.
+- Quick-start image-build examples now use `eden docker build-image`, keeping
+  the documented flow aligned with Eden's UID/GID-aware scaffolded Dockerfile.
 
 ### Added
 

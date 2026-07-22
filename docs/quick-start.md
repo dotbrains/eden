@@ -61,11 +61,11 @@ This writes `.eden/Dockerfile`, `.eden/prompt.md`, `.eden/main.py`, `.eden/.env.
 
 ```bash
 cp .eden/.env.example .eden/.env  # then fill in agent credentials
-docker build -t eden:<repo-name> -f .eden/Dockerfile .
+eden docker build-image
 python .eden/main.py
 ```
 
-Replace `<repo-name>` with the lowercased name of the current directory — that's the default tag `eden init` chose (override with `--image-name` at scaffold time). The docker provider expects the image to already exist; it does not auto-build.
+`eden docker build-image` uses the default tag `eden init` chose (override with `--image-name`) and passes the UID/GID build args expected by the scaffolded Dockerfile. The docker provider expects the image to already exist; it does not auto-build during `run()`.
 
 ## Where to go next
 
