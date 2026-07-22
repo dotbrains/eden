@@ -119,6 +119,7 @@ def test_timeout_raises_prompt_error() -> None:
     assert excinfo.value.cause is not None
     assert "30s" in excinfo.value.message
     assert excinfo.value.hint == "still running"
+    assert excinfo.value.timeout == 30.0
     assert h.timeouts == [30.0]
 
 
@@ -126,6 +127,7 @@ def test_non_exec_prompt_error_has_no_exit_code() -> None:
     """``exit_code`` stays ``None`` for non-subprocess failures."""
     e = PromptError(code="prompt.unknown_key", message="bad key")
     assert e.exit_code is None
+    assert e.timeout is None
 
 
 def test_block_strips_trailing_newline_only() -> None:

@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **Prompt shell timeout metadata** — `PromptError` now carries `timeout` when
+  a `!` shell block times out, matching the existing `exit_code` detail for
+  non-zero shell-block exits.
 - **`eden run` completion summaries** — the CLI now reports whether the agent
   actually reached the completion signal or only exhausted its iteration
   budget, instead of printing `Completion: None`.

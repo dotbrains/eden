@@ -78,7 +78,7 @@ Failing tests:
 !`pytest -q 2>&1 | tail -20`
 ```
 
-A non-zero exit raises `PromptError` with `code="prompt.shell_block_failed"`; the command's stderr (if any) becomes the error hint.
+A non-zero exit raises `PromptError` with `code="prompt.shell_block_failed"`; the command's stderr (if any) becomes the error hint, and `exit_code` carries the process status. A timed-out shell block raises `code="prompt.shell_block_timeout"` and sets `timeout` to the configured seconds budget.
 
 Because shell blocks execute through the sandbox handle, they observe the sandbox's filesystem and environment — not the host's. For bind-mount providers (`no_sandbox`, `docker`, `podman`) the two are effectively the same; for `isolated`/`daytona`/`vercel` the block runs against the synced sandbox state.
 

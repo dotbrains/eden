@@ -36,6 +36,7 @@ def expand_shell_blocks(text: str, *, handle: SandboxHandle) -> str:
                 ),
                 hint=exc.partial_stderr.strip() or exc.partial_stdout.strip() or None,
                 cause=exc,
+                timeout=PROMPT_SHELL_BLOCK_TIMEOUT_SECONDS,
             ) from exc
         if result.exit_code != 0:
             raise PromptError(

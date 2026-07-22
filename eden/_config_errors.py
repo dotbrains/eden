@@ -51,6 +51,7 @@ class PromptError(ConfigError):
     """Prompt resolution or expansion failed.
 
     ``exit_code`` is set for non-zero ``!command`` shell-block expansions.
+    ``timeout`` is set for timed-out shell-block expansions.
     """
 
     def __init__(
@@ -61,12 +62,14 @@ class PromptError(ConfigError):
         hint: str | None = None,
         cause: Exception | None = None,
         exit_code: int | None = None,
+        timeout: float | None = None,
     ) -> None:
         self.code = code
         self.message = message
         self.hint = hint
         self.cause = cause
         self.exit_code = exit_code
+        self.timeout = timeout
         super().__init__(_format(code, message, hint))
 
 
