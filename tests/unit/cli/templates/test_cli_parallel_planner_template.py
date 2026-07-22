@@ -57,7 +57,7 @@ def test_render_parallel_planner_exact_output() -> None:
     )
     rendered = "".join(f"{path}\0{contents}\0" for path, contents in sorted(files.items()))
     assert sha256(rendered.encode()).hexdigest() == (
-        "4d7074ffb6e671d72025c1a9478fb401a65e92d36d4284fea037756e3be0d5d5"
+        "295f22c31788cd3d606172b5d106bfa7d2a3fe91a6d1e0d4ce0bf4868857263f"
     )
 
 
@@ -86,6 +86,8 @@ def test_plan_prompt_threads_list_tasks_command() -> None:
     )
     plan = files["plan-prompt.md"]
     assert "gh issue list" in plan
+    assert "Do not add a slug or any other suffix" in plan
+    assert "must be deterministic" in plan
     # The "already filtered" hint keeps the planner from re-querying the
     # tracker and picking up tasks outside the configured filter.
     assert "already been filtered" in plan

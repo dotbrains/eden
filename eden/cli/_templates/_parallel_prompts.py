@@ -9,7 +9,9 @@ Analyse the open backlog and build a dependency graph. Pick the tasks that are
 **unblocked right now** — those whose dependencies are either closed or
 non-existent — and emit a JSON plan listing them.
 
-Each task gets a unique short branch name like ``{branch_prefix}/<task-id>``.
+Each task gets a branch name using the exact format
+``{branch_prefix}/<task-id>``. Do not add a slug or any other suffix; the name
+must be deterministic so replanning the same task reuses the same branch.
 
 # Context
 

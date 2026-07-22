@@ -65,7 +65,7 @@ def test_render_parallel_planner_with_review_exact_output() -> None:
     )
     rendered = "".join(f"{path}\0{contents}\0" for path, contents in sorted(files.items()))
     assert sha256(rendered.encode()).hexdigest() == (
-        "46f6971322c5c96b70043fbf507e30b9da96e2b0614a56bad738a4f8788f1495"
+        "67c546172443442cbcf1774ea39c7a95097be9fa3da15c863c20e2f2f29fc9cd"
     )
 
 
@@ -90,6 +90,8 @@ def test_plan_prompt_marks_task_list_as_already_filtered() -> None:
     # Keeps the planner from re-querying the tracker and picking up tasks
     # outside the configured filter.
     plan = _files()["plan-prompt.md"]
+    assert "Do not add a slug or any other suffix" in plan
+    assert "must be deterministic" in plan
     assert "already been filtered" in plan
 
 
