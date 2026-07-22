@@ -19,6 +19,7 @@ from eden.orchestrator.interactive._interactive_prompt import render_interactive
 from eden.orchestrator.interactive._interactive_resources import prepare_interactive_resources
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
+from eden.sandboxes._git_setup import ensure_git_safe_directory
 from eden.worktree._create import WorktreeHandle
 
 
@@ -59,13 +60,10 @@ def interactive(
 ) -> InteractiveResult:
     """Run an agent attached to the parent TTY.
 
-    Unlike :func:`eden.run`, the agent inherits stdin / stdout / stderr. There is no
-    iteration loop, no idle watchdog, no stream parsing, no completion-signal
-    matching. The function returns when the agent process exits.
+    Unlike :func:`eden.run`, the agent inherits stdin / stdout / stderr and
+    returns when the agent process exits.
 
-    ``sandbox`` defaults to ``no_sandbox()``. Other providers raise
-    :class:`InvalidOptions` for now — TTY allocation in containerized
-    sandboxes (``docker exec -t``) is a separate, deeper feature.
+    ``sandbox`` defaults to ``no_sandbox()``.
 
     Optional prompt inputs render like ``run()`` (``{{SOURCE_BRANCH}}``,
     ``{{TARGET_BRANCH}}``, shell expansion, custom args) and pass
@@ -119,6 +117,8 @@ def interactive(
                 name_hint=name,
             )
         )
+        if resources.sandbox.kind != "none":
+            ensure_git_safe_directory(handle, timeout=resources.timeouts.git_setup)
         run_sandbox_hooks(
             phase=HookPhase.OnSandboxReady,
             hooks=hooks_or_default.sandbox,

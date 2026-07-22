@@ -15,6 +15,7 @@ class StubHandle:
     worktree_path: Path
     closed: list[bool] = field(default_factory=lambda: [False])
     exec_calls: list[dict[str, object]] = field(default_factory=list)
+    exec_results: list[ExecResult] = field(default_factory=list)
 
     def exec(
         self,
@@ -38,6 +39,8 @@ class StubHandle:
         )
         if on_line is not None:
             on_line("line")
+        if self.exec_results:
+            return self.exec_results.pop(0)
         return ExecResult(stdout="ok", stderr="", exit_code=0)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:

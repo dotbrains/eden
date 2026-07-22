@@ -19,6 +19,7 @@ from eden.orchestrator._setup import SetupResult
 from eden.orchestrator.loop._loop_resources import register_loop_emergency_cleanup
 from eden.providers._protocols import SandboxHandle, SandboxProvider
 from eden.providers._types import CreateOptions, Mount
+from eden.sandboxes._git_setup import ensure_git_safe_directory
 from eden.tracing import span
 from eden.worktree._create import WorktreeHandle
 
@@ -88,6 +89,8 @@ def start_loop_runtime(
                     name_hint=name,
                 )
             )
+            if sandbox.kind != "none":
+                ensure_git_safe_directory(handle, timeout=timeouts.git_setup)
             run_sandbox_hooks(
                 phase=HookPhase.OnSandboxReady,
                 hooks=hooks.sandbox,

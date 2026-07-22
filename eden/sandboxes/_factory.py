@@ -11,6 +11,7 @@ from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes._factory_validation import raise_copy_to_head_worktree_error
+from eden.sandboxes._git_setup import ensure_git_safe_directory
 from eden.sandboxes._sandbox import Sandbox
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.worktree._create import WorktreeHandle, create_worktree
@@ -45,16 +46,13 @@ def create_sandbox(
     Mutually exclusive with ``branch``/``branch_strategy``/``base_branch``,
     whose job (picking the branch) was done when the worktree was carved.
 
-    ``copy_to_worktree`` copies host-relative paths into the worktree before
-    sandbox boot. Incompatible with the ``head`` branch strategy.
+    ``copy_to_worktree`` copies host-relative paths into the worktree before sandbox boot.
 
     ``hooks`` runs ``host.on_worktree_ready``, ``sandbox.on_sandbox_ready``,
     and ``*.on_close`` from :meth:`Sandbox.close`.
 
-    ``timeouts`` caps the carve's git plumbing via ``Timeouts.git_setup``
-    (and is reused by ``close()`` for the teardown ``git worktree remove``).
-    It governs this one-time carve only; per-run deadlines (``iteration_step``
-    etc.) are passed to each subsequent ``sb.run(timeouts=...)``.
+    ``timeouts`` caps the carve's git plumbing and worktree teardown via
+    ``Timeouts.git_setup``. Per-run deadlines are passed to each ``sb.run(...)``.
     """
     if branch is not None and branch_strategy is not None:
         raise ValueError("branch and branch_strategy are mutually exclusive")
@@ -133,6 +131,8 @@ def create_sandbox(
                 name_hint=name,
             )
         )
+        if sandbox.kind != "none":
+            ensure_git_safe_directory(handle, timeout=resolved_timeouts.git_setup)
         try:
             run_sandbox_hooks(
                 phase=HookPhase.OnSandboxReady,

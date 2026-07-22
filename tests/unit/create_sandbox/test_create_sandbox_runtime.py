@@ -73,16 +73,14 @@ def test_sandbox_exec_delegates_to_handle_with_default_cwd(
         assert isinstance(handle, StubHandle)
         result = s.exec("pwd")
         assert result == ExecResult(stdout="ok", stderr="", exit_code=0)
-        assert handle.exec_calls == [
-            {
-                "cmd": "pwd",
-                "on_line": None,
-                "cwd": s.worktree.worktree_path,
-                "env": None,
-                "timeout": None,
-                "stdin": None,
-            }
-        ]
+        assert handle.exec_calls[-1] == {
+            "cmd": "pwd",
+            "on_line": None,
+            "cwd": s.worktree.worktree_path,
+            "env": None,
+            "timeout": None,
+            "stdin": None,
+        }
     finally:
         s.close()
 
@@ -104,7 +102,7 @@ def test_sandbox_exec_forwards_options(tmp_git_repo: Path, monkeypatch: pytest.M
             stdin="input",
         )
         assert seen_lines == ["line"]
-        call = handle.exec_calls[0]
+        call = handle.exec_calls[-1]
         assert call["cmd"] == "cat"
         assert call["on_line"] is on_line
         assert call["cwd"] == Path("/repo/subdir")
@@ -125,7 +123,7 @@ def test_sandbox_exec_explicit_cwd_overrides_sandbox_cwd(
         handle = s.handle
         assert isinstance(handle, StubHandle)
         s.exec("pwd", cwd=Path("/tmp"))
-        assert handle.exec_calls[0]["cwd"] == Path("/tmp")
+        assert handle.exec_calls[-1]["cwd"] == Path("/tmp")
     finally:
         s.close()
 
@@ -150,9 +148,13 @@ def test_create_sandbox_runs_creation_and_close_hooks(
     handle = s.handle
     assert isinstance(handle, StubHandle)
     assert (s.worktree.worktree_path / "host-ready.txt").read_text() == "ready"
-    assert handle.exec_calls[0]["cmd"] == "sandbox-ready"
+    assert [call["cmd"] for call in handle.exec_calls[:3]] == [
+        "git config --global --get-all safe.directory || true",
+        f"git config --global --add safe.directory {s.worktree.worktree_path}",
+        "sandbox-ready",
+    ]
 
     s.close()
 
-    assert handle.exec_calls[1]["cmd"] == "sandbox-close"
+    assert handle.exec_calls[-1]["cmd"] == "sandbox-close"
     assert close_marker.read_text() == "closed"
