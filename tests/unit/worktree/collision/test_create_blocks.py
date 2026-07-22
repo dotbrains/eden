@@ -10,22 +10,29 @@ import pytest
 from eden.providers._types import BranchStrategy
 from eden.worktree._create import create_worktree
 from eden.worktree._git import list_worktrees
-from eden.worktree.errors import WorktreeCollision
+from eden.worktree.errors import BranchExists, WorktreeCollision
 
 pytestmark = pytest.mark.unit
 
 
 def test_create_worktree_blocks_when_branch_already_checked_out(tmp_git_repo: Path) -> None:
-    # First worktree carves eden/foo successfully.
+    with pytest.raises(BranchExists) as exc_info:
+        create_worktree(
+            host_repo_path=tmp_git_repo,
+            strategy=BranchStrategy.named("main"),
+        )
+    msg = str(exc_info.value)
+    assert "checked out at" in msg
+    assert "worktrees" in msg
+    assert "different branch" in msg
+
+
+def test_create_worktree_blocks_when_branch_used_by_eden_worktree(tmp_git_repo: Path) -> None:
     h1 = create_worktree(
         host_repo_path=tmp_git_repo,
         strategy=BranchStrategy.named("eden/foo"),
     )
     try:
-        # A second attempt at the same branch raises BranchExists —
-        # branch_exists is true, so BranchExists fires first.
-        from eden.worktree.errors import BranchExists
-
         with pytest.raises(BranchExists):
             create_worktree(
                 host_repo_path=tmp_git_repo,

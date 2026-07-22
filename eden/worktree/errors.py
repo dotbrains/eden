@@ -27,9 +27,22 @@ class DirtyHostBlocked(WorktreeError):
 
 
 class BranchExists(WorktreeError):
-    def __init__(self, *, branch: str) -> None:
+    def __init__(
+        self,
+        *,
+        branch: str,
+        conflict_path: Path | None = None,
+        hint: str | None = None,
+    ) -> None:
         self.branch = branch
-        super().__init__(f"branch {branch!r} already exists")
+        self.conflict_path = conflict_path
+        self.hint = hint
+        msg = f"branch {branch!r} already exists"
+        if conflict_path is not None:
+            msg = f"{msg} and is checked out at {conflict_path}"
+        if hint:
+            msg = f"{msg}\nhint: {hint}"
+        super().__init__(msg)
 
 
 class WorktreeCollision(WorktreeError):

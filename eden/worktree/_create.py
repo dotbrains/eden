@@ -6,15 +6,11 @@ import secrets
 from pathlib import Path
 
 from eden.providers._types import BranchStrategy
-from eden.worktree._git import (
-    _DEFAULT_GIT_TIMEOUT,
-    branch_exists,
-    status_porcelain,
-)
+from eden.worktree._git import _DEFAULT_GIT_TIMEOUT, branch_exists, status_porcelain
 from eden.worktree._handle import WorktreeHandle
 from eden.worktree._handle_result import CloseResult
 from eden.worktree._lock import acquire_lock
-from eden.worktree._reuse import find_reusable_worktree
+from eden.worktree._reuse import checked_out_path, duplicate_branch_hint, find_reusable_worktree
 from eden.worktree._worktree_ops import worktree_add, worktree_remove
 from eden.worktree.errors import BranchExists, DirtyHostBlocked
 
@@ -88,14 +84,6 @@ def create_worktree(
 ) -> WorktreeHandle:
     """Carve (or reuse) a worktree per ``strategy``.
 
-    ``throw_on_duplicate_worktree`` only applies to the ``named`` strategy.
-    When ``False`` and the named branch already exists with a worktree on
-    disk, the existing worktree is reused (returned with ``managed=False``
-    so it is not removed on close). When ``True`` (default), a duplicate
-    raises :class:`BranchExists`. Other strategies are unaffected:
-    ``head`` uses the host repo directly and ``merge_to_head`` always
-    generates a fresh branch name.
-
     ``git_timeout`` is the per-command deadline for every host-side git
     invocation this carve runs; it is also stored on the returned handle so
     ``close()`` reuses it for the teardown ``git worktree remove``. Callers
@@ -126,8 +114,17 @@ def create_worktree(
         assert strategy.branch is not None
         branch = strategy.branch
         if branch_exists(repo_path=host_repo_path, branch=branch, timeout=git_timeout):
+            conflict_path = checked_out_path(
+                repo_path=host_repo_path,
+                branch=branch,
+                timeout=git_timeout,
+            )
             if throw_on_duplicate_worktree:
-                raise BranchExists(branch=branch)
+                raise BranchExists(
+                    branch=branch,
+                    conflict_path=conflict_path,
+                    hint=duplicate_branch_hint() if conflict_path is not None else None,
+                )
             # Reuse path: find the existing worktree for this branch.
             reusable = find_reusable_worktree(
                 host_repo_path=host_repo_path,

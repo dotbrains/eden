@@ -84,9 +84,9 @@ Another `eden` process holds the per-branch advisory lock. Carries `lock_path: P
 
 ### `BranchExists`
 
-`BranchStrategy.named(branch=...)` was called with a branch that already exists in the host repo. Carries `branch: str`.
+`BranchStrategy.named(branch=...)` was called with a branch that already exists in the host repo. Carries `branch: str`, plus `conflict_path: Path | None` and `hint: str | None` when the branch is already checked out in another worktree.
 
-**Recovery:** delete the existing branch, pick a different name, or switch to `merge_to_head()` (which generates a fresh `eden/<slug>` name).
+**Recovery:** delete the existing branch, pick a different name, or switch to `merge_to_head()` (which generates a fresh `eden/<slug>` name). If `conflict_path` is set, switch that worktree to a different branch before rerunning.
 
 ### `GitCommandFailed`
 

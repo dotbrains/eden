@@ -15,6 +15,28 @@ from eden.worktree._lock import acquire_lock
 from eden.worktree._worktree_ops import worktree_remove
 
 
+def checked_out_path(
+    *,
+    repo_path: Path,
+    branch: str,
+    timeout: float = _DEFAULT_GIT_TIMEOUT,
+) -> Path | None:
+    """Return the worktree path already using ``branch``, if any."""
+    for record in list_worktrees(repo_path=repo_path, timeout=timeout):
+        if record.branch == branch:
+            return record.path
+    return None
+
+
+def duplicate_branch_hint() -> str:
+    return (
+        "Eden's named and merge-to-head strategies run agents in git "
+        "worktrees, and git refuses to check out the same branch in two "
+        "worktrees at once. Pick a different branch, or switch the "
+        "conflicting worktree to another branch before rerunning."
+    )
+
+
 def find_reusable_worktree(
     *,
     host_repo_path: Path,
@@ -50,4 +72,4 @@ def find_reusable_worktree(
     return None
 
 
-__all__ = ["find_reusable_worktree"]
+__all__ = ["checked_out_path", "duplicate_branch_hint", "find_reusable_worktree"]
