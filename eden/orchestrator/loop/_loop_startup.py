@@ -56,6 +56,7 @@ def start_loop_runtime(
             paths=copy_to_worktree,
             source_root=setup.cwd,
             worktree_path=worktree.worktree_path,
+            timeout=timeouts.copy_to_worktree,
         )
         run_host_hooks(
             phase=HookPhase.OnWorktreeReady,

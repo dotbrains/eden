@@ -106,7 +106,6 @@ def create_sandbox(
             git_timeout=resolved_timeouts.git_setup,
         )
 
-    # .eden/.env flows into container creation; explicit env= wins.
     combined_env = {**load_eden_env(host_repo_path), **(dict(env) if env else {})}
 
     try:
@@ -114,6 +113,7 @@ def create_sandbox(
             paths=copy_to_worktree,
             source_root=host_repo_path,
             worktree_path=wt.worktree_path,
+            timeout=resolved_timeouts.copy_to_worktree,
         )
         resolved_hooks = hooks if hooks is not None else Hooks()
         run_host_hooks(

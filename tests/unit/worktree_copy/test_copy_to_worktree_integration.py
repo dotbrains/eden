@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from eden import create_sandbox, run
+from eden import Timeouts, create_sandbox, run
 from eden.agents import simulated_agent
 from eden.errors import CopyToWorktreeError, InvalidOptions
 from eden.providers._types import BranchStrategy
@@ -72,6 +72,22 @@ def test_run_missing_copy_source_raises(tmp_git_repo: Path) -> None:
             branch_strategy=BranchStrategy.merge_to_head(base="main"),
             copy_to_worktree=["nonexistent.txt"],
         )
+
+
+def test_run_copy_to_worktree_honors_timeout(tmp_git_repo: Path) -> None:
+    (tmp_git_repo / "seed.txt").write_text("payload\n")
+    with pytest.raises(CopyToWorktreeError) as exc_info:
+        run(
+            agent=simulated_agent(output="<promise>COMPLETE</promise>\n"),
+            sandbox=no_sandbox_provider(),
+            prompt="x",
+            cwd=tmp_git_repo,
+            branch_strategy=BranchStrategy.merge_to_head(base="main"),
+            copy_to_worktree=["seed.txt"],
+            timeouts=Timeouts(copy_to_worktree=0.0),
+        )
+    assert exc_info.value.code == "copy.to_worktree_timeout"
+    assert exc_info.value.timed_out is True
 
 
 def test_create_sandbox_rejects_copy_with_head_strategy(

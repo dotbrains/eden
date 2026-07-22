@@ -73,6 +73,7 @@ def create_worktree(
             paths=copy_to_worktree,
             source_root=host_repo_path,
             worktree_path=wt.worktree_path,
+            timeout=timeouts_or_default.copy_to_worktree,
         )
         run_host_hooks(
             phase=HookPhase.OnWorktreeReady,

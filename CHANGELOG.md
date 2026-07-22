@@ -98,6 +98,10 @@ ships.
 
 ### Fixed
 
+- **`copy_to_worktree` deadlines** — pre-boot file seeding now honors
+  `Timeouts.copy_to_worktree` across `run()`, `interactive()`,
+  `create_worktree()`, and `create_sandbox()` instead of leaving large
+  configured copies unbounded.
 - **Agent environment propagation** — per-agent `env=` values declared on
   built-in agent factories now reach the spawned agent process for both
   `eden.run()` and reusable `Sandbox.run()` calls.

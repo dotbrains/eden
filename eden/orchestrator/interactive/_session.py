@@ -28,8 +28,7 @@ class InteractiveResult:
 
     ``exit_code`` is the agent process's exit status. ``branch`` is the
     worktree branch the session ran on (may equal ``"HEAD"`` for the head
-    strategy). ``worktree_path`` is the host path that was the agent's CWD;
-    callers can stage / commit from there.
+    strategy). ``worktree_path`` is the host path that was the agent's CWD.
     """
 
     branch: str
@@ -101,6 +100,7 @@ def interactive(
             paths=copy_to_worktree,
             source_root=resources.cwd_path,
             worktree_path=wt.worktree_path,
+            timeout=resources.timeouts.copy_to_worktree,
         )
         run_host_hooks(
             phase=HookPhase.OnWorktreeReady,

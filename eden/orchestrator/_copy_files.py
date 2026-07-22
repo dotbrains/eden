@@ -1,28 +1,15 @@
 """``copy_to_worktree`` — copy host-relative files into the worktree pre-boot.
 
-Each entry is a host-relative file or directory path; the file is
-copied from ``source_root`` (the host
-repo) into the freshly-carved worktree, preserving the relative path. Runs
-**before** ``host.on_worktree_ready`` hooks fire so those hooks can use the
-copied files.
-
-Validation is strict (loud failure beats silent confusion):
-
-* Paths must be relative and must not traverse outside ``source_root``
-  (no ``..`` segments, no absolute paths) → :class:`InvalidOptions`.
-* Missing sources raise :class:`CopyToWorktreeError` (not ``InvalidOptions``)
-  so callers can distinguish "wrong API call" from "expected file isn't on
-  disk yet".
-
-Existing destinations are **overwritten** (files via ``shutil.copy2``, dirs
-via ``copytree(dirs_exist_ok=True)``). This matches the seeding
-semantics: callers use ``copy_to_worktree`` to inject configs / secrets
-that should replace whatever the carved worktree happens to contain.
+Each entry is a host-relative file or directory path copied from
+``source_root`` into the freshly-carved worktree before
+``host.on_worktree_ready`` hooks fire. Validation is strict, and existing
+destinations are overwritten to match the option's seeding semantics.
 """
 
 from __future__ import annotations
 
 import shutil
+import time
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
@@ -80,11 +67,35 @@ def _resolve_confined_source(*, rel: PurePosixPath, src: Path, source_root: Path
     return resolved_src
 
 
+def _raise_if_timed_out(
+    *,
+    started_at: float,
+    timeout: float | None,
+    source: Path,
+    target: Path,
+) -> None:
+    if timeout is None or time.monotonic() - started_at <= timeout:
+        return
+    raise CopyToWorktreeError(
+        code="copy.to_worktree_timeout",
+        message=(
+            f"copy_to_worktree did not complete within {timeout}s while copying "
+            f"from {source} to {target}"
+        ),
+        hint="increase Timeouts.copy_to_worktree or reduce copy_to_worktree payload size",
+        source=source,
+        target=target,
+        timeout=timeout,
+        timed_out=True,
+    )
+
+
 def apply_copy_to_worktree(
     *,
     paths: Sequence[str] | None,
     source_root: Path,
     worktree_path: Path,
+    timeout: float | None = 60.0,
 ) -> None:
     """Copy each ``paths`` entry from ``source_root`` into ``worktree_path``.
 
@@ -108,7 +119,14 @@ def apply_copy_to_worktree(
     if same_root:
         return
 
+    started_at = time.monotonic()
     for rel in rels:
+        _raise_if_timed_out(
+            started_at=started_at,
+            timeout=timeout,
+            source=source_root,
+            target=worktree_path,
+        )
         src = source_root / rel
         dst = worktree_path / rel
         if not src.exists():
@@ -129,6 +147,12 @@ def apply_copy_to_worktree(
                 shutil.copytree(resolved_src, dst, dirs_exist_ok=True)
             else:
                 shutil.copy2(resolved_src, dst)
+            _raise_if_timed_out(
+                started_at=started_at,
+                timeout=timeout,
+                source=source_root,
+                target=worktree_path,
+            )
         except OSError as exc:
             raise CopyToWorktreeError(
                 message=f"copying {src} → {dst} failed: {exc}",
