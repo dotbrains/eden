@@ -89,6 +89,8 @@ def test_failure_surfaces_exit_code_as_attribute() -> None:
     with pytest.raises(PromptError) as excinfo:
         expand_shell_blocks("!`x`", handle=h)
     assert excinfo.value.exit_code == 127
+    assert excinfo.value.elapsed_ms is not None
+    assert excinfo.value.elapsed_ms >= 0
 
 
 def test_timeout_raises_prompt_error() -> None:
@@ -120,6 +122,8 @@ def test_timeout_raises_prompt_error() -> None:
     assert "30s" in excinfo.value.message
     assert excinfo.value.hint == "still running"
     assert excinfo.value.timeout == 30.0
+    assert excinfo.value.elapsed_ms is not None
+    assert excinfo.value.elapsed_ms >= 0
     assert h.timeouts == [30.0]
 
 
@@ -128,6 +132,7 @@ def test_non_exec_prompt_error_has_no_exit_code() -> None:
     e = PromptError(code="prompt.unknown_key", message="bad key")
     assert e.exit_code is None
     assert e.timeout is None
+    assert e.elapsed_ms is None
 
 
 def test_block_strips_trailing_newline_only() -> None:

@@ -21,8 +21,9 @@ arguments to `run(...)` (for example, supplying both `prompt` and `prompt_file`)
 
 Raised when prompt rendering fails: missing `{name}` arg substitution, failed or
 timed-out `!\`shell\`` block, unreadable `prompt_file`, etc. Carries `code`,
-`message`, `hint`, `cause`, plus `exit_code` for non-zero shell-block exits and
-`timeout` for shell-block timeouts.
+`message`, `hint`, `cause`, plus `exit_code` for non-zero shell-block exits,
+`timeout` for shell-block timeouts, and `elapsed_ms` for attempted shell-block
+commands.
 
 **Recovery:** inspect `e.code` (for example, `prompt.missing_arg`,
 `prompt.shell_block_failed`, or `prompt.shell_block_timeout`) and fix the prompt

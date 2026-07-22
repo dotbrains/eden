@@ -26,7 +26,7 @@ Eden ships four:
 | Name     | List command                                                                                | View command           | Close command                                            |
 |----------|---------------------------------------------------------------------------------------------|------------------------|----------------------------------------------------------|
 | `github` | `gh issue list --state open --label eden --json ... --jq '[.[] \| {id, title, body, ...}]'` | `gh issue view <ID>`   | `gh issue close <ID> --comment "Completed by Eden"`      |
-| `beads`  | `bd ready --json`                                                                            | `bd show <ID>`         | `bd close <ID> "Completed by Eden"`                      |
+| `beads`  | `bd ready --json`                                                                            | `bd show <ID>`         | `bd close <ID> --reason="Completed by Eden"`             |
 | `linear` | `linear-list` (helper script — wraps the Linear GraphQL API, returns JSON)                  | `linear-view <ID>`     | `linear-close <ID>` (transitions to the team's "completed" state) |
 | `jira`   | `jira issue list -q "assignee = currentUser() AND status not in (Done, Closed, Resolved)"` | `jira issue view <ID>` | `jira issue move <ID> "Done"`                            |
 

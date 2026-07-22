@@ -42,7 +42,7 @@ The 20 concrete error classes re-exported from `eden`:
 - `HookTimeout` — a hook exceeded `Timeouts.hook_step` (or its own `timeout`).
 - `IdleTimeout` — agent stdout was silent past `idle_timeout` before any completion signal was seen. After a completion signal, `completion_timeout` bounds the success-path drain instead.
 - `InvalidOptions` — generic kwarg validation failure.
-- `PromptError` — `prompt`/`prompt_file`/`prompt_args` resolution failed. Carries `exit_code` for non-zero shell-block exits and `timeout` for shell-block timeouts.
+- `PromptError` — `prompt`/`prompt_file`/`prompt_args` resolution failed. Carries `exit_code` for non-zero shell-block exits, `timeout` for shell-block timeouts, and `elapsed_ms` when a shell-block command was attempted.
 - `RestAuthError` — 401/403 from a cloud provider's REST API.
 - `RestError` — base for any non-2xx REST response (or `status=0` connection failure).
 - `RestNotFoundError` — 404 from a cloud provider.

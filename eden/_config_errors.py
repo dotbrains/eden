@@ -52,6 +52,7 @@ class PromptError(ConfigError):
 
     ``exit_code`` is set for non-zero ``!command`` shell-block expansions.
     ``timeout`` is set for timed-out shell-block expansions.
+    ``elapsed_ms`` is set when a shell-block command was attempted.
     """
 
     def __init__(
@@ -63,6 +64,7 @@ class PromptError(ConfigError):
         cause: Exception | None = None,
         exit_code: int | None = None,
         timeout: float | None = None,
+        elapsed_ms: int | None = None,
     ) -> None:
         self.code = code
         self.message = message
@@ -70,6 +72,7 @@ class PromptError(ConfigError):
         self.cause = cause
         self.exit_code = exit_code
         self.timeout = timeout
+        self.elapsed_ms = elapsed_ms
         super().__init__(_format(code, message, hint))
 
 

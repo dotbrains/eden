@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from eden.errors import PromptError
@@ -25,9 +26,11 @@ def expand_shell_blocks(text: str, *, handle: SandboxHandle) -> str:
 
     def _run(match: re.Match[str]) -> str:
         cmd = match.group("cmd").strip()
+        started_at = time.monotonic()
         try:
             result = handle.exec(cmd, timeout=PROMPT_SHELL_BLOCK_TIMEOUT_SECONDS)
         except ExecTimeout as exc:
+            elapsed_ms = int((time.monotonic() - started_at) * 1000)
             raise PromptError(
                 code="prompt.shell_block_timeout",
                 message=(
@@ -37,13 +40,16 @@ def expand_shell_blocks(text: str, *, handle: SandboxHandle) -> str:
                 hint=exc.partial_stderr.strip() or exc.partial_stdout.strip() or None,
                 cause=exc,
                 timeout=PROMPT_SHELL_BLOCK_TIMEOUT_SECONDS,
+                elapsed_ms=elapsed_ms,
             ) from exc
         if result.exit_code != 0:
+            elapsed_ms = int((time.monotonic() - started_at) * 1000)
             raise PromptError(
                 code="prompt.shell_block_failed",
                 message=f"prompt shell block {cmd!r} exited {result.exit_code}",
                 hint=result.stderr.strip() or None,
                 exit_code=result.exit_code,
+                elapsed_ms=elapsed_ms,
             )
         body = result.stdout
         if body.endswith("\n"):
