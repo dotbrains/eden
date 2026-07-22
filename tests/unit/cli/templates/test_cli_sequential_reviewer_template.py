@@ -87,9 +87,11 @@ def test_implement_prompt_threads_backlog_commands() -> None:
     impl = files["implement-prompt.md"]
     assert "bd ready --json" in impl
     assert "bd close <ID>" in impl
-    # The "already filtered" hint keeps the implementer from re-querying the
+    # The filtered-list guard keeps the implementer from re-querying the
     # tracker with a broader filter when the configured list comes back empty.
     assert "already been filtered" in impl
+    assert "sole source of truth" in impl
+    assert "If the list is empty, there is nothing to do" in impl
 
 
 def test_init_writes_sequential_reviewer_files(runner: CliRunner, repo_dir: Path) -> None:
