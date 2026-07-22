@@ -92,6 +92,7 @@ def test_implement_prompt_threads_backlog_commands() -> None:
     assert "already been filtered" in impl
     assert "sole source of truth" in impl
     assert "If the list is empty, there is nothing to do" in impl
+    assert "open-tasks block at the top" in impl
 
 
 def test_init_writes_sequential_reviewer_files(runner: CliRunner, repo_dir: Path) -> None:

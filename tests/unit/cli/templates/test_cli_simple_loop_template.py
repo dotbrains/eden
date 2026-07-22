@@ -80,6 +80,7 @@ def test_render_simple_loop_prompt_threads_backlog_commands() -> None:
     assert "already been filtered" in prompt
     assert "sole source of truth" in prompt
     assert "If the list is empty, there is nothing to do" in prompt
+    assert "open-tasks block at the top of this prompt is empty" in prompt
 
 
 def test_render_simple_loop_main_py_threads_agent_factory() -> None:

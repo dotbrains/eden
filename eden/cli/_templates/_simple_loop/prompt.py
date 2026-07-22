@@ -52,8 +52,9 @@ Pick the highest-priority open task that isn't blocked.
 
 # Done
 
-When all actionable tasks are complete (or all remaining are blocked), output
-the completion signal:
+When all actionable tasks are complete, all remaining tasks are blocked, or the
+open-tasks block at the top of this prompt is empty, output the completion
+signal:
 
 <promise>COMPLETE</promise>
 """

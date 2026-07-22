@@ -55,7 +55,8 @@ implement it on this branch.
 
 # Done
 
-When the task is implemented and committed, output:
+When the task is implemented and committed, or the open-tasks block at the top
+of this prompt is empty, output:
 
 <promise>COMPLETE</promise>
 """
