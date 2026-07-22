@@ -16,6 +16,9 @@ ships.
   after shell expansion.
 - Quick-start image-build examples now use `eden docker build-image`, keeping
   the documented flow aligned with Eden's UID/GID-aware scaffolded Dockerfile.
+- Scaffolded Dockerfiles now create the `agent` UID/GID with non-unique flags,
+  so builds keep working when the host UID or GID already exists in the base
+  image.
 
 ### Added
 

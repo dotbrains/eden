@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \\
     ca-certificates curl git gnupg nodejs npm \\
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd --gid ${{AGENT_GID}} agent \\
-    && useradd --uid ${{AGENT_UID}} --gid ${{AGENT_GID}} \\
+RUN groupadd --gid ${{AGENT_GID}} --non-unique agent \\
+    && useradd --uid ${{AGENT_UID}} --non-unique --gid ${{AGENT_GID}} \\
        --create-home --home-dir /home/agent --shell /bin/sh agent
 
 WORKDIR /workspace

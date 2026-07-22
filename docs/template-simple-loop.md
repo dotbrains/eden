@@ -41,7 +41,7 @@ The selection wires three things:
 The same five filenames as `blank` (`Dockerfile`, `prompt.md`, `main.py`,
 `.env.example`, `.gitignore`) but with simple-loop content:
 
-- **`Dockerfile`** — `python:3.13-slim` with `git`, Node/npm, the selected agent CLI, the chosen backlog CLI, and a non-root `agent` user (`AGENT_UID`/`AGENT_GID` build args default 1000; eden init's "Next steps" command auto-aligns to your host UID/GID).
+- **`Dockerfile`** — `python:3.13-slim` with `git`, Node/npm, the selected agent CLI, the chosen backlog CLI, and a non-root `agent` user (`AGENT_UID`/`AGENT_GID` build args default 1000; eden init's "Next steps" command auto-aligns to your host UID/GID and tolerates IDs already present in the base image).
 - **`prompt.md`** — RALPH-style autonomous-agent instructions: explore → plan → execute → verify → commit → close. The "Open tasks" section embeds the list-tasks command. The agent emits `<promise>COMPLETE</promise>` when the queue is empty.
 - **`main.py`** — calls `eden.run(name="worker", agent=..., sandbox=..., prompt_file=".eden/prompt.md", max_iterations=3)`.
 - **`.env.example`** — agent API keys plus backlog manager env vars.

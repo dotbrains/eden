@@ -56,6 +56,8 @@ def test_init_simple_loop_dockerfile_includes_backlog_install(
     dockerfile = (repo_dir / ".eden" / "Dockerfile").read_text(encoding="utf-8")
     assert "gh" in dockerfile  # gh CLI install line present
     assert "ARG AGENT_UID=1000" in dockerfile
+    assert "groupadd --gid ${AGENT_GID} --non-unique agent" in dockerfile
+    assert "useradd --uid ${AGENT_UID} --non-unique --gid ${AGENT_GID}" in dockerfile
     assert "USER ${AGENT_UID}:${AGENT_GID}" in dockerfile
 
 

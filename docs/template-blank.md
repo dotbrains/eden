@@ -18,7 +18,7 @@ The blank template writes five files into `.eden/`. The exact contents of `main.
 
 ### `.eden/Dockerfile`
 
-Python 3.13-slim base with `git`, Node/npm, and the selected agent CLI installed:
+Python 3.13-slim base with `git`, Node/npm, the selected agent CLI installed, and a non-root `agent` user. The UID/GID build args tolerate collisions with IDs already present in the base image:
 
 ```dockerfile
 FROM python:3.13-slim

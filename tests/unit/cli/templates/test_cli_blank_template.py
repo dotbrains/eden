@@ -35,6 +35,8 @@ def test_dockerfile_uses_python_3_13_slim() -> None:
     out = _render()
     assert "FROM python:3.13-slim" in out["Dockerfile"]
     assert "nodejs npm" in out["Dockerfile"]
+    assert "groupadd --gid ${AGENT_GID} --non-unique agent" in out["Dockerfile"]
+    assert "useradd --uid ${AGENT_UID} --non-unique --gid ${AGENT_GID}" in out["Dockerfile"]
 
 
 @pytest.mark.parametrize(
