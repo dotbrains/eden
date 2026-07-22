@@ -47,6 +47,53 @@ def test_git_setup_adds_missing_safe_directory(tmp_path: Path) -> None:
     assert [call["timeout"] for call in handle.exec_calls] == [4.0, 4.0]
 
 
+def test_git_setup_retries_transient_exec_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sleeps: list[float] = []
+    monkeypatch.setattr("eden.sandboxes._git_setup.time.sleep", sleeps.append)
+    handle = StubHandle(
+        worktree_path=Path("/workspace"),
+        exec_results=[
+            ExecResult(stdout="", stderr="killed", exit_code=137),
+            ExecResult(stdout="", stderr="", exit_code=0),
+            ExecResult(stdout="", stderr="", exit_code=0),
+        ],
+    )
+
+    configure_sandbox_git(handle, tmp_path, timeout=4.0)
+
+    assert [call["cmd"] for call in handle.exec_calls] == [
+        "git config --global --get-all safe.directory || true",
+        "git config --global --get-all safe.directory || true",
+        "git config --global --add safe.directory /workspace",
+    ]
+    assert sleeps == [0.25]
+
+
+def test_git_setup_does_not_retry_regular_git_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sleeps: list[float] = []
+    monkeypatch.setattr("eden.sandboxes._git_setup.time.sleep", sleeps.append)
+    handle = StubHandle(
+        worktree_path=Path("/workspace"),
+        exec_results=[
+            ExecResult(stdout="", stderr="", exit_code=0),
+            ExecResult(stdout="", stderr="bad config", exit_code=1),
+        ],
+    )
+
+    with pytest.raises(RuntimeError, match=r"failed to configure git safe\.directory"):
+        configure_sandbox_git(handle, tmp_path, timeout=4.0)
+
+    assert [call["cmd"] for call in handle.exec_calls] == [
+        "git config --global --get-all safe.directory || true",
+        "git config --global --add safe.directory /workspace",
+    ]
+    assert sleeps == []
+
+
 def test_git_setup_propagates_host_identity(tmp_git_repo: Path) -> None:
     handle = StubHandle(
         worktree_path=Path("/workspace"),

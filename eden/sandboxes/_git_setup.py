@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import shlex
 import subprocess
+import time
 from pathlib import Path
 
 from eden.providers._protocols import SandboxHandle
+from eden.providers._types import ExecResult
+
+_TRANSIENT_EXEC_EXIT_CODES = frozenset({126, 137})
+_GIT_SETUP_MAX_RETRIES = 2
+_GIT_SETUP_RETRY_DELAY = 0.25
 
 
 def _normalize_git_path(value: str) -> str:
@@ -32,7 +38,8 @@ def configure_sandbox_git(
 def _ensure_git_safe_directory(handle: SandboxHandle, *, timeout: float) -> None:
     worktree_path: Path = handle.worktree_path
     target = _normalize_git_path(worktree_path.as_posix())
-    current = handle.exec(
+    current = _exec_git_setup(
+        handle,
         "git config --global --get-all safe.directory || true",
         timeout=timeout,
     )
@@ -40,7 +47,8 @@ def _ensure_git_safe_directory(handle: SandboxHandle, *, timeout: float) -> None
     if target in configured:
         return
 
-    result = handle.exec(
+    result = _exec_git_setup(
+        handle,
         f"git config --global --add safe.directory {shlex.quote(worktree_path.as_posix())}",
         timeout=timeout,
     )
@@ -68,12 +76,25 @@ def _set_global_git_config(
     *,
     timeout: float,
 ) -> None:
-    result = handle.exec(
+    result = _exec_git_setup(
+        handle,
         f"git config --global {shlex.quote(key)} {shlex.quote(value)}",
         timeout=timeout,
     )
     if result.exit_code != 0:
         raise RuntimeError(f"failed to configure git {key}: {result.stderr.strip()}")
+
+
+def _exec_git_setup(handle: SandboxHandle, cmd: str, *, timeout: float) -> ExecResult:
+    attempts = _GIT_SETUP_MAX_RETRIES + 1
+    for attempt in range(attempts):
+        result = handle.exec(cmd, timeout=timeout)
+        if result.exit_code == 0:
+            return result
+        if result.exit_code not in _TRANSIENT_EXEC_EXIT_CODES or attempt == attempts - 1:
+            return result
+        time.sleep(_GIT_SETUP_RETRY_DELAY)
+    return result
 
 
 __all__ = ["configure_sandbox_git"]
