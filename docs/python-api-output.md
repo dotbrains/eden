@@ -67,7 +67,7 @@ except StructuredOutputError as e:
     )
 ```
 
-**`max_retries` automates that loop.** Pass `Output.object(tag=..., schema=..., max_retries=N)` (or `Output.string(tag=..., max_retries=N)`) and `run()` retries on its own when extraction or validation fails: it resumes the failing session with corrective feedback (the failure message, parser detail, previous matched output when available, retry count, and the tag to re-emit), or — for agents without session capture — re-runs the original prompt, up to `N` extra times before raising `StructuredOutputError`. Default `0` (no retry). A negative value raises `InvalidOptions`.
+**`max_retries` automates that loop.** Pass `Output.object(tag=..., schema=..., max_retries=N)` (or `Output.string(tag=..., max_retries=N)`) and `run()` retries on its own when extraction or validation fails: it resumes the failing session with corrective feedback (the failure message, parser detail, previous matched output when available, retry count, and the tag to re-emit), or — for agents without session capture — re-runs the original prompt, up to `N` extra times before raising `StructuredOutputError`. Default `0` (no retry). A negative or non-integer value raises `InvalidOptions`.
 
 ```python
 result = run(

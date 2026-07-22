@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from eden.errors import StructuredOutputError
+from eden.errors import InvalidOptions, StructuredOutputError
 from eden.orchestrator import _corrective_output_prompt
+from eden.orchestrator.run._run_preflight import validate_output_options
 from eden.output import Output
 
 pytestmark = pytest.mark.unit
@@ -19,6 +20,17 @@ def test_max_retries_defaults_to_zero() -> None:
 def test_max_retries_is_stored() -> None:
     assert Output.object(tag="r", schema=lambda d: d, max_retries=3).max_retries == 3
     assert Output.string(tag="r", max_retries=2).max_retries == 2
+
+
+def test_max_retries_must_be_an_integer() -> None:
+    out = Output.string(tag="r", max_retries=1.5)  # type: ignore[arg-type]
+    with pytest.raises(InvalidOptions) as ex:
+        validate_output_options(
+            output=out,
+            max_iterations=1,
+            prompt_text="emit <r>done</r>",
+        )
+    assert "non-negative integer" in ex.value.message
 
 
 def test_corrective_prompt_quotes_failure_and_restates_tag() -> None:

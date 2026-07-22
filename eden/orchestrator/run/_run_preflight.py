@@ -103,10 +103,10 @@ def validate_output_options(
                 "looping iterations would discard intermediate matches"
             ),
         )
-    if output.max_retries < 0:
+    if not isinstance(output.max_retries, int) or output.max_retries < 0:
         raise InvalidOptions(
             code="config.invalid_options",
-            message=f"output max_retries must be >= 0; got {output.max_retries}",
+            message=f"output max_retries must be a non-negative integer; got {output.max_retries}",
             hint="use 0 to disable retries (the default), or a positive count",
         )
     tag_marker = f"<{output.tag}>"
