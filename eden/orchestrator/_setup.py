@@ -59,6 +59,7 @@ def _resolve_cwd(cwd: Path | None) -> Path:
         raise CwdError(message=f"cwd does not exist: {target}")
     if not target.is_dir():
         raise CwdError(message=f"cwd is not a directory: {target}")
+    target = target.resolve()
     git_dir = target / ".git"
     if not git_dir.exists():
         raise CwdError(

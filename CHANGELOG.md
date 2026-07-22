@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **`cwd=` setup paths are normalized** — relative repository paths now resolve
+  to absolute paths before Eden stores them on run setup/results or uses them
+  for downstream session, env, and worktree handling.
 - **Claude resume precheck is less path-fragile** — no-sandbox
   `resume_session=` now falls back to finding a Claude session by id anywhere
   under `~/.claude/projects` when the exact cwd-derived project slug misses.

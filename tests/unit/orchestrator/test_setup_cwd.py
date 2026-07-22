@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -37,3 +38,25 @@ def test_resolve_setup_cwd_must_be_git_repo(tmp_path: Path) -> None:
             provider_env={},
             sandbox_kind="none",
         )
+
+
+def test_resolve_setup_cwd_returns_absolute_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    monkeypatch.chdir(tmp_path)
+
+    result = resolve_setup(
+        prompt="x",
+        prompt_file=None,
+        prompt_args=None,
+        cwd=Path("repo"),
+        env=None,
+        provider_env={},
+        sandbox_kind="none",
+    )
+
+    assert result.cwd == repo.resolve()
