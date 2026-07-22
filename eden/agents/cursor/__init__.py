@@ -21,6 +21,7 @@ class _CursorAgent:
     name: str
     model: str
     captures_sessions: bool
+    structured_stream: bool = True
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()
     _force: bool = False

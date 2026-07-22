@@ -21,7 +21,7 @@ class Agent(Protocol):
     def parse_stream(self, line: str) -> StreamEvent | None: ...
 ```
 
-Agents may also expose `captures_sessions: bool` — the orchestrator reads it via `getattr` and post-processes session JSONL when `True`.
+Agents may also expose `captures_sessions: bool` — the orchestrator reads it via `getattr` and post-processes session JSONL when `True`. Structured JSONL agents may expose `structured_stream = True` so `parse_stream(line) -> None` drops an uninteresting structured line instead of falling back to a text event; agents without the flag keep the plain-text fallback.
 
 ### `IterationContext`
 

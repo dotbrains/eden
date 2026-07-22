@@ -27,6 +27,7 @@ class _PiAgent:
     name: str
     model: str
     captures_sessions: bool
+    structured_stream: bool = True
     _binary: str = "pi"
     _env: Mapping[str, str] = field(default_factory=dict)
     _extra_args: tuple[str, ...] = ()

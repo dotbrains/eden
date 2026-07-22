@@ -76,10 +76,12 @@ def parse_event(
     line: str,
     iteration: int,
     timestamp: Callable[[], datetime],
-) -> StreamEvent:
+) -> StreamEvent | None:
     parsed = agent.parse_stream(line)
     if parsed is not None:
         return replace(parsed, iteration=iteration, agent_name=agent.name)
+    if getattr(agent, "structured_stream", False):
+        return None
     return StreamEvent(
         type="text",
         agent_name=agent.name,

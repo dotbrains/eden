@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -13,6 +15,7 @@ from eden.lifecycle import Hooks
 from eden.logging import Logging
 from eden.orchestrator._setup import SetupResult, resolve_setup
 from eden.orchestrator.loop import _run_loop
+from eden.orchestrator.loop._agent_stream import parse_event
 from eden.sandboxes.no_sandbox import provider as no_sandbox_provider
 from eden.streaming import StreamEvent
 
@@ -107,6 +110,28 @@ def test_run_loop_emits_text_events_via_callback(tmp_git_repo: Path) -> None:
     )
     text_events = [e for e in events if e.type == "text"]
     assert any(e.text == "alpha" for e in text_events)
+
+
+def test_parse_event_drops_structured_stream_noise() -> None:
+    class _StructuredAgent:
+        name = "structured"
+        model = "x"
+        structured_stream = True
+
+        def build_command(self, _ctx: Any) -> list[str]:
+            return []
+
+        def parse_stream(self, _line: str) -> StreamEvent | None:
+            return None
+
+    ev = parse_event(
+        agent=_StructuredAgent(),
+        line='{"type":"heartbeat"}',
+        iteration=0,
+        timestamp=lambda: datetime.now(UTC),
+    )
+
+    assert ev is None
 
 
 def test_run_loop_simulated_agent_does_not_capture(tmp_git_repo: Path) -> None:

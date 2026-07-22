@@ -107,8 +107,10 @@ def execute_agent_iteration(
                     text=raw_line,
                 )
 
-            def _handle_event(ev: StreamEvent) -> None:
+            def _handle_event(ev: StreamEvent | None) -> None:
                 nonlocal iter_session_id, iter_usage
+                if ev is None:
+                    return
                 if ev.type == "usage":
                     iter_session_id = ev.session_id
                     iter_usage = ev.usage
