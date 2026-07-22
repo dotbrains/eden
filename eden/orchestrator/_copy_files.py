@@ -8,12 +8,12 @@ destinations are overwritten to match the option's seeding semantics.
 
 from __future__ import annotations
 
-import shutil
 import time
 from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 
 from eden.errors import CopyToWorktreeError, InvalidOptions
+from eden.orchestrator.copying._cow import copy_path
 
 
 def _validate_entry(raw: str) -> PurePosixPath:
@@ -143,10 +143,7 @@ def apply_copy_to_worktree(
         try:
             resolved_src = _resolve_confined_source(rel=rel, src=src, source_root=source_root)
             dst.parent.mkdir(parents=True, exist_ok=True)
-            if resolved_src.is_dir():
-                shutil.copytree(resolved_src, dst, dirs_exist_ok=True)
-            else:
-                shutil.copy2(resolved_src, dst)
+            copy_path(resolved_src, dst)
             _raise_if_timed_out(
                 started_at=started_at,
                 timeout=timeout,

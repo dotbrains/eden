@@ -98,6 +98,8 @@ ships.
 
 ### Fixed
 
+- **`copy_to_worktree` copy performance** — pre-boot file seeding now attempts
+  copy-on-write filesystem copies before falling back to regular copies.
 - **`copy_to_worktree` deadlines** — pre-boot file seeding now honors
   `Timeouts.copy_to_worktree` across `run()`, `interactive()`,
   `create_worktree()`, and `create_sandbox()` instead of leaving large
