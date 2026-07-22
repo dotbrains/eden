@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **Agent environment propagation** — per-agent `env=` values declared on
+  built-in agent factories now reach the spawned agent process for both
+  `eden.run()` and reusable `Sandbox.run()` calls.
 - **File display status logs** — `FileDisplay.status()` now strips leading
   bracketed UI prefixes before appending status lines, keeping unattended file
   logs cleaner while leaving raw text output untouched.

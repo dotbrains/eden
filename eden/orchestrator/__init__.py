@@ -9,6 +9,7 @@ from pathlib import Path
 from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.abort._signal import AbortController
+from eden.agents._env import agent_env
 from eden.agents._protocol import Agent
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
@@ -65,14 +66,13 @@ def run(
 ) -> RunResult:
     """Run an agent against a sandbox in a managed worktree, returning RunResult."""
     cwd_path = Path(cwd) if cwd is not None else None
-    provider_env: dict[str, str] = {}
     setup = resolve_setup(
         prompt=prompt,
         prompt_file=prompt_file,
         prompt_args=prompt_args,
         cwd=cwd_path,
         env=env,
-        provider_env=provider_env,
+        provider_env=agent_env(agent),
         sandbox_kind=sandbox.kind,
     )
     validate_session_options(

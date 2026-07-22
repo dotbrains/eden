@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from eden._types import RunResult, Timeouts
 from eden.abort import AbortSignal
 from eden.abort._signal import AbortController
+from eden.agents._env import agent_env
 from eden.lifecycle import Hooks
 from eden.logging._config import Logging
 from eden.providers._protocols import SandboxHandle, SandboxProvider
@@ -105,14 +106,13 @@ class Sandbox:
         from eden.orchestrator.loop import _run_loop
 
         cwd_path = self.cwd if self.cwd is not None else self.worktree.host_repo_path
-        provider_env: dict[str, str] = {}
         setup = resolve_setup(
             prompt=prompt,
             prompt_file=prompt_file,
             prompt_args=prompt_args,
             cwd=cwd_path,
             env=env,
-            provider_env=provider_env,
+            provider_env=agent_env(agent),
             sandbox_kind=self.sandbox_provider.kind,
         )
         validate_sandbox_run_options(
