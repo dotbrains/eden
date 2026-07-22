@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **`eden run` completion summaries** — the CLI now reports whether the agent
+  actually reached the completion signal or only exhausted its iteration
+  budget, instead of printing `Completion: None`.
 - **Agent failure recovery preserves plain stdout** — when an agent exits
   non-zero without a structured stdout error or stderr text, the recovery event
   now includes the captured stdout instead of reporting no agent output.

@@ -1,10 +1,4 @@
-"""`eden run` — run a template's iteration loop in-process.
-
-Unlike ``eden init`` (which scaffolds files for the user to edit and run
-themselves), ``eden run`` translates the same flags into an in-process
-``eden.run()`` invocation. Useful for quick experiments and CI pipelines
-where there's no value in committing a generated ``.eden/`` directory.
-"""
+"""`eden run` — run a template's iteration loop in-process."""
 
 from __future__ import annotations
 
@@ -69,6 +63,12 @@ def _build_sandbox(sandbox: str, image_name: str | None) -> SandboxProvider:
     raise typer.BadParameter(
         f"sandbox must be one of {list(_VALID_SANDBOXES)}, got {sandbox!r}",
     )
+
+
+def _completion_summary(*, completion_signal: str | None, iterations: int) -> str:
+    status = "agent finished after" if completion_signal is not None else "reached"
+    suffix = "." if completion_signal is not None else " without completion signal."
+    return f"Run complete: {status} {iterations} iteration(s){suffix}"
 
 
 def run_command(
@@ -152,6 +152,13 @@ def run_command(
         cwd=cwd,
     )
 
-    typer.echo(f"Completion: {result.completion_signal}")
+    typer.echo(
+        _completion_summary(
+            completion_signal=result.completion_signal,
+            iterations=len(result.iterations),
+        )
+    )
+    completion = result.completion_signal or "(not reached)"
+    typer.echo(f"Completion: {completion}")
     typer.echo(f"Iterations: {len(result.iterations)}")
     typer.echo(f"Branch:     {result.branch}")
