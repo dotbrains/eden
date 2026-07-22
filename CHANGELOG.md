@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **Agent failure recovery preserves plain stdout** — when an agent exits
+  non-zero without a structured stdout error or stderr text, the recovery event
+  now includes the captured stdout instead of reporting no agent output.
 - **Long text deltas flush during streaming** — `TextDeltaBuffer` now emits
   newline-free text once its residual reaches 80 characters, so live consumers
   do not wait until final flush for long assistant chunks.

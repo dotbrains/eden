@@ -30,7 +30,7 @@ Maps any `EdenError` (including the sandbox / worktree subclasses) to a single m
 The 20 concrete error classes re-exported from `eden`:
 
 - `EdenError` — base class for everything.
-- `AgentError` — the agent subprocess exited non-zero without hitting the completion signal. Carries `agent_name`, `exit_code`, `stderr`, and `parsed_error` (extracted from stdout for Codex / Pi / OpenCode, which surface errors there rather than on stderr).
+- `AgentError` — the agent subprocess exited non-zero without hitting the completion signal. Carries `agent_name`, `exit_code`, `stdout`, `stderr`, and `parsed_error` (extracted from stdout for Codex / Pi / OpenCode, which surface errors there rather than on stderr).
 - `ConfigError` — bad arguments, env, or cwd; raised before any side-effect.
 - `CopyToWorktreeError` — a worktree copy failed. Raised in two places: (1) the isolated provider's worktree clone failed or exceeded `Timeouts.copy_to_worktree`; (2) a `copy_to_worktree=` entry passed to `run()` / `create_sandbox()` / `interactive()` doesn't exist on disk, or the copy hit a permissions / disk-space error. Carries `source`, `target`, `timeout`, and `timed_out` (true on budget overrun, false on missing-source / permission / disk failure).
 - `CwdError` — invalid `cwd=` (missing, not a directory, not in a git repo).

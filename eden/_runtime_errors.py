@@ -75,6 +75,7 @@ class AgentError(EdenError):
         cause: Exception | None = None,
         agent_name: str = "",
         exit_code: int | None = None,
+        stdout: str = "",
         stderr: str = "",
         parsed_error: str | None = None,
     ) -> None:
@@ -84,6 +85,7 @@ class AgentError(EdenError):
         self.cause = cause
         self.agent_name = agent_name
         self.exit_code = exit_code
+        self.stdout = stdout
         self.stderr = stderr
         self.parsed_error = parsed_error
         super().__init__(_format(code, message, hint))

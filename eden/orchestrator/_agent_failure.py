@@ -47,6 +47,7 @@ def raise_agent_exit_without_completion(
         ),
         agent_name=agent_name,
         exit_code=exit_code,
+        stdout=stdout.strip(),
         stderr=stderr_text,
         parsed_error=parsed_stdout,
     )

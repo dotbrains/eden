@@ -17,6 +17,7 @@ def _err(
     *,
     parsed: str | None = None,
     stderr: str = "",
+    stdout: str = "",
     exit_code: int = 1,
     agent_name: str = "codex",
 ) -> AgentError:
@@ -24,6 +25,7 @@ def _err(
         message="agent failed",
         agent_name=agent_name,
         exit_code=exit_code,
+        stdout=stdout,
         stderr=stderr,
         parsed_error=parsed,
     )
@@ -65,6 +67,16 @@ def test_handles_no_output_at_all(tmp_path: Path) -> None:
         log_path=None,
     )
     assert "(no agent output captured)" in out
+
+
+def test_falls_back_to_stdout_when_stderr_missing(tmp_path: Path) -> None:
+    out = format_agent_error_recovery(
+        error=_err(stdout="ordinary stdout failure\n"),
+        branch="b",
+        worktree_path=tmp_path / "wt",
+        log_path=None,
+    )
+    assert "ordinary stdout failure" in out
 
 
 def test_omits_log_line_when_no_log_path(tmp_path: Path) -> None:

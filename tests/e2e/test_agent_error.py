@@ -98,6 +98,33 @@ def test_agent_error_falls_back_to_stderr_when_stdout_silent(
     assert "connection refused" in err.stderr
 
 
+def test_agent_error_preserves_plain_stdout_on_failure(e2e_git_repo: Path) -> None:
+    events: list[eden.StreamEvent] = []
+
+    def _build(ctx: IterationContext) -> list[str]:
+        return _failing_agent_argv(
+            stdout_payload="plain failure details\n",
+            exit_code=4,
+        )
+
+    agent = cli_agent(name="plain-stdout", model="x", binary="ignored", build_argv=_build)
+
+    with pytest.raises(eden.AgentError) as excinfo:
+        eden.run(
+            agent=agent,
+            sandbox=no_sandbox(),
+            prompt="x",
+            max_iterations=1,
+            completion_signal="<promise>COMPLETE</promise>",
+            idle_timeout=30.0,
+            on_event=events.append,
+        )
+
+    assert excinfo.value.stdout == "plain failure details"
+    text_events = [ev.text for ev in events if ev.type == "text" and ev.text is not None]
+    assert any("plain failure details" in t for t in text_events)
+
+
 def test_agent_clean_exit_with_completion_does_not_raise(e2e_git_repo: Path) -> None:
     """Sanity check: an agent that prints completion then exits 0 still works."""
 

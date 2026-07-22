@@ -34,7 +34,12 @@ def format_agent_error_recovery(
       interpolated value so paths with spaces (a real case under macOS's
       "User Name" home dirs) don't break the paste.
     """
-    body = error.parsed_error or error.stderr.strip() or "(no agent output captured)"
+    body = (
+        error.parsed_error
+        or error.stderr.strip()
+        or error.stdout.strip()
+        or "(no agent output captured)"
+    )
     wt_q = shlex.quote(str(worktree_path))
     branch_q = shlex.quote(branch)
     lines: list[str] = [
