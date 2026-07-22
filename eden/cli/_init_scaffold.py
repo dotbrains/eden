@@ -16,6 +16,12 @@ from eden.cli._init_dependencies import (
 from eden.cli._init_dependencies import (
     has_host_dependency as _has_host_dependency,
 )
+from eden.cli._init_dependencies import (
+    install_dependency as _install_dependency,
+)
+from eden.cli._init_dependencies import (
+    missing_template_dependencies as _missing_template_dependencies,
+)
 from eden.cli._init_templates import TEMPLATE_METADATA as _TEMPLATE_METADATA
 
 console = Console(stderr=True)
@@ -29,6 +35,7 @@ def scaffold_init_files(
     template: str,
     sandbox: str,
     image_name: str,
+    install_template_deps: bool = False,
 ) -> None:
     files = _build_file_names_for_sandbox(files, sandbox=sandbox)
     outputs: list[tuple[Path, str]] = []
@@ -48,6 +55,11 @@ def scaffold_init_files(
         out.write_text(contents, encoding="utf-8")
 
     typer.secho(f"✓ scaffolded {target}", fg="green")
+    _install_template_dependencies(
+        repo=repo,
+        template=template,
+        install_template_deps=install_template_deps,
+    )
     _print_next_steps(repo=repo, template=template, sandbox=sandbox, image_name=image_name)
 
 
@@ -79,3 +91,24 @@ def _print_next_steps(*, repo: Path, template: str, sandbox: str, image_name: st
     )
     step += 1
     typer.echo(f"  {step}. python .eden/main.py")
+
+
+def _install_template_dependencies(
+    *,
+    repo: Path,
+    template: str,
+    install_template_deps: bool,
+) -> None:
+    if not install_template_deps:
+        return
+    dependencies = _missing_template_dependencies(repo, _TEMPLATE_METADATA[template].dependencies)
+    if not dependencies:
+        return
+    package_manager = _detect_package_manager(repo)
+    for dependency in dependencies:
+        command = _add_dependency_command(package_manager, dependency)
+        typer.echo(f"Installing template dependency: {command}")
+        exit_code = _install_dependency(package_manager, dependency)
+        if exit_code != 0:
+            console.print(f"[red]template dependency install failed: {command}[/red]")
+            raise typer.Exit(code=exit_code)

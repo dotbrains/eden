@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -55,3 +56,15 @@ def has_host_dependency(repo: Path, dependency: str) -> bool:
         if isinstance(deps, dict) and dependency in deps:
             return True
     return False
+
+
+def missing_template_dependencies(repo: Path, dependencies: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(
+        dependency for dependency in dependencies if not has_host_dependency(repo, dependency)
+    )
+
+
+def install_dependency(package_manager: str, dependency: str) -> int:
+    command = add_dependency_command(package_manager, dependency).split()
+    proc = subprocess.run(command, check=False)
+    return proc.returncode

@@ -9,6 +9,10 @@ ships.
 
 ### Added
 
+- **`eden init --install-template-deps`** — after scaffolding, install any
+  host-side packages declared by the selected template and missing from
+  `package.json`, using the same npm/pnpm/yarn/bun detection as the printed
+  next steps. The default remains print-only.
 - **`Output(max_retries=...)`** — `Output.object`/`Output.string` gain an
   optional `max_retries` (default `0`). When extraction or validation fails,
   `run()` now retries automatically: it resumes the failing session with

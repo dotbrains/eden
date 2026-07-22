@@ -72,6 +72,11 @@ def init_command(
     ),
     image_name: str | None = typer.Option(None, "--image-name", help="Docker image tag"),
     build_image: bool = typer.Option(False, "--build-image", help="Build the image"),
+    install_template_deps: bool = typer.Option(
+        False,
+        "--install-template-deps",
+        help="Install missing host dependencies for the selected template",
+    ),
     create_label: bool = typer.Option(False, "--create-label", help="Create the GitHub label"),
     yes: bool = typer.Option(False, "--yes", help="Accept all defaults"),
 ) -> None:
@@ -155,6 +160,7 @@ def init_command(
         template=template,
         sandbox=sandbox,
         image_name=image_name,
+        install_template_deps=install_template_deps,
     )
     if create_label:
         _create_github_label()

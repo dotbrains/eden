@@ -23,6 +23,7 @@ On an interactive terminal, any flag you omit is collected via a prompt (with se
 | `--backlog` | `github` (when template needs one) | `github`, `beads`, `linear`, `jira` | Backlog manager that the tracker-aware templates target; ignored for `blank`. |
 | `--image-name` | `eden:<cwd-basename-lowercase>` | any string | Container image tag referenced from the generated `.eden/main.py` and the suggested `docker build` command. |
 | `--build-image` | `false` | flag | Build the scaffolded container image after writing `.eden/`. |
+| `--install-template-deps` | `false` | flag | Install missing host packages required by the selected template. |
 | `--create-label` | `false` | flag | Create or update the GitHub Issues `eden` label for GitHub-backed templates. |
 | `--yes` | `false` | flag | Accept all defaults; skip interactive prompts. |
 
@@ -56,8 +57,6 @@ cp .eden/.env.example .eden/.env  # then fill in your API keys
 docker build -t <image-name> -f .eden/Dockerfile .
 python .eden/main.py
 ```
-
-Read source: `eden/cli/init.py`, `eden/cli/_templates/blank.py`, `eden/cli/_templates/simple_loop.py`, `eden/cli/_templates/_backlog.py`.
 
 ## Image Commands
 
