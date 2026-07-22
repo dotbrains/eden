@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **Long text deltas flush during streaming** — `TextDeltaBuffer` now emits
+  newline-free text once its residual reaches 80 characters, so live consumers
+  do not wait until final flush for long assistant chunks.
 - **Container mount host paths expand `~`** — Docker and Podman mounts now
   resolve `Mount(host=Path("~/..."))` before building bind-mount argv, so user
   home paths work without manual `Path.expanduser()`.

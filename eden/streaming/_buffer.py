@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+DEFAULT_FLUSH_CHARS = 80
+
 
 @dataclass
 class TextDeltaBuffer:
@@ -17,6 +19,10 @@ class TextDeltaBuffer:
         combined = self._residual + chunk
         if "\n" not in combined:
             self._residual = combined
+            if len(self._residual) >= DEFAULT_FLUSH_CHARS:
+                out = self._residual
+                self._residual = ""
+                return [out]
             return []
         lines = combined.split("\n")
         self._residual = lines.pop()

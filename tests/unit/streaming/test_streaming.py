@@ -56,6 +56,19 @@ def test_buffer_flush_returns_residual() -> None:
     assert buf.flush() == ""
 
 
+def test_buffer_flushes_long_newline_free_chunk() -> None:
+    buf = TextDeltaBuffer()
+    assert buf.feed("a" * 79) == []
+    assert buf.feed("b") == ["a" * 79 + "b"]
+    assert buf.flush() == ""
+
+
+def test_buffer_continues_after_threshold_flush() -> None:
+    buf = TextDeltaBuffer()
+    assert buf.feed("x" * 80) == ["x" * 80]
+    assert buf.feed("tail\n") == ["tail"]
+
+
 def test_stream_event_is_frozen() -> None:
     ev = StreamEvent(
         type="text",
