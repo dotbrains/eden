@@ -10,6 +10,7 @@ import pytest
 
 from eden.agents import Agent, IterationContext
 from eden.agents.cli import cli_agent
+from eden.errors import InvalidOptions
 from eden.providers._types import ExecResult
 from eden.streaming import StreamEvent
 
@@ -78,6 +79,21 @@ def test_custom_build_argv_overrides_default() -> None:
     a = cli_agent(name="custom", model="m", binary="ignored", build_argv=my_argv)
     argv = a.build_command(_ctx(prompt="x"))
     assert argv == ["echo", "iter=0", "x"]
+
+
+def test_default_build_command_rejects_huge_prompt() -> None:
+    a = cli_agent(name="custom", model="m", binary="my-cli")
+    with pytest.raises(InvalidOptions) as excinfo:
+        a.build_command(_ctx(prompt="x" * 120_001))
+    assert excinfo.value.code == "config.prompt_too_long"
+
+
+def test_custom_build_argv_can_handle_huge_prompt() -> None:
+    def my_argv(ctx: IterationContext) -> list[str]:
+        return ["echo", str(len(ctx.prompt))]
+
+    a = cli_agent(name="custom", model="m", binary="ignored", build_argv=my_argv)
+    assert a.build_command(_ctx(prompt="x" * 120_001)) == ["echo", "120001"]
 
 
 def test_default_parse_stream_returns_none() -> None:

@@ -12,6 +12,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from eden.agents._argv_guards import assert_prompt_fits_argv
 from eden.agents._context import IterationContext
 from eden.agents._protocol import Agent
 from eden.streaming import StreamEvent
@@ -35,6 +36,7 @@ class _CliAgent:
     def build_command(self, ctx: IterationContext) -> list[str]:
         if self._build_argv is not None:
             return self._build_argv(ctx)
+        assert_prompt_fits_argv(prompt=ctx.prompt, agent_name=self.name)
         return [self._binary, *self._extra_args, ctx.prompt]
 
     def parse_stream(self, line: str) -> StreamEvent | None:

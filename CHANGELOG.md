@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **`cli_agent` prompt-size failures** — the generic default argv builder now
+  rejects oversized positional prompts with `InvalidOptions` before subprocess
+  spawn, instead of surfacing a lower-level argv-size failure.
 - **Prompt shell timeout metadata** — `PromptError` now carries `timeout` when
   a `!` shell block times out, matching the existing `exit_code` detail for
   non-zero shell-block exits.

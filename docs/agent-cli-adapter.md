@@ -43,7 +43,8 @@ All arguments are keyword-only.
   Required.
 - `build_argv` - override the default argv; receives the
   [`IterationContext`](python-api.md#iterationcontext). Default produces
-  `[binary, *extra_args, ctx.prompt]`.
+  `[binary, *extra_args, ctx.prompt]` and rejects prompts above Eden's
+  conservative argv byte limit before subprocess spawn.
 - `parse_stream` - override the default line-to-`StreamEvent` parser. Default
   returns `None` (orchestrator emits a `text` event per line).
 - `captures_sessions` - opt into the session post-processing the orchestrator
@@ -51,6 +52,10 @@ All arguments are keyword-only.
 - `env` - per-agent environment additions. Merged by the orchestrator.
 - `extra_args` - inserted between the binary and prompt by the default
   `build_argv`.
+
+The default argv shape passes the prompt positionally, so it is capped by the
+host OS argv limit. For large prompts, provide `build_argv=` and deliver the
+prompt by stdin, a temporary file, or the wrapped tool's native session input.
 
 ### What binary it wraps
 
