@@ -58,6 +58,8 @@ def test_plan_prompt_extracts_via_xml_tag() -> None:
     )
     assert "<plan>" in files["plan-prompt.md"]
     assert "</plan>" in files["plan-prompt.md"]
+    assert "Always emit the `<plan>` tags" in files["plan-prompt.md"]
+    assert "<plan>No open tasks.</plan>" in files["plan-prompt.md"]
 
 
 def test_implement_prompt_substitutes_PLAN_arg() -> None:

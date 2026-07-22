@@ -48,6 +48,9 @@ Acceptance:
 - <test or behaviour that proves the change works>
 </plan>
 
+Always emit the `<plan>` tags. If there are no open tasks to plan, output
+`<plan>No open tasks.</plan>` so the run can exit cleanly.
+
 When the plan is wrapped, output the completion signal:
 
 <promise>COMPLETE</promise>
