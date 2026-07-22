@@ -13,6 +13,7 @@ from eden.abort import AbortController
 from eden.agents import simulated_agent
 from eden.errors import Aborted, IdleTimeout
 from eden.lifecycle import Hooks
+from eden.orchestrator import run
 from eden.orchestrator._setup import SetupResult, resolve_setup
 from eden.orchestrator.loop import _run_loop
 from eden.sandboxes.no_sandbox import provider as no_sandbox_provider
@@ -60,6 +61,22 @@ def test_run_loop_aborts_when_signal_set(tmp_git_repo: Path) -> None:
             signal=ctrl.signal,
             prompt_args=None,
         )
+
+
+def test_run_rejects_pre_aborted_signal_before_setup(tmp_git_repo: Path) -> None:
+    ctrl = AbortController()
+    ctrl.abort(reason="cancelled-before-start")
+
+    with pytest.raises(Aborted) as ex:
+        run(
+            agent=simulated_agent(),
+            sandbox=no_sandbox_provider(),
+            prompt_file=tmp_git_repo / "missing.md",
+            cwd=tmp_git_repo,
+            signal=ctrl.signal,
+        )
+
+    assert ex.value.reason == "cancelled-before-start"
 
 
 def test_run_loop_idle_timeout(tmp_git_repo: Path) -> None:

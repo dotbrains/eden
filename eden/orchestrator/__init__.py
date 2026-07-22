@@ -65,6 +65,9 @@ def run(
     throw_on_duplicate_worktree: bool = True,
 ) -> RunResult:
     """Run an agent against a sandbox in a managed worktree, returning RunResult."""
+    if signal is not None:
+        signal.raise_if_aborted()
+
     cwd_path = Path(cwd) if cwd is not None else None
     setup = resolve_setup(
         prompt=prompt,

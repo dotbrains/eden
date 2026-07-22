@@ -47,6 +47,10 @@ class Aborted(EdenError):
 Raised by `raise_if_aborted()` and surfaced from `run()` when cancellation
 lands.
 
+`run(signal=...)` checks a pre-aborted signal before resolving the prompt,
+`cwd`, worktree, sandbox, or log sink. This preserves the caller's cancellation
+reason and avoids unrelated setup errors after the caller has already canceled.
+
 ### `register_shutdown(callback)`
 
 ```python
