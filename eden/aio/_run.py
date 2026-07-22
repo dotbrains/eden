@@ -18,7 +18,7 @@ from eden import (
     StreamEvent,
     Timeouts,
 )
-from eden import run as _sync_run
+from eden.orchestrator import run as _sync_run
 from eden.providers._protocols import SandboxProvider
 
 
@@ -46,6 +46,7 @@ async def run(
     signal: AbortSignal | None = None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    fork_session: bool = False,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
 ) -> RunResult:
@@ -74,6 +75,7 @@ async def run(
         signal=signal,
         output=output,
         resume_session=resume_session,
+        fork_session=fork_session,
         copy_to_worktree=copy_to_worktree,
         throw_on_duplicate_worktree=throw_on_duplicate_worktree,
     )

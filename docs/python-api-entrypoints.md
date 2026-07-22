@@ -36,6 +36,7 @@ def run(
     signal: AbortSignal | None = None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
+    fork_session: bool = False,
     copy_to_worktree: list[str] | None = None,
     throw_on_duplicate_worktree: bool = True,
 ) -> RunResult: ...
@@ -61,7 +62,8 @@ Parameters:
 - `logging` — `Logging.file(path, on_agent_stream_event=...)` to mirror events to a log file, or `Logging.stdout(...)` to write them to the host process's stdout (CI-friendly; `RunResult.log_file_path` is then `None`); the optional callback fires for agent-emitted text/tool_call/usage/session_id events (plus `raw` when `verbose=True`) and swallows exceptions. Pass `verbose=True` to also surface each literal stdout line as a `raw` event.
 - `signal` — `AbortSignal` for cooperative cancellation. If omitted, `run` allocates its own (unused) signal.
 - `output` — `Output.object(...)` / `Output.string(...)` to extract a typed payload from a `<tag>` block in stdout. Requires `max_iterations=1` and that `<tag>` literally appear in the prompt. Failure raises [`StructuredOutputError`](#structuredoutputerror).
-- `resume_session` — Claude Code session id to resume; appends `--resume <id>` to the agent argv. Requires `max_iterations=1`.
+- `resume_session` — captured session id to resume. Requires `max_iterations=1`.
+- `fork_session` — when combined with `resume_session`, starts a child session instead of mutating the parent session. Requires `resume_session`.
 - `copy_to_worktree` — list of host-relative file/directory paths to copy from `cwd` into the freshly-carved worktree before the sandbox boots (and before `host.on_worktree_ready` hooks fire, so hooks can use the copied files). Files preserve their relative path; directories copy recursively; existing destinations are overwritten. Absolute paths, `..` traversal, and the `head` branch strategy raise `InvalidOptions`; missing sources raise `CopyToWorktreeError`. Useful for seeding `.env` files, fixtures, or local configs that the worktree shouldn't inherit from `git checkout`.
 - `throw_on_duplicate_worktree` — when `False` and the named-strategy branch already has an on-disk worktree, that worktree is reused (and `close()` does not remove it). Default `True` (raise `BranchExists` on duplicate). Only meaningful for `BranchStrategy.named(...)`. Useful for iterative re-runs against the same scenario branch without `eden clean` in between. On reuse, a clean worktree is fast-forwarded to `origin/<branch>` (`git fetch` + `git merge --ff-only`) so the re-run isn't against stale code; a dirty worktree, a detached HEAD, a missing/unreachable origin, or a diverged branch are all reused as-is.
 
