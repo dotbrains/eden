@@ -73,14 +73,14 @@ def _normalize_args(args: Mapping[str, object]) -> dict[str, str]:
                 message=f"prompt_args value for {{{{{key}}}}} is missing",
                 hint=f"pass a non-empty string for prompt_args[{key!r}]",
             )
-        if not isinstance(value, str):
+        if not isinstance(value, str | int | float | bool):
             raise PromptError(
                 code="prompt.invalid_arg",
                 message=(
-                    f"prompt_args value for {{{{{key}}}}} must be a string, "
+                    f"prompt_args value for {{{{{key}}}}} must be a scalar, "
                     f"got {type(value).__name__}"
                 ),
-                hint=f"convert prompt_args[{key!r}] to a string before calling Eden",
+                hint=f"pass a string, number, or boolean for prompt_args[{key!r}]",
             )
-        normalized[key] = value
+        normalized[key] = str(value)
     return normalized

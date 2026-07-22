@@ -14,7 +14,7 @@ def render_interactive_prompt(
     *,
     prompt_text: str,
     prompt_is_literal: bool,
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
     collect_args: bool | None,
     source_branch: str,
     target_branch: str,
@@ -27,7 +27,7 @@ def render_interactive_prompt(
         # shell expansion, no built-in injection.
         return prompt_text
 
-    effective_args: Mapping[str, str] = prompt_args or {}
+    effective_args: Mapping[str, object] = prompt_args or {}
     should_collect = collect_args if collect_args is not None else sys.stdin.isatty()
     if should_collect:
         effective_args = collect_missing_args(prompt_text, effective_args)

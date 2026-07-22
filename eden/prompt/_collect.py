@@ -68,16 +68,16 @@ def collect_missing_args(
     for key, value in args.items():
         if value is None:
             continue
-        if not isinstance(value, str):
+        if not isinstance(value, str | int | float | bool):
             raise PromptError(
                 code="prompt.invalid_arg",
                 message=(
-                    f"prompt_args value for {{{{{key}}}}} must be a string, "
+                    f"prompt_args value for {{{{{key}}}}} must be a scalar, "
                     f"got {type(value).__name__}"
                 ),
-                hint=f"convert prompt_args[{key!r}] to a string before calling Eden",
+                hint=f"pass a string, number, or boolean for prompt_args[{key!r}]",
             )
-        merged[key] = value
+        merged[key] = str(value)
     if not missing:
         return merged
     pf = prompt_fn if prompt_fn is not None else _default_prompt

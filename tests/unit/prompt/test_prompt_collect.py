@@ -72,9 +72,18 @@ def test_collect_missing_args_replaces_none_values() -> None:
     assert out == {"A": "v-A", "B": "pre"}
 
 
-def test_collect_missing_args_rejects_non_string_existing_value() -> None:
+def test_collect_missing_args_stringifies_scalar_existing_values() -> None:
+    out = collect_missing_args(
+        "{{A}} {{B}} {{C}}",
+        {"A": 123, "B": 1.5, "C": False},
+        prompt_fn=lambda k: f"v-{k}",
+    )
+    assert out == {"A": "123", "B": "1.5", "C": "False"}
+
+
+def test_collect_missing_args_rejects_non_scalar_existing_value() -> None:
     with pytest.raises(PromptError) as excinfo:
-        collect_missing_args("{{A}}", {"A": 123}, prompt_fn=lambda k: f"v-{k}")
+        collect_missing_args("{{A}}", {"A": ["x"]}, prompt_fn=lambda k: f"v-{k}")
     assert excinfo.value.code == "prompt.invalid_arg"
     assert "A" in excinfo.value.message
 

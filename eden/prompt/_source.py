@@ -31,7 +31,7 @@ def resolve_source(
     *,
     prompt: str | None,
     prompt_file: str | Path | None,
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
 ) -> PromptSource:
     if prompt is None and prompt_file is None:
         raise InvalidOptions(

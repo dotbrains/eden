@@ -28,7 +28,7 @@ def run_loop_iterations(
     hooks: Hooks,
     timeouts: Timeouts,
     name: str | None,
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
     resume_session: str | None,
     fork_session: bool,
     flox_env_dir: Path | None,

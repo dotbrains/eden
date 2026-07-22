@@ -93,7 +93,7 @@ The pipeline is:
 3. Expand `` !`cmd` `` shell blocks via the sandbox handle.
 4. Substitute user-provided `prompt_args`.
 
-So a `prompt_file` whose body mixes `{{MODULE}}` placeholders, `{{SOURCE_BRANCH}}` references, and `` !`git diff {{SOURCE_BRANCH}}` `` blocks is fully supported. Built-ins can shape the shell command; user arguments are filled in after command output is collected.
+So a `prompt_file` whose body mixes `{{MODULE}}` placeholders, `{{SOURCE_BRANCH}}` references, and `` !`git diff {{SOURCE_BRANCH}}` `` blocks is fully supported. Built-ins can shape the shell command; user arguments are filled in after command output is collected. `prompt_args` values may be strings, numbers, or booleans; Eden stringifies those scalar values during substitution. `None` is treated as missing, and arbitrary objects are rejected.
 
 ## See also
 

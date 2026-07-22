@@ -32,7 +32,7 @@ def resolve_setup(
     *,
     prompt: str | None,
     prompt_file: str | Path | None,
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
     cwd: Path | None,
     env: Mapping[str, str] | None,
     provider_env: Mapping[str, str],

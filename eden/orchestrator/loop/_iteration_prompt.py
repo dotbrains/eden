@@ -12,7 +12,7 @@ from eden.providers._protocols import SandboxHandle
 def render_iteration_prompt(
     *,
     setup: SetupResult,
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
     source_branch: str,
     target_branch: str,
     handle: SandboxHandle,

@@ -41,7 +41,7 @@ def run_with_output_retries(
     max_retries: int,
     invoke: Callable[[SetupResult, str | None, bool], RunResult],
     precheck_resume: Callable[[str], None],
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
     cwd_path: Path | None,
     env: Mapping[str, str] | None,
     sandbox: SandboxProvider,

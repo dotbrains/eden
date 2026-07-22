@@ -41,7 +41,7 @@ def prepare_interactive_resources(
     cwd: str | Path | None,
     prompt: str | None,
     prompt_file: str | Path | None,
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
     env: Mapping[str, str] | None,
     branch_strategy: BranchStrategy | None,
     base_branch: str | None,

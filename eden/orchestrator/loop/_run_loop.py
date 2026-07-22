@@ -40,7 +40,7 @@ def _run_loop(
     on_event: Callable[[StreamEvent], None] | None,
     logging_cfg: Logging | None,
     signal: AbortSignal,
-    prompt_args: Mapping[str, str] | None,
+    prompt_args: Mapping[str, object] | None,
     output: OutputDefinition | None = None,
     resume_session: str | None = None,
     fork_session: bool = False,

@@ -65,12 +65,22 @@ def test_none_arg_value_raises_prompt_error() -> None:
     assert "NAME" in excinfo.value.message
 
 
-def test_non_string_arg_value_raises_prompt_error() -> None:
+def test_scalar_arg_values_are_stringified() -> None:
+    out = render(
+        "{{COUNT}} {{RATIO}} {{ENABLED}}",
+        args={"COUNT": 123, "RATIO": 1.5, "ENABLED": True},
+        source_branch="b",
+        target_branch="main",
+    )
+    assert out == "123 1.5 True"
+
+
+def test_non_scalar_arg_value_raises_prompt_error() -> None:
     with pytest.raises(PromptError) as excinfo:
-        render("hello {{NAME}}", args={"NAME": 123}, source_branch="b", target_branch="main")
+        render("hello {{NAME}}", args={"NAME": ["Ada"]}, source_branch="b", target_branch="main")
     assert excinfo.value.code == "prompt.invalid_arg"
     assert "NAME" in excinfo.value.message
-    assert "int" in excinfo.value.message
+    assert "list" in excinfo.value.message
 
 
 def test_no_braces_returns_input() -> None:

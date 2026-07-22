@@ -86,7 +86,7 @@ async def interactive(
     sandbox: SandboxProvider | None = None,
     prompt: str | None = None,
     prompt_file: str | Path | None = None,
-    prompt_args: Mapping[str, str] | None = None,
+    prompt_args: Mapping[str, object] | None = None,
     cwd: str | Path | None = None,
     env: Mapping[str, str] | None = None,
     branch_strategy: BranchStrategy | None = None,

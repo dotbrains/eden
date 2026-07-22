@@ -84,7 +84,7 @@ class Sandbox:
         agent: Agent,
         prompt: str | None = None,
         prompt_file: str | Path | None = None,
-        prompt_args: Mapping[str, str] | None = None,
+        prompt_args: Mapping[str, object] | None = None,
         env: Mapping[str, str] | None = None,
         max_iterations: int = 1,
         completion_signal: str | list[str] = "<promise>COMPLETE</promise>",
