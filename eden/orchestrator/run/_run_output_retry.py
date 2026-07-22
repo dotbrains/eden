@@ -12,16 +12,23 @@ from eden.output import OutputDefinition
 from eden.providers._protocols import SandboxProvider
 
 
-def corrective_output_prompt(output: OutputDefinition, exc: Exception) -> str:
+def corrective_output_prompt(
+    output: OutputDefinition, exc: Exception, *, retries_remaining: int = 0
+) -> str:
     """Build the follow-up prompt sent when structured-output extraction fails."""
     message = getattr(exc, "message", str(exc))
     cause = getattr(exc, "cause", None)
-    detail = f" ({cause})" if cause else ""
+    raw_matched = getattr(exc, "raw_matched", None)
+    previous = raw_matched if raw_matched is not None else "(no matching tag)"
     tag = output.tag
     return (
-        f"Your previous response could not be used: {message}{detail}. "
-        f"Re-emit the complete <{tag}>...</{tag}> block with corrected, valid "
-        "content and nothing after the closing tag."
+        "Your previous response could not be used as structured output.\n\n"
+        f"Retries remaining after this attempt: {retries_remaining}.\n\n"
+        f"Problem:\n{message}\n\n"
+        f"Parser detail:\n{cause if cause else '(no parser detail)'}\n\n"
+        f"Previous matched output:\n{previous}\n\n"
+        f"Emit only a corrected <{tag}>...</{tag}> block. Do not change files or run "
+        "commands."
     )
 
 
@@ -56,7 +63,9 @@ def run_with_output_retries(
                     use_resume = False
             if use_resume:
                 cur_setup = resolve_setup(
-                    prompt=corrective_output_prompt(output, exc),
+                    prompt=corrective_output_prompt(
+                        output, exc, retries_remaining=max_retries - attempt
+                    ),
                     prompt_file=None,
                     prompt_args=prompt_args,
                     cwd=cwd_path,
