@@ -25,8 +25,6 @@ def _seed_dockerfile(repo: Path) -> None:
 
 
 def test_docker_build_image_missing_dockerfile(runner: CliRunner, tmp_path: Path) -> None:
-    # Mock shutil.which so the test isolates the missing-Dockerfile path
-    # regardless of whether docker happens to be installed on the CI runner.
     with (
         patch("eden.cli._image.Path.cwd", return_value=tmp_path),
         patch("eden.cli._image.shutil.which", return_value="/usr/bin/docker"),
@@ -103,13 +101,14 @@ def test_docker_remove_image_invokes_docker(runner: CliRunner, tmp_path: Path) -
 
 
 def test_podman_build_image_invokes_podman(runner: CliRunner, tmp_path: Path) -> None:
-    (tmp_path / ".eden").mkdir(parents=True, exist_ok=True)
-    (tmp_path / ".eden" / "Containerfile").write_text("FROM scratch\n", encoding="utf-8")
+    repo = tmp_path / "My Repo!"
+    (repo / ".eden").mkdir(parents=True)
+    (repo / ".eden" / "Containerfile").write_text("FROM scratch\n", encoding="utf-8")
     completed: subprocess.CompletedProcess[bytes] = subprocess.CompletedProcess(
         args=[], returncode=0
     )
     with (
-        patch("eden.cli._image.Path.cwd", return_value=tmp_path),
+        patch("eden.cli._image.Path.cwd", return_value=repo),
         patch("eden.cli._image.shutil.which", return_value="/usr/bin/podman"),
         patch("eden.cli._image.subprocess.run", return_value=completed) as run_mock,
     ):
@@ -122,7 +121,7 @@ def test_podman_build_image_invokes_podman(runner: CliRunner, tmp_path: Path) ->
     build_file = argv[argv.index("-f") + 1]
     assert build_file.endswith(str(Path(".eden") / "Containerfile"))
     tag = argv[argv.index("-t") + 1]
-    assert tag.startswith("eden:")
+    assert tag == "eden:my-repo"
 
 
 def test_podman_build_image_accepts_custom_containerfile(

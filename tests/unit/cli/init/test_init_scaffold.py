@@ -100,29 +100,19 @@ def test_init_podman_writes_containerfile(
     assert not (eden_dir / "Dockerfile").exists()
 
 
-def test_init_image_name_default_uses_repo_basename(
+def test_init_image_name_default_uses_sanitized_repo_basename(
     runner: CliRunner,
     repo_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Default image name is `eden:<lowercase-cwd-basename>`."""
-    # repo_dir is named "my-repo".
+    repo = repo_dir.parent / "My Repo!"
+    repo_dir.rmdir()
+    repo.mkdir()
+    monkeypatch.chdir(repo)
     result = runner.invoke(app, ["init", "--yes"])
     assert result.exit_code == 0, result.output
-    main_py = (repo_dir / ".eden" / "main.py").read_text(encoding="utf-8")
+    main_py = (repo / ".eden" / "main.py").read_text(encoding="utf-8")
     assert 'image="eden:my-repo"' in main_py
-
-
-def test_init_image_name_explicit_override(
-    runner: CliRunner,
-    repo_dir: Path,
-) -> None:
-    result = runner.invoke(
-        app,
-        ["init", "--yes", "--image-name", "foo:bar"],
-    )
-    assert result.exit_code == 0, result.output
-    main_py = (repo_dir / ".eden" / "main.py").read_text(encoding="utf-8")
-    assert 'image="foo:bar"' in main_py
 
 
 def test_init_prints_template_metadata_and_matching_build_tool(

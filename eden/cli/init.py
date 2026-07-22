@@ -22,6 +22,7 @@ from eden.cli._init_templates import (
     render_template as _render_template,
 )
 from eden.cli._init_validation import validate_init_options as _validate_init_options
+from eden.providers._impl.container_run_args import default_image_name as _default_image_name
 
 console = Console(stderr=True)
 
@@ -65,8 +66,7 @@ def init_command(
         None,
         "--backlog",
         help=(
-            "Backlog manager: one of github, beads, linear, jira, or custom "
-            "(custom scaffolds <TODO> stubs the agent wires up on first run). "
+            "Backlog manager: github, beads, linear, jira, or custom. "
             "Only used by templates that read a backlog."
         ),
     ),
@@ -130,7 +130,7 @@ def init_command(
             yes=yes,
         )
 
-    image_name = image_name or f"eden:{Path.cwd().name.lower()}"
+    image_name = image_name or _default_image_name(Path.cwd())
 
     _validate_init_options(
         sandbox=sandbox,

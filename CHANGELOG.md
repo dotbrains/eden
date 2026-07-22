@@ -98,6 +98,10 @@ ships.
 
 ### Fixed
 
+- **CLI default image tags are sanitized** — `eden init`, `eden docker
+  build-image`, `eden docker remove-image`, and their Podman equivalents now
+  turn invalid characters in the repo directory name into `-`, matching the
+  container provider default and avoiding bad tags for names with spaces.
 - **e2e test fixture** now disables commit/tag gpg-signing, so the suite no
   longer fails on signing-enabled hosts without a reachable gpg agent.
 - **Sandbox teardown no longer masks the primary error** — when

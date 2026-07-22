@@ -2,7 +2,7 @@
 Typer sub-apps.
 
 Docker builds default to ``.eden/Dockerfile`` and Podman builds default to
-``.eden/Containerfile``; ``--image-name`` overrides the default
+``.eden/Containerfile``; ``--image-name`` overrides the default sanitized
 ``eden:<repo-dir-name>`` tag.
 """
 
@@ -17,11 +17,9 @@ from pathlib import Path
 import typer
 from rich.console import Console
 
+from eden.providers._impl.container_run_args import default_image_name
+
 _console = Console(stderr=True)
-
-
-def _default_image_name() -> str:
-    return f"eden:{Path.cwd().name.lower()}"
 
 
 def _resolve_binary(binary: str) -> str:
@@ -66,7 +64,7 @@ def build_image(*, binary: str, image_name: str | None, build_file: Path | None 
         if build_file is not None
         else _default_build_file_path(binary)
     )
-    tag = image_name or _default_image_name()
+    tag = image_name or default_image_name(Path.cwd())
     uid, gid = _build_uid_gid()
     # Inherit caller UID/GID into the build args so the scaffolded
     # ``ARG AGENT_UID`` / ``ARG AGENT_GID`` lines pick them up — same default
@@ -93,7 +91,7 @@ def build_image(*, binary: str, image_name: str | None, build_file: Path | None 
 
 def remove_image(*, binary: str, image_name: str | None) -> None:
     bin_path = _resolve_binary(binary)
-    tag = image_name or _default_image_name()
+    tag = image_name or default_image_name(Path.cwd())
     argv = [bin_path, "image", "rm", tag]
     _console.print(f"[cyan]→ {' '.join(argv)}[/cyan]")
     proc = subprocess.run(argv, check=False)
