@@ -11,7 +11,7 @@ from eden.orchestrator._copy_files import apply_copy_to_worktree
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions, Mount
 from eden.sandboxes._factory_validation import raise_copy_to_head_worktree_error
-from eden.sandboxes._git_setup import ensure_git_safe_directory
+from eden.sandboxes._git_setup import configure_sandbox_git
 from eden.sandboxes._sandbox import Sandbox
 from eden.sandboxes.errors import UnsupportedStrategy
 from eden.worktree._create import WorktreeHandle, create_worktree
@@ -132,7 +132,7 @@ def create_sandbox(
             )
         )
         if sandbox.kind != "none":
-            ensure_git_safe_directory(handle, timeout=resolved_timeouts.git_setup)
+            configure_sandbox_git(handle, wt.host_repo_path, timeout=resolved_timeouts.git_setup)
         try:
             run_sandbox_hooks(
                 phase=HookPhase.OnSandboxReady,

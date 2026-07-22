@@ -19,7 +19,7 @@ from eden.orchestrator.interactive._interactive_prompt import render_interactive
 from eden.orchestrator.interactive._interactive_resources import prepare_interactive_resources
 from eden.providers._protocols import SandboxProvider
 from eden.providers._types import BranchStrategy, CreateOptions
-from eden.sandboxes._git_setup import ensure_git_safe_directory
+from eden.sandboxes._git_setup import configure_sandbox_git
 from eden.worktree._create import WorktreeHandle
 
 
@@ -118,7 +118,7 @@ def interactive(
             )
         )
         if resources.sandbox.kind != "none":
-            ensure_git_safe_directory(handle, timeout=resources.timeouts.git_setup)
+            configure_sandbox_git(handle, wt.host_repo_path, timeout=resources.timeouts.git_setup)
         run_sandbox_hooks(
             phase=HookPhase.OnSandboxReady,
             hooks=hooks_or_default.sandbox,

@@ -16,7 +16,7 @@ Eden ships seven sandbox providers covering local, isolated, cloud, and microVM 
 
 Each provider's `kind` (`"none"`, `"bind_mount"`, or `"isolated"`) controls how `create_sandbox` and `run()` resolve the default branch strategy and whether the orchestrator calls `handle.finalize(...)` after the run. See [how-it-works.md](how-it-works.md) for the full lifecycle.
 
-Before user `sandbox.on_sandbox_ready` hooks run, Eden marks the sandbox worktree as a global Git `safe.directory` entry inside the sandbox when it is not already configured. This keeps bind-mounted repos usable when host and sandbox file ownership differ, and the check normalizes path separators so repeated Windows runs do not accumulate duplicate entries.
+Before user `sandbox.on_sandbox_ready` hooks run, Eden configures Git inside real sandboxes. It marks the sandbox worktree as a global `safe.directory` entry when missing, normalizing path separators so repeated Windows runs do not accumulate duplicates, and copies the host repo's `user.name` / `user.email` into sandbox-global Git config when available. This keeps bind-mounted repos usable when file ownership differs and lets agents commit without manual Git setup. `no_sandbox` is skipped so Eden does not mutate the user's host-global Git config.
 
 ## Choosing a provider
 
