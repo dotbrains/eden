@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from eden._types import Commit
 from eden.errors import StructuredOutputError
 from eden.output import Output, extract_structured_output
 
@@ -21,6 +22,14 @@ def test_object_missing_tag_carries_branch_and_preserved() -> None:
         )
     assert ex.value.branch == "bb"
     assert ex.value.preserved_worktree_path == preserved_path
+
+
+def test_missing_tag_carries_commits() -> None:
+    out = Output.object(tag="r", schema=lambda raw: raw)
+    commits = [Commit(sha="abc123"), Commit(sha="def456")]
+    with pytest.raises(StructuredOutputError) as ex:
+        extract_structured_output("nothing", out, branch="bb", commits=commits)
+    assert ex.value.commits == commits
 
 
 def test_missing_tag_carries_session_id_and_file_path() -> None:

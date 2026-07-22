@@ -6,13 +6,18 @@ from pathlib import Path
 
 import pytest
 
-from eden._types import Usage
+from eden._types import Commit, Iteration, Usage
+from eden.agents import simulated_agent
+from eden.errors import StructuredOutputError
+from eden.orchestrator._result import assemble_loop_result
 from eden.orchestrator._summary import (
     context_window_k,
     format_context_window_line,
     format_finalize_line,
 )
+from eden.output import Output
 from eden.providers._types import FinalizeResult
+from eden.sandboxes.no_sandbox import provider as no_sandbox
 
 pytestmark = pytest.mark.unit
 
@@ -79,3 +84,35 @@ def test_finalize_line_partial_failure() -> None:
     assert format_finalize_line(_fr(applied=False, n_files=2, bytes_=64)) == (
         "[eden] sync incomplete: 2 files attempted (64 bytes)"
     )
+
+
+def test_structured_output_error_carries_commits_from_loop_result() -> None:
+    commits = [Commit(sha="abc123")]
+    with pytest.raises(StructuredOutputError) as ex:
+        assemble_loop_result(
+            iterations=[
+                Iteration(
+                    index=0,
+                    completion_signal=None,
+                    session_id="sess-1",
+                    session_file_path=None,
+                    usage=None,
+                )
+            ],
+            completion_signal=None,
+            branch="eden/test",
+            stdout="<result>not json</result>",
+            worktree_path=Path("/tmp/worktree"),
+            preserved_worktree_path=None,
+            cwd=Path("/tmp/repo"),
+            prompt="<result>",
+            env={},
+            log_file_path=None,
+            commits=commits,
+            output=Output.object(tag="result", schema=lambda raw: raw),
+            agent=simulated_agent(),
+            sandbox=no_sandbox(),
+        )
+
+    assert ex.value.commits == commits
+    assert ex.value.session_id == "sess-1"

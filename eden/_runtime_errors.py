@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from eden._error_base import EdenError, _format
+from eden._types import Commit
 
 
 class StructuredOutputError(EdenError):
@@ -20,6 +21,7 @@ class StructuredOutputError(EdenError):
         tag: str,
         raw_matched: str | None,
         branch: str,
+        commits: list[Commit] | None = None,
         preserved_worktree_path: object = None,
         session_id: str | None = None,
         session_file_path: object = None,
@@ -31,6 +33,7 @@ class StructuredOutputError(EdenError):
         self.tag = tag
         self.raw_matched = raw_matched
         self.branch = branch
+        self.commits = commits if commits is not None else []
         self.preserved_worktree_path = preserved_worktree_path
         self.session_id = session_id
         self.session_file_path = session_file_path

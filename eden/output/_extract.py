@@ -6,6 +6,7 @@ import json
 import re
 from pathlib import Path
 
+from eden._types import Commit
 from eden.errors import StructuredOutputError
 from eden.output._types import OutputDefinition, _OutputObject, _OutputString
 from eden.output._validator import resolve_validator
@@ -44,6 +45,7 @@ def extract_structured_output(
     definition: OutputDefinition,
     *,
     branch: str,
+    commits: list[Commit] | None = None,
     preserved_worktree_path: Path | None = None,
     session_id: str | None = None,
     session_file_path: Path | None = None,
@@ -68,6 +70,7 @@ def extract_structured_output(
                 tag=definition.tag,
                 raw_matched=None,
                 branch=branch,
+                commits=commits,
                 preserved_worktree_path=preserved_worktree_path,
                 session_id=session_id,
                 session_file_path=session_file_path,
@@ -84,6 +87,7 @@ def extract_structured_output(
             tag=definition.tag,
             raw_matched=None,
             branch=branch,
+            commits=commits,
             preserved_worktree_path=preserved_worktree_path,
             session_id=session_id,
             session_file_path=session_file_path,
@@ -98,6 +102,7 @@ def extract_structured_output(
             tag=definition.tag,
             raw_matched=raw,
             branch=branch,
+            commits=commits,
             preserved_worktree_path=preserved_worktree_path,
             session_id=session_id,
             session_file_path=session_file_path,
@@ -113,6 +118,7 @@ def extract_structured_output(
             tag=definition.tag,
             raw_matched=raw,
             branch=branch,
+            commits=commits,
             preserved_worktree_path=preserved_worktree_path,
             session_id=session_id,
             session_file_path=session_file_path,

@@ -74,6 +74,7 @@ def assemble_loop_result(
             stdout,
             output,
             branch=branch,
+            commits=commits,
             preserved_worktree_path=preserved_worktree_path,
             session_id=last.session_id if last else None,
             session_file_path=last.session_file_path if last else None,

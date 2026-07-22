@@ -50,7 +50,7 @@ The 20 concrete error classes re-exported from `eden`:
 - `SessionCaptureFailed` — the orchestrator could not locate or read a session JSONL; soft failure surfaced as a warning event.
 - `SessionNotFound` — raised at run start when `resume_session=<id>` references a JSONL that does not exist on the host filesystem. The orchestrator runs this precheck before spawning the agent so the failure surfaces host-side with the expected path, rather than buried in agent stderr. Carries `session_id`, `agent_name`, optional `expected_path`, and `hint`.
 - `StepTimeout` — an iteration exceeded `Timeouts.iteration_step`.
-- <a id="structuredoutputerror"></a>`StructuredOutputError` — `output=Output.{object,string}(...)` failed to extract or validate. Carries `tag`, `raw_matched` (the matched contents or `None`), `branch`, optional `preserved_worktree_path`, and — when the failing iteration was captured — `session_id` and `session_file_path` so claude_code callers can resume that conversation with corrective feedback via `resume_session=`. Raised on missing tag, invalid JSON, or schema validation failure.
+- <a id="structuredoutputerror"></a>`StructuredOutputError` — `output=Output.{object,string}(...)` failed to extract or validate. Carries `tag`, `raw_matched` (the matched contents or `None`), `branch`, `commits` produced before extraction failed, optional `preserved_worktree_path`, and — when the failing iteration was captured — `session_id` and `session_file_path` so claude_code callers can resume that conversation with corrective feedback via `resume_session=`. Raised on missing tag, invalid JSON, or schema validation failure.
 
 ---
 

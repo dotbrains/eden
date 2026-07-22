@@ -45,7 +45,7 @@ Validation at entry:
 - `max_iterations == 1` is required (raises `InvalidOptions` otherwise).
 - `<tag>` must literally appear in the prompt source (raises `InvalidOptions` otherwise).
 
-Failures during extraction raise [`StructuredOutputError`](python-api-errors-tracing.md#structuredoutputerror) with `tag`, `raw_matched`, `branch`, optional `preserved_worktree_path`, and — when the failing iteration was captured — `session_id` and `session_file_path`. The session fields let claude_code callers resume the same conversation with corrective feedback and re-emit corrected output, rather than restart from scratch:
+Failures during extraction raise [`StructuredOutputError`](python-api-errors-tracing.md#structuredoutputerror) with `tag`, `raw_matched`, `branch`, `commits` produced before extraction failed, optional `preserved_worktree_path`, and — when the failing iteration was captured — `session_id` and `session_file_path`. The session fields let claude_code callers resume the same conversation with corrective feedback and re-emit corrected output, rather than restart from scratch:
 
 ```python
 from eden import Output, StructuredOutputError, claude_code, run
