@@ -90,6 +90,7 @@ def test_selinux_label_combines_with_readonly(
         return m
 
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
+    (tmp_path / "ro").mkdir()
     extra = (Mount(host=tmp_path / "ro", sandbox=Path("/ro"), read_only=True),)
     p = make_container_provider(
         binary=binary,  # type: ignore[arg-type]

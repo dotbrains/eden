@@ -50,6 +50,12 @@ Docker / Podman rejected a bind-mount configuration before container startup. Th
 
 **Recovery:** mount the parent directory instead, or rebuild the image with that parent directory pre-created.
 
+### `MountHostMissing`
+
+Docker / Podman rejected a bind mount because the host-side path did not exist after `~` expansion.
+
+**Recovery:** create the host path before running Eden, or remove the mount.
+
 ### `UnsupportedStrategy`
 
 The chosen `BranchStrategy` is not supported by this provider. Carries `provider: str` and `strategy: StrategyTag`.

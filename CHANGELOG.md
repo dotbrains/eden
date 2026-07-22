@@ -98,6 +98,8 @@ ships.
 
 ### Fixed
 
+- **Container mount validation** — Docker and Podman providers now reject
+  missing host-side mount paths before starting a container.
 - **`copy_to_worktree` copy performance** — pre-boot file seeding now attempts
   copy-on-write filesystem copies before falling back to regular copies.
 - **`copy_to_worktree` deadlines** — pre-boot file seeding now honors

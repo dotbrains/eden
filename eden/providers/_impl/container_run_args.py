@@ -10,6 +10,7 @@ from typing import Literal
 
 from eden.providers._impl.container_mounts import SANDBOX_HOMEDIR, SelinuxLabel, _mount_argv
 from eden.providers._types import Mount
+from eden.sandboxes.errors import MountHostMissing
 
 _NAME_RE = re.compile(r"[^a-z0-9-]+")
 _IMAGE_TAG_RE = re.compile(r"[^a-z0-9_.-]+")
@@ -40,7 +41,10 @@ def build_mount_map(
 
 
 def _expand_host_path(mount: Mount) -> Mount:
-    return Mount(host=mount.host.expanduser(), sandbox=mount.sandbox, read_only=mount.read_only)
+    expanded = mount.host.expanduser()
+    if not expanded.exists():
+        raise MountHostMissing(host_path=expanded)
+    return Mount(host=expanded, sandbox=mount.sandbox, read_only=mount.read_only)
 
 
 def container_name(*, branch: str, name_hint: str | None) -> str:

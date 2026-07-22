@@ -95,6 +95,17 @@ class MountConfigError(SandboxError):
         )
 
 
+class MountHostMissing(SandboxError):
+    """Bind-mount host path does not exist."""
+
+    def __init__(self, *, host_path: object) -> None:
+        self.host_path = host_path
+        super().__init__(
+            f"cannot bind-mount missing host path {host_path!r}; "
+            "create it first or remove the mount"
+        )
+
+
 class UnsupportedStrategy(SandboxError):
     def __init__(self, *, provider: str, strategy: StrategyTag) -> None:
         self.provider = provider

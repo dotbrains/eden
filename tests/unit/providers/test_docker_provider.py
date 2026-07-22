@@ -94,6 +94,8 @@ def test_provider_mount_overrides_caller_mount(
     fake_subprocess.queue_run(returncode=0)  # inspect (existence)
     fake_subprocess.queue_run(returncode=0)  # inspect (UID format)
     fake_subprocess.queue_run(stdout="cid\n", returncode=0)
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
     caller_mount = Mount(host=tmp_path / "a", sandbox=Path("/data"))
     provider_mount = Mount(host=tmp_path / "b", sandbox=Path("/data"), read_only=True)
     p = docker_mod.provider(image="alpine:3.20", mounts=(provider_mount,))

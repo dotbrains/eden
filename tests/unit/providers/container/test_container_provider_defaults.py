@@ -46,14 +46,18 @@ def test_image_defaults_from_repo_directory(
     assert "eden:my-repo" in run_cmd
 
 
-def test_build_mount_map_expands_user_mount_host_tilde(tmp_path: Path) -> None:
+def test_build_mount_map_expands_user_mount_host_tilde(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    (tmp_path / "cache").mkdir()
     mount_map = build_mount_map(
         worktree_path=tmp_path / "repo",
         opts_mounts=(Mount(host=Path("~/cache"), sandbox=Path("/cache")),),
         provider_mounts=(),
     )
 
-    assert mount_map[Path("/cache")].host == Path.home() / "cache"
+    assert mount_map[Path("/cache")].host == tmp_path / "cache"
 
 
 @pytest.mark.parametrize("binary", ["docker", "podman"])

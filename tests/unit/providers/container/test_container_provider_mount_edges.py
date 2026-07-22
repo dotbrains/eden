@@ -29,6 +29,7 @@ def test_windows_host_paths_use_mount_flag(
         m.stderr = ""
         return m
 
+    monkeypatch.setattr("eden.providers._impl.container_run_args.Path.exists", lambda _p: True)
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
     extra = (
         Mount(host=Path("C:/Users/me/cache"), sandbox=Path("/home/agent/.cache"), read_only=True),
@@ -56,6 +57,7 @@ def test_windows_host_paths_resolve_relative_sandbox_path(
         m.stderr = ""
         return m
 
+    monkeypatch.setattr("eden.providers._impl.container_run_args.Path.exists", lambda _p: True)
     monkeypatch.setattr("eden.providers._impl.container.subprocess.run", _run)
     extra = (Mount(host=Path("C:/Users/me/cache"), sandbox=Path("cache"), read_only=True),)
     p = make_container_provider(binary=binary, image="alpine", mounts=extra)  # type: ignore[arg-type]
