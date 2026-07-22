@@ -35,6 +35,17 @@ class _OpenCodeAgent:
             dangerously_skip_permissions=self._dangerously_skip_permissions,
         )
 
+    def build_interactive_command(self, ctx: IterationContext) -> list[str]:
+        argv = ["opencode", "--model", self.model]
+        if self._agent_mode is not None:
+            argv.extend(["--agent", self._agent_mode])
+        if self._dangerously_skip_permissions:
+            argv.append("--dangerously-skip-permissions")
+        argv.extend(self._extra_args)
+        if ctx.prompt:
+            argv.extend(["--prompt", ctx.prompt])
+        return argv
+
     def parse_stream(self, line: str) -> StreamEvent | None:
         return parse_line(line, agent_name=self.name, iteration=0)
 
@@ -52,11 +63,12 @@ def opencode(
 ) -> Agent:
     """opencode CLI agent (sst/opencode). Assumes ``opencode`` binary is on PATH.
 
-    Builds the invocation ``opencode run --format json --model <model>
+    Non-interactive runs build ``opencode run --format json --model <model>
     [--variant <v>] [--agent <name>] [--dangerously-skip-permissions]
     [extra_args ...] <prompt>``. ``--format json`` is always present so the
     bundled :mod:`eden.agents.opencode._stream` parser receives structured
-    events.
+    events. Interactive sessions use the opencode TUI shape
+    ``opencode --model <model> [--agent <name>] [--prompt <seed>]``.
 
     Args:
         model: Model identifier passed via ``--model``. Default

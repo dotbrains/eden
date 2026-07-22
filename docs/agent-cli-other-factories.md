@@ -33,6 +33,9 @@ json` is always present so the bundled stream parser receives structured events;
 without it, opencode would emit free-form text and Eden would lose session ids
 and tool calls.
 
+For `eden.interactive(...)`, Eden switches to the opencode TUI argv:
+`opencode --model <model> [--agent <name>] [extra_args] [--prompt <seed>]`.
+
 `captures_sessions` is `False`. No `OpenCodeSessionStorage` ships today, though
 the parser does surface `step_start` events so `Iteration.session_id` populates.
 

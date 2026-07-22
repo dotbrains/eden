@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -120,6 +121,18 @@ def test_opencode_agent_mode_threaded() -> None:
     assert "--agent" in argv
     assert argv[argv.index("--agent") + 1] == "build"
     assert argv.index("--agent") < argv.index("p")
+
+
+def test_opencode_interactive_command_uses_tui_prompt_flag() -> None:
+    a = opencode(model="m", agent="build", extra_args=("--config", "x.yaml"))
+    build_interactive = cast(Any, a).build_interactive_command
+    argv = build_interactive(_ctx(prompt="seed"))
+    assert argv[:3] == ["opencode", "--model", "m"]
+    assert "run" not in argv
+    assert "--format" not in argv
+    assert argv[argv.index("--agent") + 1] == "build"
+    assert argv[argv.index("--prompt") + 1] == "seed"
+    assert argv.index("x.yaml") < argv.index("--prompt")
 
 
 def test_opencode_no_agent_mode_omits_flag() -> None:
