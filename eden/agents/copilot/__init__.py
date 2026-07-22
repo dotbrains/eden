@@ -37,6 +37,17 @@ class _CopilotAgent:
             allow_all_tools=self._allow_all_tools,
         )
 
+    def build_interactive_command(self, ctx: IterationContext) -> list[str]:
+        argv = ["copilot", "--model", self.model]
+        if self._allow_all_tools:
+            argv.append("--allow-all-tools")
+        if self._effort is not None:
+            argv.extend(["--effort", self._effort])
+        argv.extend(self._extra_args)
+        if ctx.prompt:
+            argv.extend(["-i", ctx.prompt])
+        return argv
+
     def parse_stream(self, line: str) -> StreamEvent | None:
         return parse_line(line, agent_name=self.name, iteration=0)
 
@@ -58,9 +69,10 @@ def copilot(
         copilot -p <prompt> --output-format json --model <model>
                 [--allow-all-tools] [--effort <level>] [extra_args ...]
 
-    The prompt is passed via ``-p`` (still argv); ``InvalidOptions`` is
-    raised pre-flight if it would overflow the ~120 KB Linux execve argv
-    limit. Copilot does not currently support session capture
+    The prompt is passed via ``-p`` (still argv) for non-interactive runs;
+    ``InvalidOptions`` is raised pre-flight if it would overflow the ~120 KB
+    Linux execve argv limit. Interactive sessions use ``-i <prompt>`` to seed
+    the TUI without exiting. Copilot does not currently support session capture
     (``captures_sessions`` is always ``False``); resume is not available.
 
     Args:

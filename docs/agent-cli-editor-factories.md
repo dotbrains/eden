@@ -56,7 +56,7 @@ def copilot(
 ) -> Agent: ...
 ```
 
-Builds `copilot -p <prompt> --output-format json --model <model> [--allow-all-tools] [--effort <level>] [extra_args ...]`. Prompt is delivered via `-p` (still argv); same ~120 KB pre-flight guard as `cursor()`. `captures_sessions` is `False`; resume is not supported.
+Builds `copilot -p <prompt> --output-format json --model <model> [--allow-all-tools] [--effort <level>] [extra_args ...]`. Prompt is delivered via `-p` (still argv); same ~120 KB pre-flight guard as `cursor()`. For `eden.interactive(...)`, Eden uses `copilot --model <model> ... -i <seed>` so the TUI stays attached. `captures_sessions` is `False`; resume is not supported.
 
 ### Options
 

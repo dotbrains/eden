@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -80,6 +81,19 @@ def test_copilot_allow_all_tools_appends_flag() -> None:
     a = copilot(allow_all_tools=True)
     argv = a.build_command(_ctx())
     assert "--allow-all-tools" in argv
+
+
+def test_copilot_interactive_command_uses_interactive_prompt_flag() -> None:
+    a = copilot(effort="high", allow_all_tools=True, extra_args=("--config", "x.yaml"))
+    build_interactive = cast(Any, a).build_interactive_command
+    argv = build_interactive(_ctx(prompt="seed"))
+    assert argv[:3] == ["copilot", "--model", "claude-sonnet-4"]
+    assert "-p" not in argv
+    assert "--output-format" not in argv
+    assert "--allow-all-tools" in argv
+    assert argv[argv.index("--effort") + 1] == "high"
+    assert argv[argv.index("-i") + 1] == "seed"
+    assert argv.index("x.yaml") < argv.index("-i")
 
 
 def test_copilot_prompt_too_long_raises() -> None:
