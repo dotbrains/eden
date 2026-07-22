@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -91,6 +92,7 @@ class _NoSandboxHandle:
             argv,
             cwd=str(cwd) if cwd is not None else str(self.worktree_path),
             env=merged_env,
+            shell=sys.platform == "win32",
         )
         return _wait_interactive_process(proc, signal)
 

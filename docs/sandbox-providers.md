@@ -41,7 +41,7 @@ def provider(
 ) -> SandboxProvider: ...
 ```
 
-Runs commands directly on the host via `subprocess` with `shell=True`, using the worktree path as the default `cwd`. `kind` is `"none"`. `env` values are merged into sandbox exec environments, and per-call `env` overrides them. `max_output_tail_chars` bounds the stdout/stderr retained in `ExecResult` for streamed exec calls; live `on_line` callbacks still receive every line.
+Runs commands directly on the host via `subprocess` with `shell=True`, using the worktree path as the default `cwd`. `kind` is `"none"`. `env` values are merged into sandbox exec environments, and per-call `env` overrides them. `max_output_tail_chars` bounds the stdout/stderr retained in `ExecResult` for streamed exec calls; live `on_line` callbacks still receive every line. Interactive no-sandbox sessions also use shell resolution on Windows so npm-style `.cmd` / `.ps1` agent wrappers on `PATH` can launch.
 
 ### What it does
 
