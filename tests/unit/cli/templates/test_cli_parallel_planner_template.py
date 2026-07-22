@@ -57,7 +57,7 @@ def test_render_parallel_planner_exact_output() -> None:
     )
     rendered = "".join(f"{path}\0{contents}\0" for path, contents in sorted(files.items()))
     assert sha256(rendered.encode()).hexdigest() == (
-        "295f22c31788cd3d606172b5d106bfa7d2a3fe91a6d1e0d4ce0bf4868857263f"
+        "5ec4d26f9429c48f7d747bd60f06852deca9636047bfb83f31e99f92346b6e12"
     )
 
 
@@ -91,6 +91,7 @@ def test_plan_prompt_threads_list_tasks_command() -> None:
     # The "already filtered" hint keeps the planner from re-querying the
     # tracker and picking up tasks outside the configured filter.
     assert "already been filtered" in plan
+    assert "sole source of truth" in plan
 
 
 def test_implement_prompt_substitutes_id_placeholder() -> None:

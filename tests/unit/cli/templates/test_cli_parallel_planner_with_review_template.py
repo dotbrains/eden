@@ -65,7 +65,7 @@ def test_render_parallel_planner_with_review_exact_output() -> None:
     )
     rendered = "".join(f"{path}\0{contents}\0" for path, contents in sorted(files.items()))
     assert sha256(rendered.encode()).hexdigest() == (
-        "67c546172443442cbcf1774ea39c7a95097be9fa3da15c863c20e2f2f29fc9cd"
+        "4de52007a7966d9b2e6ddca9f4bb3eab296e1e42c667c21281770c6ca84da4a7"
     )
 
 
@@ -93,6 +93,7 @@ def test_plan_prompt_marks_task_list_as_already_filtered() -> None:
     assert "Do not add a slug or any other suffix" in plan
     assert "must be deterministic" in plan
     assert "already been filtered" in plan
+    assert "sole source of truth" in plan
 
 
 def test_implement_prompt_substitutes_id_placeholder() -> None:

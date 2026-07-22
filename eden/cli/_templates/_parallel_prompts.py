@@ -19,8 +19,9 @@ must be deterministic so replanning the same task reuses the same branch.
 
 !`{list_tasks_command}`
 
-The list above has already been filtered to tasks ready for work — do not
-re-query the tracker or pull in tasks outside this list.
+The list above has already been filtered to tasks ready for work and is the
+sole source of truth for what work exists. Do not re-query the tracker or pull
+in tasks outside this list.
 
 ## Recent eden commits (last 10)
 
