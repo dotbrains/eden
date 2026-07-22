@@ -14,6 +14,7 @@ def provider_hint(error: EdenError) -> str | None:
             ImageNotFound,
             ImageUidMismatch,
             MountConfigError,
+            MountHostMissing,
             ProviderUnavailable,
             UnsupportedStrategy,
         )
@@ -52,6 +53,8 @@ def provider_hint(error: EdenError) -> str | None:
             "Move the mount target inside the sandbox HOME, or pre-create the "
             "parent directory in your image."
         )
+    if isinstance(error, MountHostMissing):
+        return "Create the host path before running Eden, or remove the mount."
     if isinstance(error, ExecTimeout):
         timeout = getattr(error, "timeout", None)
         if timeout:

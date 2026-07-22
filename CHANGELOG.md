@@ -98,6 +98,8 @@ ships.
 
 ### Fixed
 
+- **Mount error recovery hints** — formatted Docker/Podman mount-path failures
+  now include the next action alongside the typed error.
 - **Container mount validation** — Docker and Podman providers now reject
   missing host-side mount paths before starting a container.
 - **`copy_to_worktree` copy performance** — pre-boot file seeding now attempts

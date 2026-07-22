@@ -15,6 +15,7 @@ from eden.sandboxes.errors import (
     ImageNotFound,
     ImageUidMismatch,
     MountConfigError,
+    MountHostMissing,
     ProviderUnavailable,
     UnsupportedStrategy,
 )
@@ -66,6 +67,13 @@ def test_mount_config_error_synthesises_hint() -> None:
     err = MountConfigError(sandbox_path="/foo", parent="/", sandbox_homedir="/home/agent")
     out = format_error_message(err)
     assert "sandbox HOME" in out or "parent directory" in out
+
+
+def test_mount_host_missing_synthesises_hint() -> None:
+    err = MountHostMissing(host_path=Path("/missing/cache"))
+    out = format_error_message(err)
+    assert "Create the host path" in out
+    assert "/missing/cache" in out
 
 
 def test_exec_timeout_synthesises_hint() -> None:
