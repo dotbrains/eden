@@ -60,6 +60,13 @@ currently always `None`. `usage` is the final iteration's token usage. `output`
 is the validated payload extracted by `output=Output.object(...)` /
 `Output.string(...)`, or `None` when no `output=` is configured.
 
+`RunResult.resume(prompt, **overrides)` runs one follow-up iteration from the
+captured `session_id`, reusing the original `agent`, `sandbox`, and `cwd` unless
+overridden. `RunResult.fork(prompt, **overrides)` writes a new child session id
+from the same captured session. Forking isolates only the agent transcript, so
+concurrent forks should pass distinct `branch_strategy=BranchStrategy.named(...)`
+overrides. Both methods raise `InvalidOptions` without a captured session or run context.
+
 ### `Iteration`
 
 ```python
