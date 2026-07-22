@@ -27,7 +27,7 @@ class ClaudeSessionStorage:
     home: Path | None = None
 ```
 
-The default `SessionStorage` implementation, used by `claude_code()`. Mounts `~/.claude/projects` into containerized sandboxes and locates Claude's per-iteration JSONL by the project-slug convention. `home=` overrides `~` for tests.
+The default `SessionStorage` implementation, used by `claude_code()`. Mounts `~/.claude/projects` into containerized sandboxes and locates Claude's per-iteration JSONL by the project-slug convention. Resume prechecks try the exact project slug first, then fall back to scanning the projects directory by session id so no-sandbox resumes are not broken by a cwd-derived slug mismatch. `home=` overrides `~` for tests.
 
 ## `CodexSessionStorage`
 

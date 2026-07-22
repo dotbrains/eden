@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **Claude resume precheck is less path-fragile** — no-sandbox
+  `resume_session=` now falls back to finding a Claude session by id anywhere
+  under `~/.claude/projects` when the exact cwd-derived project slug misses.
 - **CLI default image tags are sanitized** — `eden init`, `eden docker
   build-image`, `eden docker remove-image`, and their Podman equivalents now
   turn invalid characters in the repo directory name into `-`, matching the

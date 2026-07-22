@@ -10,6 +10,23 @@ from eden.providers._types import Mount
 from eden.session import capture_session, capture_sidechain_sessions
 
 
+def _find_session_in_projects_dir(projects_dir: Path, session_id: str) -> Path | None:
+    if not projects_dir.is_dir():
+        return None
+    try:
+        entries = sorted(projects_dir.iterdir())
+    except OSError:
+        return None
+    for entry in entries:
+        try:
+            candidate = entry / f"{session_id}.jsonl"
+            if entry.is_dir() and candidate.is_file():
+                return candidate
+        except OSError:
+            continue
+    return None
+
+
 @dataclass(frozen=True)
 class ClaudeSessionStorage:
     """Capture Claude Code's per-iteration transcript JSONL.
@@ -111,7 +128,9 @@ class ClaudeSessionStorage:
 
         slug = claude_projects_slug(sandbox_cwd)
         path = self._projects_dir() / slug / f"{session_id}.jsonl"
-        return path if path.is_file() else None
+        if path.is_file():
+            return path
+        return _find_session_in_projects_dir(self._projects_dir(), session_id)
 
 
 __all__ = ["ClaudeSessionStorage"]

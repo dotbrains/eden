@@ -45,12 +45,11 @@ def test_claude_locator_returns_none_when_missing(tmp_path: Path) -> None:
     assert s.locate_session_on_host(session_id="missing", sandbox_cwd=Path("/workspace")) is None
 
 
-def test_claude_locator_uses_sandbox_cwd_slug(tmp_path: Path) -> None:
-    # Same session id seeded under one cwd; lookup with a different cwd must miss.
+def test_claude_locator_falls_back_to_session_id_scan(tmp_path: Path) -> None:
     home = tmp_path / "home"
-    _seed_claude(home, slug_cwd=Path("/workspace"), session_id="sess-y")
+    src = _seed_claude(home, slug_cwd=Path("/workspace"), session_id="sess-y")
     s = ClaudeSessionStorage(home=home)
-    assert s.locate_session_on_host(session_id="sess-y", sandbox_cwd=Path("/elsewhere")) is None
+    assert s.locate_session_on_host(session_id="sess-y", sandbox_cwd=Path("/elsewhere")) == src
 
 
 def test_codex_locator_walks_dated_tree(tmp_path: Path) -> None:
