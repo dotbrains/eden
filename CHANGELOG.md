@@ -11,6 +11,9 @@ ships.
 
 - README and scaffolded `.env.example` guidance now point users at
   `.eden/.env`, matching Eden's scoped environment loader.
+- Prompt docs now describe the actual shell-block render order: built-ins
+  resolve before shell expansion, while user `prompt_args` remain inert until
+  after shell expansion.
 
 ### Added
 

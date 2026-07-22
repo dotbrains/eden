@@ -32,7 +32,7 @@ The file is read as UTF-8 each iteration, so editing it between iterations updat
 
 ## `{{KEY}}` substitution
 
-Eden substitutes `{{KEY}}` placeholders inside the prompt body. Substitution runs before shell-block expansion. Keys must match `[A-Za-z_][A-Za-z0-9_]*`; whitespace inside the braces is accepted, so `{{KEY}}` and `{{ KEY }}` are equivalent. Read source: `eden/prompt/_render.py`.
+Eden substitutes `{{KEY}}` placeholders inside the prompt body. Built-in keys are substituted before shell-block expansion; user-supplied `prompt_args` are substituted after shell-block expansion so argument values are always inert text. Keys must match `[A-Za-z_][A-Za-z0-9_]*`; whitespace inside the braces is accepted, so `{{KEY}}` and `{{ KEY }}` are equivalent. Read source: `eden/prompt/_render.py`.
 
 ```python
 run(
@@ -68,7 +68,7 @@ Built-ins win over user args if a name collides — but the collision is rejecte
 
 ## Shell blocks (`` !`cmd` ``)
 
-Eden expands `` !`cmd` `` blocks **after** placeholder substitution by running each command via the sandbox handle's `exec()`. Multiple blocks in one prompt run concurrently, then their stdout (with one trailing newline stripped) is spliced back into the prompt in source order. Read source: `eden/prompt/_shell.py`.
+Eden expands `` !`cmd` `` blocks after built-in placeholder substitution, but before user `prompt_args` substitution, by running each command via the sandbox handle's `exec()`. Multiple blocks in one prompt run concurrently, then their stdout (with one trailing newline stripped) is spliced back into the prompt in source order. Read source: `eden/prompt/_shell.py`.
 
 ```markdown
 Current branch state:
@@ -82,15 +82,18 @@ A non-zero exit raises `PromptError` with `code="prompt.shell_block_failed"`; th
 
 Because shell blocks execute through the sandbox handle, they observe the sandbox's filesystem and environment — not the host's. For bind-mount providers (`no_sandbox`, `docker`, `podman`) the two are effectively the same; for `isolated`/`daytona`/`vercel` the block runs against the synced sandbox state.
 
+Shell blocks that appear inside `prompt_args` values are not executed. For example, `prompt_args={"TITLE": "!`rm -rf /`"}` renders that text literally when the prompt contains `{{TITLE}}`.
+
 ## Composition
 
 The pipeline is:
 
 1. Resolve source (`prompt=` or `prompt_file=`).
-2. Substitute `{{KEY}}` placeholders (user args + built-ins).
+2. Substitute built-in `{{SOURCE_BRANCH}}` and `{{TARGET_BRANCH}}` placeholders.
 3. Expand `` !`cmd` `` shell blocks via the sandbox handle.
+4. Substitute user-provided `prompt_args`.
 
-So a `prompt_file` whose body mixes `{{MODULE}}` placeholders, `{{SOURCE_BRANCH}}` references, and `` !`git diff main` `` blocks is fully supported — the placeholders resolve first, then the shell command runs against the post-substitution text.
+So a `prompt_file` whose body mixes `{{MODULE}}` placeholders, `{{SOURCE_BRANCH}}` references, and `` !`git diff {{SOURCE_BRANCH}}` `` blocks is fully supported. Built-ins can shape the shell command; user arguments are filled in after command output is collected.
 
 ## See also
 
