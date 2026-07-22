@@ -2,11 +2,28 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def isolated_git_global_config(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
+    """Keep tests independent of the developer's global git config."""
+    previous = os.environ.get("GIT_CONFIG_GLOBAL")
+    config_path = tmp_path_factory.mktemp("git-global") / "config"
+    config_path.write_text("", encoding="utf-8")
+    os.environ["GIT_CONFIG_GLOBAL"] = str(config_path)
+    try:
+        yield config_path
+    finally:
+        if previous is None:
+            os.environ.pop("GIT_CONFIG_GLOBAL", None)
+        else:
+            os.environ["GIT_CONFIG_GLOBAL"] = previous
 
 
 @pytest.fixture
