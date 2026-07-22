@@ -7,6 +7,7 @@ streamed live.
 
 from __future__ import annotations
 
+import re
 import time
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
@@ -15,9 +16,15 @@ from pathlib import Path
 
 from eden.display._types import Severity
 
+_STATUS_PREFIX_RE = re.compile(r"^\[[^\]]+\] ")
+
 
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def _strip_status_prefix(message: str) -> str:
+    return _STATUS_PREFIX_RE.sub("", message, count=1)
 
 
 class FileDisplay:
@@ -60,7 +67,7 @@ class FileDisplay:
 
     def status(self, message: str, severity: Severity = "info") -> None:
         del severity  # All severities flatten to a single log line.
-        self._append(message)
+        self._append(_strip_status_prefix(message))
 
     def text(self, message: str) -> None:
         self._append(message)

@@ -98,6 +98,9 @@ ships.
 
 ### Fixed
 
+- **File display status logs** — `FileDisplay.status()` now strips leading
+  bracketed UI prefixes before appending status lines, keeping unattended file
+  logs cleaner while leaving raw text output untouched.
 - **`cli_agent` prompt-size failures** — the generic default argv builder now
   rejects oversized positional prompts with `InvalidOptions` before subprocess
   spawn, instead of surfacing a lower-level argv-size failure.

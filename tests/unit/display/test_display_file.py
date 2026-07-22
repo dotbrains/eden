@@ -67,6 +67,15 @@ def test_file_display_status_writes_message(tmp_path: Path) -> None:
     assert "failed" in content
 
 
+def test_file_display_status_strips_bracketed_prefix(tmp_path: Path) -> None:
+    log = tmp_path / "run.log"
+    sink = FileDisplay(log)
+    sink.status("[eden] finalized: copied changes")
+    content = log.read_text()
+    assert "[eden]" not in content
+    assert "finalized: copied changes" in content
+
+
 def test_file_display_tool_call_formats(tmp_path: Path) -> None:
     log = tmp_path / "run.log"
     sink = FileDisplay(log)
