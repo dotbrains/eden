@@ -66,10 +66,10 @@ Other agents substitute their factory name (`codex`, `opencode`, `pi`); `--sandb
 
 ### `.eden/.env.example`
 
-A starter `.env` template with commented-out keys for the agent CLIs Eden orchestrates:
+A starter `.eden/.env` template with commented-out keys for the agent CLIs Eden orchestrates:
 
 ```bash
-# Copy this file to .env and fill in the values your agent needs.
+# Copy this file to .eden/.env and fill in the values your agent needs.
 
 # Claude Code OAuth token (run `claude setup-token` on your host)
 # CLAUDE_CODE_OAUTH_TOKEN=

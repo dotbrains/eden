@@ -26,7 +26,7 @@ AGENT_ENV_EXAMPLE: dict[str, str] = {
     "copilot": "# GitHub Copilot CLI credentials\n# GITHUB_TOKEN=ghp_...\n",
 }
 
-ENV_EXAMPLE_HEADER = "# Copy this file to .env and fill in the values your agent needs.\n\n"
+ENV_EXAMPLE_HEADER = "# Copy this file to .eden/.env and fill in the values your agent needs.\n\n"
 
 
 def render_env_example(*, agent: str, backlog_lines: str) -> str:

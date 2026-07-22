@@ -62,7 +62,7 @@ if __name__ == "__main__":
 """
 
 BLANK_ENV_EXAMPLE = """\
-# Copy this file to .env and fill in the values your agent needs.
+# Copy this file to .eden/.env and fill in the values your agent needs.
 
 # Claude Code OAuth token (run `claude setup-token` on your host)
 # CLAUDE_CODE_OAUTH_TOKEN=

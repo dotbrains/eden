@@ -7,6 +7,11 @@ ships.
 
 ## Unreleased
 
+### Changed
+
+- README and scaffolded `.env.example` guidance now point users at
+  `.eden/.env`, matching Eden's scoped environment loader.
+
 ### Added
 
 - **`eden init --install-template-deps`** — after scaffolding, install any
