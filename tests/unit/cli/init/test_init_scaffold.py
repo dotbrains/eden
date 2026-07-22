@@ -137,6 +137,33 @@ def test_init_prints_template_metadata_and_matching_build_tool(
     assert "-f .eden/Containerfile" in result.output
 
 
+def test_init_prints_missing_template_dependencies_with_detected_manager(
+    runner: CliRunner,
+    repo_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from eden.cli import _init_scaffold as scaffold
+
+    (repo_dir / "package.json").write_text(
+        '{"packageManager": "pnpm@9.0.0"}',
+        encoding="utf-8",
+    )
+    monkeypatch.setitem(
+        scaffold.__dict__["_TEMPLATE_METADATA"],
+        "blank",
+        scaffold.__dict__["_TEMPLATE_METADATA"]["blank"].__class__(
+            name="blank",
+            description="Bare scaffold; write your own prompt and orchestration.",
+            dependencies=("zod",),
+        ),
+    )
+
+    result = runner.invoke(app, ["init", "--yes"])
+
+    assert result.exit_code == 0, result.output
+    assert "pnpm add zod" in result.output
+
+
 def test_init_gitignore_includes_runtime_dirs(
     runner: CliRunner,
     repo_dir: Path,

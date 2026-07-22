@@ -49,7 +49,7 @@ When `--model` is omitted, the default depends on `--agent`:
 - `.eden/.env.example` — sample environment variables for the chosen agent (e.g. `CLAUDE_CODE_OAUTH_TOKEN`).
 - `.eden/.gitignore` — excludes `.env` and runtime artifacts (`logs/`, `sessions/`, `worktrees/`, `isolated/`).
 
-After scaffolding, `eden init` prints the next steps it expects you to run:
+After scaffolding, `eden init` prints the next steps it expects you to run. If the chosen template needs host packages not already in `package.json`, Eden detects npm, pnpm, yarn, or bun and prints the matching install command before the image-build step.
 
 ```bash
 cp .eden/.env.example .eden/.env  # then fill in your API keys
