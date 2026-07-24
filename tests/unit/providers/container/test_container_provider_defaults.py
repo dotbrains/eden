@@ -50,6 +50,7 @@ def test_build_mount_map_expands_user_mount_host_tilde(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("USERPROFILE", str(tmp_path))
     (tmp_path / "cache").mkdir()
     mount_map = build_mount_map(
         worktree_path=tmp_path / "repo",

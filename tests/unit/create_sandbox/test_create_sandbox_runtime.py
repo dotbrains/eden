@@ -150,7 +150,7 @@ def test_create_sandbox_runs_creation_and_close_hooks(
     assert (s.worktree.worktree_path / "host-ready.txt").read_text() == "ready"
     assert [call["cmd"] for call in handle.exec_calls[:5]] == [
         "git config --global --get-all safe.directory || true",
-        f"git config --global --add safe.directory {s.worktree.worktree_path}",
+        f"git config --global --add safe.directory {s.worktree.worktree_path.as_posix()}",
         "git config --global user.name Test",
         "git config --global user.email test@example.com",
         "sandbox-ready",

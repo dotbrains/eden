@@ -106,6 +106,7 @@ def test_init_image_name_default_uses_sanitized_repo_basename(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repo = repo_dir.parent / "My Repo!"
+    monkeypatch.chdir(repo_dir.parent)
     repo_dir.rmdir()
     repo.mkdir()
     monkeypatch.chdir(repo)
