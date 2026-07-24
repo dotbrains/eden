@@ -71,7 +71,7 @@ def _normalize_args(args: Mapping[str, object]) -> dict[str, str]:
             raise PromptError(
                 code="prompt.missing_arg",
                 message=f"prompt_args value for {{{{{key}}}}} is missing",
-                hint=f"pass a non-empty string for prompt_args[{key!r}]",
+                hint=f"pass a string, number, or boolean for prompt_args[{key!r}]",
             )
         if not isinstance(value, str | int | float | bool):
             raise PromptError(

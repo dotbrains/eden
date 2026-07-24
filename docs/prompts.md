@@ -49,9 +49,11 @@ Add tests for {{MODULE}} in {{TARGET}}.
 
 Unknown placeholders raise `PromptError` with `code="prompt.unknown_key"` — the hint lists the keys that _are_ defined. Extra `prompt_args` keys that are not referenced by the prompt emit a warning.
 
-Each `prompt_args` value must be a string. A `None` value raises `PromptError`
+`prompt_args` values may be strings, numbers, or booleans. Eden stringifies
+those scalar values during substitution. A `None` value raises `PromptError`
 with `code="prompt.missing_arg"` during non-interactive rendering; interactive
 argument collection treats it as missing and asks for a replacement value.
+Lists, mappings, and other non-scalar objects raise `code="prompt.invalid_arg"`.
 
 ### Built-in keys
 
