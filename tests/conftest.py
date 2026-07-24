@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(autouse=True)
 def isolated_git_global_config(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
     """Keep tests independent of the developer's global git config."""
     previous = os.environ.get("GIT_CONFIG_GLOBAL")

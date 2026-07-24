@@ -91,10 +91,16 @@ def _exec_git_setup(handle: SandboxHandle, cmd: str, *, timeout: float) -> ExecR
         result = handle.exec(cmd, timeout=timeout)
         if result.exit_code == 0:
             return result
-        if result.exit_code not in _TRANSIENT_EXEC_EXIT_CODES or attempt == attempts - 1:
+        if not _is_transient_git_setup_failure(result) or attempt == attempts - 1:
             return result
         time.sleep(_GIT_SETUP_RETRY_DELAY)
     return result
+
+
+def _is_transient_git_setup_failure(result: ExecResult) -> bool:
+    if result.exit_code in _TRANSIENT_EXEC_EXIT_CODES:
+        return True
+    return "could not lock config file" in result.stderr
 
 
 __all__ = ["configure_sandbox_git"]

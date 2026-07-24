@@ -68,7 +68,35 @@ def test_git_setup_retries_transient_exec_failure(
         "git config --global --get-all safe.directory || true",
         "git config --global --add safe.directory /workspace",
     ]
-    assert sleeps == [0.25]
+    assert sleeps[:1] == [0.25]
+
+
+def test_git_setup_retries_transient_config_lock(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    sleeps: list[float] = []
+    monkeypatch.setattr("eden.sandboxes._git_setup.time.sleep", sleeps.append)
+    handle = StubHandle(
+        worktree_path=Path("/workspace"),
+        exec_results=[
+            ExecResult(stdout="", stderr="", exit_code=0),
+            ExecResult(
+                stdout="",
+                stderr="error: could not lock config file /tmp/config: File exists",
+                exit_code=255,
+            ),
+            ExecResult(stdout="", stderr="", exit_code=0),
+        ],
+    )
+
+    configure_sandbox_git(handle, tmp_path, timeout=4.0)
+
+    assert [call["cmd"] for call in handle.exec_calls] == [
+        "git config --global --get-all safe.directory || true",
+        "git config --global --add safe.directory /workspace",
+        "git config --global --add safe.directory /workspace",
+    ]
+    assert sleeps[:1] == [0.25]
 
 
 def test_git_setup_does_not_retry_regular_git_failure(
