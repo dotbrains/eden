@@ -62,7 +62,7 @@ def test_cwd_stored_on_sandbox(tmp_git_repo: Path, monkeypatch: pytest.MonkeyPat
         s.close()
 
 
-def test_sandbox_exec_delegates_to_handle_with_default_cwd(
+def test_sandbox_exec_defaults_to_sandbox_repo_path(
     tmp_git_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_git_repo)
@@ -71,12 +71,13 @@ def test_sandbox_exec_delegates_to_handle_with_default_cwd(
     try:
         handle = s.handle
         assert isinstance(handle, StubHandle)
+        handle.worktree_path = Path("/sandbox/workspace")
         result = s.exec("pwd")
         assert result == ExecResult(stdout="ok", stderr="", exit_code=0)
         assert handle.exec_calls[-1] == {
             "cmd": "pwd",
             "on_line": None,
-            "cwd": s.worktree.worktree_path,
+            "cwd": Path("/sandbox/workspace"),
             "env": None,
             "timeout": None,
             "stdin": None,
@@ -90,10 +91,11 @@ def test_sandbox_exec_forwards_options(tmp_git_repo: Path, monkeypatch: pytest.M
     p = StubProvider()
     seen_lines: list[str] = []
     on_line = seen_lines.append
-    s = create_sandbox(sandbox=p, cwd=Path("/repo/subdir"))
+    s = create_sandbox(sandbox=p)
     try:
         handle = s.handle
         assert isinstance(handle, StubHandle)
+        handle.worktree_path = Path("/sandbox/workspace")
         s.exec(
             "cat",
             on_line=on_line,
@@ -105,7 +107,7 @@ def test_sandbox_exec_forwards_options(tmp_git_repo: Path, monkeypatch: pytest.M
         call = handle.exec_calls[-1]
         assert call["cmd"] == "cat"
         assert call["on_line"] is on_line
-        assert call["cwd"] == Path("/repo/subdir")
+        assert call["cwd"] == Path("/sandbox/workspace")
         assert call["env"] == {"A": "B"}
         assert call["timeout"] == 2.5
         assert call["stdin"] == "input"

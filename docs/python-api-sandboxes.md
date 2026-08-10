@@ -57,7 +57,7 @@ if not result.ok:
     result.check()
 ```
 
-Keyword options mirror `SandboxHandle.exec(...)`: `on_line`, `cwd`, `env`, `timeout`, and `stdin`, plus `sudo=True` to run through `sudo -E -- sh -c` inside the sandbox. `cwd` defaults to the sandbox's configured `cwd`, or the worktree path when no sandbox cwd was configured. Non-zero exit codes are returned, not raised; call `result.check()` for strict behavior.
+Keyword options mirror `SandboxHandle.exec(...)`: `on_line`, `cwd`, `env`, `timeout`, and `stdin`, plus `sudo=True` to run through `sudo -E -- sh -c` inside the sandbox. `cwd` defaults to the provider handle's sandbox-side repository path (for example, `/workspace` in Docker and Podman), not the host worktree path. Non-zero exit codes are returned, not raised; call `result.check()` for strict behavior.
 
 ## `Sandbox.run(...)`
 

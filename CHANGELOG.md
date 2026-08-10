@@ -111,6 +111,10 @@ ships.
 
 ### Fixed
 
+- **`Sandbox.exec()` default working directory** — commands issued through a
+  reusable sandbox now default to the provider's sandbox-side repository path
+  instead of the host worktree path, so Docker, Podman, and cloud providers do
+  not receive an invalid host-only `cwd`.
 - **Mount error recovery hints** — formatted Docker/Podman mount-path failures
   now include the next action alongside the typed error.
 - **Container mount validation** — Docker and Podman providers now reject

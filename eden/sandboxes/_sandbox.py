@@ -67,12 +67,12 @@ class Sandbox:
         stdin: str | None = None,
         sudo: bool = False,
     ) -> ExecResult:
-        """Run ``cmd`` inside this reusable sandbox."""
+        """Run ``cmd`` in this sandbox, defaulting to its sandbox-side repo path."""
         exec_cmd = f"sudo -E -- sh -c {shlex.quote(cmd)}" if sudo else cmd
         return self.handle.exec(
             exec_cmd,
             on_line=on_line,
-            cwd=cwd if cwd is not None else self.cwd or self.worktree.worktree_path,
+            cwd=cwd if cwd is not None else self.handle.worktree_path,
             env=env,
             timeout=maybe_seconds(timeout),
             stdin=stdin,
