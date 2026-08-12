@@ -27,12 +27,18 @@ def build_mount_map(
     worktree_path: Path,
     opts_mounts: tuple[Mount, ...],
     provider_mounts: tuple[Mount, ...],
+    git_common_dir: Path | None = None,
 ) -> dict[Path, Mount]:
-    # Mount precedence: implicit /workspace, then opts.mounts, then
-    # provider_mounts (last write wins on sandbox-path collision).
-    mount_map: dict[Path, Mount] = {
-        Path("/workspace"): Mount(host=worktree_path, sandbox=Path("/workspace"))
-    }
+    # Mount precedence: implicit git common dir, then /workspace, then
+    # opts.mounts, then provider_mounts (last write wins on sandbox-path
+    # collision). The git common dir is mounted first — at its own absolute
+    # host path — so an explicit user/provider mount can still override it;
+    # in practice its path never collides with /workspace or a real mount
+    # target.
+    mount_map: dict[Path, Mount] = {}
+    if git_common_dir is not None:
+        mount_map[git_common_dir] = Mount(host=git_common_dir, sandbox=git_common_dir)
+    mount_map[Path("/workspace")] = Mount(host=worktree_path, sandbox=Path("/workspace"))
     for mount in opts_mounts:
         mount_map[mount.sandbox] = _expand_host_path(mount)
     for mount in provider_mounts:

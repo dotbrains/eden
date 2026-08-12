@@ -160,6 +160,7 @@ __all__ = [
     "_ensure_mount_parents",
     "_expand_sandbox_tilde",
     "_file_mount_parents",
+    "_is_windows_host_path",
     "_mount_argv",
     "_mount_spec",
 ]

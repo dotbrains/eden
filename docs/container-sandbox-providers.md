@@ -67,6 +67,14 @@ Creates a long-running container that bind-mounts the worktree path. Each
 writes happen in-place on the host filesystem, so there is no `finalize()`
 step.
 
+When the worktree is a linked worktree (the `merge_to_head`/`named` branch
+strategies, the default for this provider), its `.git` is a file pointing at
+the main repository's git dir by absolute host path. Eden additionally
+bind-mounts that git dir at its own host path (Linux/macOS only — see
+[ADR 0016](adr/0016-linked-worktree-git-dir-mount.md)) so `git` commands
+resolve inside the container; the `head` strategy needs no extra mount since
+its `.git` is already a real directory inside the mounted worktree.
+
 ### When to use
 
 - Untrusted code on Linux/macOS where you want process and filesystem isolation
