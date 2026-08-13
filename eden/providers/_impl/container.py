@@ -8,6 +8,7 @@ from typing import Literal
 
 from eden.providers._helpers import make_bind_mount_provider
 from eden.providers._impl.container_git_mount import resolve_git_common_dir
+from eden.providers._impl.container_git_mount_windows import merge_windows_git_mounts
 from eden.providers._impl.container_handle import ContainerHandle
 from eden.providers._impl.container_identity import host_gid, host_uid
 from eden.providers._impl.container_image import check_image_uid
@@ -71,9 +72,8 @@ def make_container_provider(
     tuple emits one ``--network`` flag per entry.
 
     ``devices`` exposes host device specs such as ``"/dev/kvm"`` or
-    ``"/dev/dri:/dev/dri:rwm"`` for GPU workloads or KVM nesting.
-
-    ``cpus`` bounds container CPU usage via ``--cpus <value>``.
+    ``"/dev/dri:/dev/dri:rwm"`` for GPU workloads or KVM nesting. ``cpus``
+    bounds container CPU usage via ``--cpus <value>``.
 
     ``groups`` is a tuple of supplementary group names or GIDs passed via
     ``--group-add``. Most commonly used to grant the in-container ``agent``
@@ -82,7 +82,6 @@ def make_container_provider(
     ``userns`` is Podman-only. ``"keep-id"`` adds
     ``--userns=keep-id:uid=<uid>,gid=<gid>`` so rootless Podman maps the host
     user to the configured in-container user without chowning bind mounts.
-
     ``max_output_tail_chars`` bounds the returned stdout/stderr tail for
     streamed exec calls while preserving complete live ``on_line`` delivery.
     """
@@ -122,6 +121,7 @@ def make_container_provider(
             provider_mounts=provider_mounts,
             git_common_dir=resolve_git_common_dir(opts.worktree_path),
         )
+        no_prep_mounts = merge_windows_git_mounts(mount_map, opts.worktree_path)
         merged_env: dict[str, str] = {**provider_env, **dict(opts.env)}
         name = container_name(branch=opts.branch, name_hint=opts.name_hint)
         argv = build_run_argv(
@@ -152,7 +152,7 @@ def make_container_provider(
         prepare_file_mount_parents(
             binary=binary,
             container_id=container_id,
-            mount_map=mount_map,
+            mount_map={s: m for s, m in mount_map.items() if m not in no_prep_mounts},
             uid=effective_uid,
             gid=effective_gid,
         )
