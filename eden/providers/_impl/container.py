@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from eden.providers._helpers import make_bind_mount_provider
+from eden.providers._impl.container_git_mount import resolve_git_common_dir
 from eden.providers._impl.container_handle import ContainerHandle
 from eden.providers._impl.container_identity import host_gid, host_uid
 from eden.providers._impl.container_image import check_image_uid
@@ -119,6 +120,7 @@ def make_container_provider(
             worktree_path=opts.worktree_path,
             opts_mounts=opts.mounts,
             provider_mounts=provider_mounts,
+            git_common_dir=resolve_git_common_dir(opts.worktree_path),
         )
         merged_env: dict[str, str] = {**provider_env, **dict(opts.env)}
         name = container_name(branch=opts.branch, name_hint=opts.name_hint)

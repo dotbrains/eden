@@ -61,6 +61,32 @@ def test_build_mount_map_expands_user_mount_host_tilde(
     assert mount_map[Path("/cache")].host == tmp_path / "cache"
 
 
+def test_build_mount_map_includes_git_common_dir(tmp_path: Path) -> None:
+    git_dir = tmp_path / "main-repo" / ".git"
+    git_dir.mkdir(parents=True)
+    mount_map = build_mount_map(
+        worktree_path=tmp_path / "worktree",
+        opts_mounts=(),
+        provider_mounts=(),
+        git_common_dir=git_dir,
+    )
+
+    assert mount_map[git_dir].host == git_dir
+    assert mount_map[git_dir].sandbox == git_dir
+    # /workspace stays the worktree mount; the git dir is additive.
+    assert mount_map[Path("/workspace")].host == tmp_path / "worktree"
+
+
+def test_build_mount_map_git_common_dir_none_by_default(tmp_path: Path) -> None:
+    mount_map = build_mount_map(
+        worktree_path=tmp_path / "worktree",
+        opts_mounts=(),
+        provider_mounts=(),
+    )
+
+    assert list(mount_map) == [Path("/workspace")]
+
+
 @pytest.mark.parametrize("binary", ["docker", "podman"])
 def test_container_start_failed(
     binary: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

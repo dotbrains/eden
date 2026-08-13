@@ -111,6 +111,18 @@ ships.
 
 ### Fixed
 
+- **Docker/Podman linked worktrees can now run git commands** — the
+  `merge_to_head`/`named` branch strategies (the default for bind-mount
+  providers) carve a linked worktree via `git worktree add`, whose `.git`
+  is a file pointing at the main repository's git dir by absolute host
+  path. Eden only bind-mounted the worktree itself, so that path was
+  unreachable inside the container and every git command
+  (`git status`, `git add`, `git commit`, ...) failed with
+  `fatal: not a git repository`. Docker and Podman now additionally
+  bind-mount the resolved git common dir at its own host path (a Linux/macOS
+  identity mount, matching how Eden already documents those providers);
+  `head`-strategy sandboxes are unaffected since their `.git` is already a
+  real directory inside the mounted worktree.
 - **`Sandbox.exec()` default working directory** — commands issued through a
   reusable sandbox now default to the provider's sandbox-side repository path
   instead of the host worktree path, so Docker, Podman, and cloud providers do
