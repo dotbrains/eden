@@ -10,6 +10,7 @@ from eden import format_error_message
 from eden.providers._types import ExecResult
 from eden.sandboxes.errors import (
     ContainerStartFailed,
+    ContainerStartTimeout,
     ExecFailed,
     ExecTimeout,
     ImageNotFound,
@@ -55,6 +56,12 @@ def test_container_start_failed_synthesises_hint() -> None:
     err = ContainerStartFailed(image="my:img", exit_code=125, stderr="oops")
     out = format_error_message(err)
     assert "container exited" in out.lower() or "Docker daemon" in out
+
+
+def test_container_start_timeout_synthesises_hint() -> None:
+    err = ContainerStartTimeout(binary="docker", timeout=120.0)
+    out = format_error_message(err)
+    assert "docker ps" in out or "create_timeout" in out
 
 
 def test_image_uid_mismatch_synthesises_hint() -> None:

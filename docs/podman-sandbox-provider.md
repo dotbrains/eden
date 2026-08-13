@@ -31,6 +31,7 @@ def provider(
     groups: tuple[str | int, ...] | None = None,
     userns: Literal["keep-id"] | None = "keep-id",
     max_output_tail_chars: int = 64 * 1024,
+    create_timeout: float = 120.0,
 ) -> SandboxProvider: ...
 ```
 

@@ -24,6 +24,7 @@ def provider(
     cpus: float | None = None,
     groups: tuple[str | int, ...] | None = None,
     max_output_tail_chars: int = DEFAULT_MAX_CHARS,
+    create_timeout: float = 120.0,
 ) -> SandboxProvider:
     """Build a docker bind-mount SandboxProvider.
 
@@ -56,6 +57,12 @@ def provider(
     ``max_output_tail_chars`` bounds the stdout/stderr retained in
     ``ExecResult`` for streamed exec calls; live ``on_line`` callbacks still
     receive every line.
+
+    ``create_timeout`` bounds the whole container-creation sequence (image
+    inspect, UID check, ``docker run``, mount-parent prep) against one shared
+    deadline, not each step independently — a hung daemon otherwise costs up
+    to N times the intended deadline across N sequential subprocess calls.
+    Raises ``ContainerStartTimeout`` on expiry.
     """
     return make_container_provider(
         binary="docker",
@@ -70,6 +77,7 @@ def provider(
         cpus=cpus,
         groups=groups,
         max_output_tail_chars=max_output_tail_chars,
+        create_timeout=create_timeout,
     )
 
 

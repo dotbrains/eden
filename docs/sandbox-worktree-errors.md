@@ -32,6 +32,12 @@ Examples: `docker`/`podman` binary not on `PATH`; `DAYTONA_API_KEY` unset; `VERC
 
 **Recovery:** check the `stderr` for the failure cause; usually a missing entrypoint, broken image, or insufficient mount permissions.
 
+### `ContainerStartTimeout`
+
+The docker/podman `create()` sequence (image inspect, UID check, `<binary> run`, mount-parent prep) exceeded its shared deadline — either a step's own `subprocess.run(timeout=...)` expired, or the remaining budget ran out between steps. Carries `binary` and `timeout`.
+
+**Recovery:** check for a stuck daemon or slow image pull (`docker ps`/`docker info`), then pass a larger `create_timeout=` to `docker()`/`podman()` if the host is just slow.
+
 ### `ExecFailed`
 
 `handle.exec(cmd)` returned a non-zero exit code (raised when the caller invokes `ExecResult.check()`, or from internal cloud-provider operations). Carries `result: ExecResult` and `argv_or_cmd: str`.

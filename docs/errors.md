@@ -57,12 +57,13 @@ Compatibility anchors: <a id="edenerror"></a><a id="configerror"></a><a id="inva
 
 Moved to [Sandbox and worktree errors](sandbox-worktree-errors.md#sandbox-errors).
 
-Compatibility anchors: <a id="sandboxerror"></a><a id="providerunavailable"></a><a id="imagenotfound"></a><a id="containerstartfailed"></a><a id="execfailed"></a><a id="exectimeout"></a><a id="mountconfigerror"></a><a id="unsupportedstrategy"></a>
+Compatibility anchors: <a id="sandboxerror"></a><a id="providerunavailable"></a><a id="imagenotfound"></a><a id="containerstartfailed"></a><a id="containerstarttimeout"></a><a id="execfailed"></a><a id="exectimeout"></a><a id="mountconfigerror"></a><a id="unsupportedstrategy"></a>
 
 - [`SandboxError`](sandbox-worktree-errors.md#sandboxerror)
 - [`ProviderUnavailable`](sandbox-worktree-errors.md#providerunavailable)
 - [`ImageNotFound`](sandbox-worktree-errors.md#imagenotfound)
 - [`ContainerStartFailed`](sandbox-worktree-errors.md#containerstartfailed)
+- [`ContainerStartTimeout`](sandbox-worktree-errors.md#containerstarttimeout)
 - [`ExecFailed`](sandbox-worktree-errors.md#execfailed)
 - [`ExecTimeout`](sandbox-worktree-errors.md#exectimeout)
 - [`MountConfigError`](sandbox-worktree-errors.md#mountconfigerror)

@@ -10,6 +10,7 @@ from eden.errors import EdenError
 from eden.providers._types import ExecResult
 from eden.sandboxes.errors import (
     ContainerStartFailed,
+    ContainerStartTimeout,
     ExecFailed,
     ExecTimeout,
     ImageNotFound,
@@ -103,6 +104,13 @@ def test_exec_timeout_carries_partial_buffers() -> None:
     assert err.timeout == 1.0
     assert err.partial_stdout == "hello"
     assert err.partial_stderr == "warn"
+
+
+def test_container_start_timeout_carries_binary_and_timeout() -> None:
+    err = ContainerStartTimeout(binary="docker", timeout=120.0)
+    assert err.binary == "docker"
+    assert err.timeout == 120.0
+    assert isinstance(err, SandboxError)
 
 
 def test_mount_config_error_carries_paths() -> None:

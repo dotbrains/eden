@@ -61,6 +61,23 @@ class ExecTimeout(SandboxError):
         super().__init__(f"command {cmd!r} timed out after {timeout}s")
 
 
+class ContainerStartTimeout(SandboxError):
+    """The docker/podman container-creation sequence exceeded its deadline.
+
+    Covers the whole ``create()`` sequence (image inspect, UID check,
+    ``docker run``/``podman run``, mount-parent prep) against one shared
+    budget, not each subprocess call independently — a hung daemon
+    otherwise costs up to N times the intended deadline across N sequential
+    calls. Raised for either an exhausted budget between steps or a
+    ``subprocess.TimeoutExpired`` from the step itself.
+    """
+
+    def __init__(self, *, binary: str, timeout: float) -> None:
+        self.binary = binary
+        self.timeout = timeout
+        super().__init__(f"{binary} container start timed out after {timeout}s")
+
+
 class ImageUidMismatch(SandboxError):
     """Container image's USER UID does not match the configured ``container_uid``.
 

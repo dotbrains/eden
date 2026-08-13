@@ -28,6 +28,7 @@ def provider(
     cpus: float | None = None,
     groups: tuple[str | int, ...] | None = None,
     max_output_tail_chars: int = 64 * 1024,
+    create_timeout: float = 120.0,
 ) -> SandboxProvider: ...
 ```
 
@@ -50,6 +51,9 @@ def provider(
 - `groups` — supplementary groups passed via `--group-add`.
 - `max_output_tail_chars` — stdout/stderr retained in `ExecResult` for streamed
   exec calls. Live callbacks still receive every line.
+- `create_timeout` — shared deadline (seconds) for the whole container-creation
+  sequence (image inspect, UID check, `docker run`, mount-parent prep), not
+  each step independently. Raises `ContainerStartTimeout` on expiry.
 
 For file mounts targeting `/home/agent`, Eden creates and owns the parent
 directory before user code runs; prep failures surface as

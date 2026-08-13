@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from eden.providers._impl.container_mounts import (
@@ -22,6 +22,7 @@ def prepare_file_mount_parents(
     mount_map: Mapping[Path, Mount],
     uid: int,
     gid: int,
+    remaining: Callable[[], float] | None = None,
 ) -> None:
     parents = _file_mount_parents(list(mount_map.values()), sandbox_homedir=SANDBOX_HOMEDIR)
     if not parents:
@@ -33,6 +34,7 @@ def prepare_file_mount_parents(
             parents=parents,
             uid=uid,
             gid=gid,
+            remaining=remaining,
         )
     except ContainerStartFailed:
         subprocess.run([binary, "kill", container_id], capture_output=True, text=True)
