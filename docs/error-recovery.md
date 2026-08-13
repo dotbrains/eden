@@ -20,6 +20,7 @@ Handling strategies and catch-all examples for Eden errors. See [Errors](errors.
 | `ProviderUnavailable` | Install the missing binary / set the missing env var. |
 | `ImageNotFound` | Build or pull the image. |
 | `ContainerStartFailed` | Inspect `e.stderr`; fix the image. |
+| `ContainerStartTimeout` | Check for a stuck daemon/slow image pull; raise `create_timeout=`. |
 | `ExecFailed` / `ExecTimeout` | Inspect `e.result.stderr`; fix the command or raise the timeout. |
 | `MountConfigError` | Mount the parent directory or pre-create the target parent in the image. |
 | `UnsupportedStrategy` | Pick a supported `BranchStrategy` or switch providers. |

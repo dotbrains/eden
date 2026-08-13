@@ -25,6 +25,7 @@ def provider(
     groups: tuple[str | int, ...] | None = None,
     userns: Literal["keep-id"] | None = "keep-id",
     max_output_tail_chars: int = DEFAULT_MAX_CHARS,
+    create_timeout: float = 120.0,
 ) -> SandboxProvider:
     """Build a podman bind-mount SandboxProvider.
 
@@ -33,7 +34,7 @@ def provider(
 
     See :func:`eden.sandboxes.docker.provider` for the meaning of
     ``container_uid`` / ``container_gid``, ``selinux_label``, ``devices``,
-    ``cpus``, and ``groups``.
+    ``cpus``, ``groups``, and ``create_timeout``.
 
     ``userns="keep-id"`` (default) adds Podman's rootless
     ``--userns=keep-id:uid=<uid>,gid=<gid>`` mapping so the host user appears
@@ -58,6 +59,7 @@ def provider(
         groups=groups,
         userns=userns,
         max_output_tail_chars=max_output_tail_chars,
+        create_timeout=create_timeout,
     )
 
 

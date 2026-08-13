@@ -22,6 +22,13 @@ ships.
 
 ### Added
 
+- **`docker()`/`podman()` gain `create_timeout=`** — bounds the whole
+  container-creation sequence (image inspect, UID check, `<binary> run`,
+  mount-parent prep) against one shared deadline (default 120s), raising
+  the new `ContainerStartTimeout` on expiry instead of hanging indefinitely
+  on a stuck daemon or contended image pull. Matches sandcastle's
+  `ContainerStartTimeoutError` design — see
+  `docs/adr/0017-container-start-deadline.md`.
 - **`eden init --install-template-deps`** — after scaffolding, install any
   host-side packages declared by the selected template and missing from
   `package.json`, using the same npm/pnpm/yarn/bun detection as the printed

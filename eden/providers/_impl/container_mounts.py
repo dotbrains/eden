@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
 from typing import Literal
 
@@ -76,8 +77,7 @@ def _mount_argv(
     expanded = _expand_sandbox_tilde(sandbox, sandbox_homedir=sandbox_homedir)
     if _is_windows_host_path(host):
         source = str(host).replace("\\", "/")
-        target = expanded.as_posix()
-        spec = f"type=bind,source={source},target={target}"
+        spec = f"type=bind,source={source},target={expanded.as_posix()}"
         if read_only:
             spec += ",readonly"
         return ["--mount", spec]
@@ -123,6 +123,7 @@ def _ensure_mount_parents(
     parents: list[Path],
     uid: int,
     gid: int,
+    remaining: Callable[[], float] | None = None,
 ) -> None:
     for parent in parents:
         proc = subprocess.run(
@@ -142,6 +143,7 @@ def _ensure_mount_parents(
             ],
             capture_output=True,
             text=True,
+            timeout=remaining() if remaining is not None else None,
         )
         if proc.returncode != 0:
             raise ContainerStartFailed(

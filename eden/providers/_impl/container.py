@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Literal
 
 from eden.providers._helpers import make_bind_mount_provider
+from eden.providers._impl.container_deadline import container_start_deadline
 from eden.providers._impl.container_git_mount import resolve_git_common_dir
 from eden.providers._impl.container_git_mount_windows import merge_windows_git_mounts
 from eden.providers._impl.container_handle import ContainerHandle
 from eden.providers._impl.container_identity import host_gid, host_uid
-from eden.providers._impl.container_image import check_image_uid
+from eden.providers._impl.container_image import verify_image
 from eden.providers._impl.container_mounts import SelinuxLabel
 from eden.providers._impl.container_prepare import prepare_file_mount_parents
 from eden.providers._impl.container_run_args import (
@@ -27,7 +28,6 @@ from eden.providers._protocols import (
 from eden.providers._types import CreateOptions, Mount
 from eden.sandboxes.errors import (
     ContainerStartFailed,
-    ImageNotFound,
     ProviderUnavailable,
 )
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
@@ -48,6 +48,7 @@ def make_container_provider(
     groups: tuple[str | int, ...] | None = None,
     userns: Literal["keep-id"] | None = None,
     max_output_tail_chars: int = DEFAULT_MAX_CHARS,
+    create_timeout: float = 120.0,
 ) -> SandboxProvider:
     """Build a bind-mount provider backed by ``<binary> run``.
 
@@ -69,21 +70,25 @@ def make_container_provider(
     non-SELinux hosts (Docker / Podman ignore the suffix).
 
     ``network`` accepts a single runtime network name or a tuple of names. A
-    tuple emits one ``--network`` flag per entry.
-
-    ``devices`` exposes host device specs such as ``"/dev/kvm"`` or
-    ``"/dev/dri:/dev/dri:rwm"`` for GPU workloads or KVM nesting. ``cpus``
-    bounds container CPU usage via ``--cpus <value>``.
+    tuple emits one ``--network`` flag per entry. ``devices`` exposes host
+    device specs such as ``"/dev/kvm"`` or ``"/dev/dri:/dev/dri:rwm"`` for GPU
+    workloads or KVM nesting. ``cpus`` bounds container CPU usage via
+    ``--cpus <value>``.
 
     ``groups`` is a tuple of supplementary group names or GIDs passed via
     ``--group-add``. Most commonly used to grant the in-container ``agent``
     user access to a bind-mounted Docker socket (``groups=("docker",)``).
-
     ``userns`` is Podman-only. ``"keep-id"`` adds
     ``--userns=keep-id:uid=<uid>,gid=<gid>`` so rootless Podman maps the host
     user to the configured in-container user without chowning bind mounts.
     ``max_output_tail_chars`` bounds the returned stdout/stderr tail for
     streamed exec calls while preserving complete live ``on_line`` delivery.
+
+    ``create_timeout`` bounds the whole container-creation sequence (image
+    inspect, UID check, ``<binary> run``, mount-parent prep) against one
+    shared deadline, not each step independently — a hung daemon otherwise
+    costs up to N times the intended deadline across N sequential
+    subprocess calls. Raises ``ContainerStartTimeout`` on expiry.
     """
     provider_mounts: tuple[Mount, ...] = mounts or ()
     provider_env: dict[str, str] = dict(env) if env else {}
@@ -99,63 +104,58 @@ def make_container_provider(
         if not shutil.which(binary):
             raise ProviderUnavailable(provider=binary, binary=binary)
 
-        resolved_image = image or default_image_name(opts.host_repo_path)
-        inspect = subprocess.run(
-            [binary, "image", "inspect", resolved_image],
-            capture_output=True,
-            text=True,
-        )
-        if inspect.returncode != 0:
-            raise ImageNotFound(image=resolved_image, stderr=inspect.stderr)
-
-        check_image_uid(
-            binary=binary,
-            image=resolved_image,
-            expected_uid=effective_uid,
-            run=subprocess.run,
-        )
-
-        mount_map = build_mount_map(
-            worktree_path=opts.worktree_path,
-            opts_mounts=opts.mounts,
-            provider_mounts=provider_mounts,
-            git_common_dir=resolve_git_common_dir(opts.worktree_path),
-        )
-        no_prep_mounts = merge_windows_git_mounts(mount_map, opts.worktree_path)
-        merged_env: dict[str, str] = {**provider_env, **dict(opts.env)}
-        name = container_name(branch=opts.branch, name_hint=opts.name_hint)
-        argv = build_run_argv(
-            binary=binary,
-            container_name=name,
-            uid=effective_uid,
-            gid=effective_gid,
-            mounts=mount_map,
-            env=merged_env,
-            networks=provider_networks,
-            cpus=cpus,
-            userns=userns,
-            devices=provider_devices,
-            groups=provider_groups,
-            image=resolved_image,
-            selinux_label=selinux_label,
-        )
-
-        run_proc = subprocess.run(argv, capture_output=True, text=True)
-        if run_proc.returncode != 0:
-            raise ContainerStartFailed(
+        with container_start_deadline(binary=binary, timeout=create_timeout) as remaining:
+            resolved_image = image or default_image_name(opts.host_repo_path)
+            verify_image(
+                binary=binary,
                 image=resolved_image,
-                exit_code=run_proc.returncode,
-                stderr=run_proc.stderr,
+                expected_uid=effective_uid,
+                run=subprocess.run,
+                remaining=remaining,
             )
-        container_id = run_proc.stdout.strip()
 
-        prepare_file_mount_parents(
-            binary=binary,
-            container_id=container_id,
-            mount_map={s: m for s, m in mount_map.items() if m not in no_prep_mounts},
-            uid=effective_uid,
-            gid=effective_gid,
-        )
+            mount_map = build_mount_map(
+                worktree_path=opts.worktree_path,
+                opts_mounts=opts.mounts,
+                provider_mounts=provider_mounts,
+                git_common_dir=resolve_git_common_dir(opts.worktree_path),
+            )
+            no_prep_mounts = merge_windows_git_mounts(mount_map, opts.worktree_path)
+            merged_env: dict[str, str] = {**provider_env, **dict(opts.env)}
+            name = container_name(branch=opts.branch, name_hint=opts.name_hint)
+            argv = build_run_argv(
+                binary=binary,
+                container_name=name,
+                uid=effective_uid,
+                gid=effective_gid,
+                mounts=mount_map,
+                env=merged_env,
+                networks=provider_networks,
+                cpus=cpus,
+                userns=userns,
+                devices=provider_devices,
+                groups=provider_groups,
+                image=resolved_image,
+                selinux_label=selinux_label,
+            )
+
+            run_proc = subprocess.run(argv, capture_output=True, text=True, timeout=remaining())
+            if run_proc.returncode != 0:
+                raise ContainerStartFailed(
+                    image=resolved_image,
+                    exit_code=run_proc.returncode,
+                    stderr=run_proc.stderr,
+                )
+            container_id = run_proc.stdout.strip()
+
+            prepare_file_mount_parents(
+                binary=binary,
+                container_id=container_id,
+                mount_map={s: m for s, m in mount_map.items() if m not in no_prep_mounts},
+                uid=effective_uid,
+                gid=effective_gid,
+                remaining=remaining,
+            )
 
         return ContainerHandle(
             binary=binary,

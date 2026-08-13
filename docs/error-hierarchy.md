@@ -50,6 +50,7 @@ classDiagram
     SandboxError <|-- ProviderUnavailable
     SandboxError <|-- ImageNotFound
     SandboxError <|-- ContainerStartFailed
+    SandboxError <|-- ContainerStartTimeout
     SandboxError <|-- ExecFailed
     SandboxError <|-- ExecTimeout
     SandboxError <|-- MountConfigError

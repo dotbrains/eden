@@ -9,6 +9,7 @@ def provider_hint(error: EdenError) -> str | None:
     try:
         from eden.sandboxes.errors import (
             ContainerStartFailed,
+            ContainerStartTimeout,
             ExecFailed,
             ExecTimeout,
             ImageNotFound,
@@ -42,6 +43,12 @@ def provider_hint(error: EdenError) -> str | None:
         return (
             "The container exited immediately. Check the image's ENTRYPOINT / "
             "CMD and confirm Docker daemon is healthy (`docker ps`)."
+        )
+    if isinstance(error, ContainerStartTimeout):
+        binary = getattr(error, "binary", "the runtime")
+        return (
+            f"Check `{binary} ps`/`{binary} info` for a stuck daemon or a slow "
+            "image pull, then pass a larger `create_timeout=` if the host is just slow."
         )
     if isinstance(error, ImageUidMismatch):
         return (
