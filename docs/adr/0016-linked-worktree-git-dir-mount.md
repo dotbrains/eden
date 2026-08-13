@@ -1,6 +1,6 @@
 # ADR 0016 — Bind-mount the git common dir for linked worktrees
 
-**Status:** Accepted (2026-08-12).
+**Status:** Accepted (2026-08-12). Extended to Windows (2026-08-13, unverified — see Decision).
 
 ## Context
 
@@ -52,18 +52,44 @@ reads `worktree_path/.git`, follows the `gitdir:` pointer, and follows
 
 - `.git` is already a real directory (the `head` strategy).
 - The resolved common dir doesn't exist.
-- The resolved common dir is a Windows-shaped path (`C:\...`). On Windows the
-  `.git` file's *own* `gitdir:` content is a Windows path a Linux container
-  can't parse regardless of mount layout, and a mount target in that shape
-  would fail container startup outright — trading a git-command failure for
-  a container-start failure is a regression, not a fix. Docker/Podman are
-  documented as Linux/macOS providers (`docs/sandbox-providers.md`), so this
-  is out of scope here rather than a gap; fixing it would need the same
-  `.git`-file-rewrite Sandcastle's ADR 0006 describes for its Windows case.
+- The resolved common dir is a Windows-shaped path (`C:\...`) — handled
+  instead by `container_git_mount_windows.py` (below).
 
 `container_run_args.build_mount_map` adds this mount first (lowest
 precedence), before `/workspace` and any user/provider mounts, so an explicit
 mount at the same target — vanishingly unlikely in practice — still wins.
+
+### Windows extension (2026-08-13)
+
+On Windows the `.git` file's *own* `gitdir:` content is itself a
+`C:\...` path a Linux container can't parse regardless of mount layout, so
+the identity-mount trick above doesn't work — mounting the common dir
+doesn't help if the pointer *inside* the mounted worktree still says
+`C:\...`. Fixing it needs the same technique Sandcastle's ADR
+`0006-git-worktree-mounts-on-windows.md` documents: mount the parent git dir
+at a deterministic in-container path (`/.eden-parent-git`), and overlay a
+*corrected* `.git` file — written next to the worktree, never inside it —
+whose `gitdir:` pointer uses that path instead, overriding the original
+`.git` file the worktree mount would otherwise present at
+`/workspace/.git`.
+
+`eden/providers/_impl/container_git_mount_windows.py` implements this:
+`plan_windows_git_mounts` is the pure planning step (parses the pointer,
+derives the parent dir structurally by assuming eden's standard
+`<parent>\worktrees\<name>` layout rather than reading the private dir's
+`commondir` file); `resolve_windows_git_mounts` writes the corrected file
+and returns the two mounts; `merge_windows_git_mounts` wires them into a
+provider's mount map and reports them back so `container.py` can exclude
+them from the `/home/agent`-only file-mount-parent prep step they don't
+need.
+
+**This extension is ported from Sandcastle's documented design but has not
+been exercised against a real Windows host + Docker Desktop/Podman
+pairing** — no such environment was available while writing it. The pure
+parsing logic is unit-tested on every platform (including this repo's CI);
+the filesystem/mount wiring is only exercised against a hand-written fake
+`.git` file, not a real `git worktree add` on Windows. Treat it as
+best-effort until someone verifies it there.
 
 ## Consequences
 
@@ -75,12 +101,17 @@ mount at the same target — vanishingly unlikely in practice — still wins.
 - The common dir mounts read-write (git needs to write objects and update
   the worktree-private `HEAD`/index under it), with the same UID/SELinux
   treatment as every other mount.
-- Windows hosts running `docker`/`podman` with `merge_to_head`/`named` remain
-  unfixed by this ADR; `head` strategy (or `isolated`, which doesn't use
-  linked worktrees) still works there today.
+- Windows hosts running `docker`/`podman` with `merge_to_head`/`named` now
+  attempt the same fix in spirit, but it carries materially higher risk
+  than the Linux/macOS path: it writes a file, relies on Docker's file-mount
+  overlay behavior, and has only been checked with fabricated `.git`
+  contents rather than a real Windows checkout. If it turns out to be
+  wrong, the safe fallback is the `head` strategy (or `isolated`, which
+  doesn't use linked worktrees).
 
 ## See also
 
 - [`docs/container-sandbox-providers.md`](../container-sandbox-providers.md) — Docker/Podman mount behavior.
 - `eden/providers/_impl/container_git_mount.py` — `resolve_git_common_dir`.
+- `eden/providers/_impl/container_git_mount_windows.py` — the Windows extension.
 - `eden/providers/_impl/container_run_args.py` — `build_mount_map`.

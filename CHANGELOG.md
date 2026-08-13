@@ -111,6 +111,13 @@ ships.
 
 ### Fixed
 
+- **Docker/Podman linked-worktree git mount now also attempts Windows** —
+  best-effort extension of the fix below to Windows hosts: mounts the
+  parent git dir at a deterministic in-container path and overlays a
+  corrected `.git` file whose pointer uses it, mirroring Sandcastle's
+  documented Windows fix. **Unverified on a real Windows host + Docker
+  Desktop/Podman pairing** — no such environment was available while
+  writing it; see `docs/adr/0016-linked-worktree-git-dir-mount.md`.
 - **Docker/Podman linked worktrees can now run git commands** — the
   `merge_to_head`/`named` branch strategies (the default for bind-mount
   providers) carve a linked worktree via `git worktree add`, whose `.git`
