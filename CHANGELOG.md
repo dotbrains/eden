@@ -5,7 +5,7 @@ All notable changes to Eden are documented here. Format follows
 project adheres to [Semantic Versioning](https://semver.org/) once 1.0
 ships.
 
-## Unreleased
+## [1.0.0] - 2026-08-17
 
 ### Changed
 
