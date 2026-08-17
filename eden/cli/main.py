@@ -11,6 +11,7 @@ from eden.cli.clean import clean_command
 from eden.cli.cost import cost_command
 from eden.cli.init import init_command
 from eden.cli.replay import replay_command
+from eden.cli.routine import make_routine_app
 from eden.cli.run import run_command
 
 setup_terminal_cleanup()
@@ -41,6 +42,7 @@ app.command(
 )(replay_command)
 app.add_typer(make_image_app(binary="docker"), name="docker")
 app.add_typer(make_image_app(binary="podman"), name="podman")
+app.add_typer(make_routine_app(), name="routine")
 
 
 @app.command(name="version", help="Print the eden version and exit.")

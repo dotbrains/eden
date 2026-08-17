@@ -22,6 +22,14 @@ ships.
 
 ### Added
 
+- **`eden routine save|list|show|remove|run`** — save a named `eden run`
+  flag combination under `.eden/routines/<name>.json` and re-run it by name
+  instead of re-typing every flag. Routine files are git-tracked like the
+  rest of `.eden/` (not touched by `eden clean` or the scaffolded
+  `.gitignore`), so history comes from git rather than a bespoke version
+  scheme. Ported from the "Routines" idea in
+  [owainlewis/factory](https://github.com/owainlewis/factory) — see
+  `docs/adr/0018-named-routines.md` and `docs/cli-routines.md`.
 - **`docker()`/`podman()` gain `create_timeout=`** — bounds the whole
   container-creation sequence (image inspect, UID check, `<binary> run`,
   mount-parent prep) against one shared deadline (default 120s), raising
