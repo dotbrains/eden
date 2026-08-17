@@ -3,8 +3,16 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
   workflow_dispatch:
 
 permissions:
@@ -17,7 +25,9 @@ concurrency:
 jobs:
   # Canonical gate: static checks once, then the default test suite once with
   # coverage. Keep compatibility jobs unit-only so e2e and coverage are not
-  # repeated across every Python/platform leg.
+  # repeated across every Python/platform leg. Runs in parallel with the
+  # other jobs (not a dependency) so a slow platform leg isn't padded by this
+  # job's runtime.
   check:
     name: check (py3.11, quality + coverage)
     runs-on: blacksmith-2vcpu-ubuntu-2404
@@ -25,23 +35,37 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
       - name: pre-commit + pytest (unit + e2e, coverage)
         run: |
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install -e ".[dev]"
           .venv/bin/pre-commit run --all-files --show-diff-on-failure
-          .venv/bin/pytest -v -m "unit or e2e" --cov=eden --cov-fail-under=70
+          .venv/bin/pytest -v -m "unit or e2e" -n auto --cov=eden --cov-fail-under=70
 
-  # Package build is checked once so release packaging failures are caught
-  # before tag publish.
+  # Package build is checked on every run (not gated behind `check`) so
+  # packaging failures surface as fast as the other legs instead of adding
+  # the quality gate's runtime to the critical path.
   build:
     name: build (py3.11)
-    needs: check
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: python -m build
         run: |
@@ -54,7 +78,6 @@ jobs:
   # unit-only leg. Linux owns e2e and coverage in the canonical gate.
   test-compat:
     name: test-compat (${{ matrix.name }})
-    needs: check
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -65,12 +88,12 @@ jobs:
             os: blacksmith-2vcpu-ubuntu-2404
             python: python3
             venv-python: .venv/bin/python
-            python-version: ""
+            python-version: "3.12"
           - name: macos py3.13
             os: blacksmith-6vcpu-macos-15
             python: python3
             venv-python: .venv/bin/python
-            python-version: ""
+            python-version: "3.13"
           - name: windows py3.13
             os: blacksmith-2vcpu-windows-2025
             python: python
@@ -80,10 +103,11 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Set up Python
-        if: matrix.python-version != ''
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: pytest (unit)
         run: |
@@ -91,17 +115,23 @@ jobs:
           ${{ matrix.python }} -m venv .venv
           ${{ matrix.venv-python }} -m pip install --upgrade pip
           ${{ matrix.venv-python }} -m pip install -e ".[dev]"
-          ${{ matrix.venv-python }} -m pytest -v -m unit
+          ${{ matrix.venv-python }} -m pytest -v -m unit -n auto
 
   # Real provider tests are Linux-only and heavily capability-gated. Run them
   # once instead of once per Python version.
   integration:
     name: integration (py3.13)
-    needs: check
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: pytest (integration)
         run: |

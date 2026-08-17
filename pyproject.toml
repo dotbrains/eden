@@ -44,6 +44,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    "pytest-xdist>=3.6",
     # Pin ruff and mypy tightly: the same versions run locally (via
     # pre-commit) and in CI, so format/lint/type gates can't drift between
     # them. Bump deliberately; do not loosen.
