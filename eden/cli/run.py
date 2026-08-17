@@ -23,6 +23,14 @@ _VALID_SANDBOXES = ("docker", "podman", "no-sandbox")
 _VALID_AGENTS = ("claude-code", "codex", "opencode", "pi", "cursor", "copilot")
 _VALID_TEMPLATES = ("simple-loop",)
 _VALID_BACKLOGS = tuple(b.name for b in list_backlog_managers())
+_DEFAULT_MODELS: dict[str, str] = {
+    "claude-code": "claude-opus-4-8",
+    "codex": "gpt-5.4",
+    "opencode": "claude-opus-4",
+    "pi": "pi-3.5",
+    "cursor": "claude-sonnet-4-6",
+    "copilot": "claude-sonnet-4",
+}
 
 
 def _build_agent(agent: str, model: str) -> Agent:
@@ -122,15 +130,7 @@ def run_command(
             f"backlog must be one of {list(_VALID_BACKLOGS)}, got {backlog!r}",
         )
 
-    default_models: dict[str, str] = {
-        "claude-code": "claude-opus-4-8",
-        "codex": "gpt-5.4",
-        "opencode": "claude-opus-4",
-        "pi": "pi-3.5",
-        "cursor": "claude-sonnet-4-6",
-        "copilot": "claude-sonnet-4",
-    }
-    resolved_model = model or default_models[agent]
+    resolved_model = model or _DEFAULT_MODELS[agent]
 
     agent_factory = _build_agent(agent, resolved_model)
     sandbox_provider = _build_sandbox(sandbox, image_name)

@@ -105,9 +105,9 @@ The simple-loop prompt is identical to the one written by `eden init --template 
 
 Read source: `eden/cli/run.py`.
 
-## Session and cleanup commands
+## Session, cleanup, and routine commands
 
-See [CLI session tools](cli-session-tools.md) for `eden cost`, `eden clean`, and `eden replay`.
+See [CLI session tools](cli-session-tools.md) for `eden cost`, `eden clean`, and `eden replay`, and [CLI routine commands](cli-routines.md) for `eden routine save|list|show|remove|run`.
 
 ## `eden version`
 
