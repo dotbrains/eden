@@ -14,6 +14,7 @@ from eden.cli.run import (
     _VALID_AGENTS,
     _VALID_BACKLOGS,
     _VALID_SANDBOXES,
+    _VALID_TEMPLATES,
     _build_agent,
     _build_sandbox,
     _completion_summary,
@@ -27,13 +28,20 @@ def _execute(config: RoutineConfig, *, name: str, cwd: Path | None) -> None:
     # Re-checked at run time (not just at save time) in case a routine file
     # was hand-edited after saving, or written by an older/newer eden whose
     # supported values have since changed.
-    sandbox, agent, backlog = config.sandbox, config.agent, config.backlog
+    sandbox, agent, backlog, template = (
+        config.sandbox,
+        config.agent,
+        config.backlog,
+        config.template,
+    )
     if sandbox not in _VALID_SANDBOXES:
         raise typer.BadParameter(f"routine {name!r} has invalid sandbox {sandbox!r}")
     if agent not in _VALID_AGENTS:
         raise typer.BadParameter(f"routine {name!r} has invalid agent {agent!r}")
     if backlog not in _VALID_BACKLOGS:
         raise typer.BadParameter(f"routine {name!r} has invalid backlog {backlog!r}")
+    if template not in _VALID_TEMPLATES:
+        raise typer.BadParameter(f"routine {name!r} has invalid template {template!r}")
 
     agent_factory = _build_agent(agent, config.model)
     sandbox_provider = _build_sandbox(sandbox, config.image_name)

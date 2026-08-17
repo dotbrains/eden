@@ -91,4 +91,26 @@ def test_run_rejects_hand_edited_invalid_backlog(
     result = runner.invoke(app, ["routine", "run", "nightly", "--cwd", str(repo_dir)])
     assert result.exit_code != 0
     fake_run.assert_not_called()
+
+
+def test_run_rejects_hand_edited_invalid_template(
+    runner: CliRunner, repo_dir: Path, fake_run: MagicMock
+) -> None:
+    save_routine(
+        repo_dir,
+        "nightly",
+        RoutineConfig(
+            sandbox="no-sandbox",
+            agent="claude-code",
+            model="claude-opus-4-8",
+            template="bogus",
+            backlog="github",
+            image_name=None,
+            max_iterations=3,
+            idle_timeout=600.0,
+            completion_timeout=60.0,
+        ),
+    )
+    result = runner.invoke(app, ["routine", "run", "nightly", "--cwd", str(repo_dir)])
+    assert result.exit_code != 0
     fake_run.assert_not_called()

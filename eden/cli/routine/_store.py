@@ -35,7 +35,7 @@ def routines_dir(cwd: Path) -> Path:
 
 
 def routine_path(cwd: Path, name: str) -> Path:
-    if not _NAME_RE.match(name):
+    if not _NAME_RE.fullmatch(name):
         raise ValueError(
             f"routine name {name!r} must start with a letter or digit and contain only "
             "letters, digits, '.', '_', or '-'"

@@ -71,7 +71,7 @@ def test_delete_missing_routine_returns_false(repo_dir: Path) -> None:
     assert delete_routine(repo_dir, "missing") is False
 
 
-@pytest.mark.parametrize("bad_name", ["../escape", "a/b", ".hidden", ""])
+@pytest.mark.parametrize("bad_name", ["../escape", "a/b", ".hidden", "", "nightly\n"])
 def test_routine_path_rejects_unsafe_names(repo_dir: Path, bad_name: str) -> None:
     with pytest.raises(ValueError, match="routine name"):
         routine_path(repo_dir, bad_name)
