@@ -8,7 +8,7 @@ Eden spawns each agent's CLI as a host subprocess from the argv its factory buil
 
 That makes an agent's *runtime* an ambient property of the machine, not part of the agent's definition. Two hosts with different `node`/`python`/CLI versions run "the same" agent differently, and concurrent agents on one host all share the host toolchain.
 
-[Blacksmith](https://github.com/dotbrains/blacksmith/pull/2) solved the equivalent problem by making a Flox env part of each *identity*: every identity ships a `.flox/env/manifest.toml`, the pool launcher activates it (`flox activate -d identities/<id>`) before invoking the harness, and registration refuses an identity whose declared env is missing. Eden already uses Flox for its *own* dev environment (`.flox/`), but not for the agents it spawns.
+[Blacksmith](https://github.com/smeltery/blacksmith/pull/2) solved the equivalent problem by making a Flox env part of each *identity*: every identity ships a `.flox/env/manifest.toml`, the pool launcher activates it (`flox activate -d identities/<id>`) before invoking the harness, and registration refuses an identity whose declared env is missing. Eden already uses Flox for its *own* dev environment (`.flox/`), but not for the agents it spawns.
 
 ## Decision
 
@@ -37,4 +37,4 @@ Design choices:
 - [`docs/agent-flox-runtime.md`](../agent-flox-runtime.md) — user-facing reference.
 - [`docs/errors.md` — `FloxEnvError`](../errors.md#floxenverror).
 - `eden/agents/_flox.py` — `flox_wrap` / `validate_flox_env`.
-- Blacksmith PR #2 (the upstream design this mirrors) — https://github.com/dotbrains/blacksmith/pull/2
+- Blacksmith PR #2 (the upstream design this mirrors) — https://github.com/smeltery/blacksmith/pull/2

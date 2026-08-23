@@ -1,6 +1,6 @@
 name: "Run an eden agent loop"
 description: "Run an eden iteration loop in-process via `eden run`."
-author: "dotbrains"
+author: "smeltery"
 branding:
   icon: "git-branch"
   color: "purple"

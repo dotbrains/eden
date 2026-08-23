@@ -74,7 +74,7 @@ README.md                                # MODIFY — bump status to phase 4a co
 - [ ] **Step 1: Confirm working tree clean and on main**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   git status -s && git rev-parse --abbrev-ref HEAD && git log --oneline -1
 ```
 Expected: empty status, branch `main`, commit `bb23464 docs: add phase 4a ...` (or later).
@@ -82,7 +82,7 @@ Expected: empty status, branch `main`, commit `bb23464 docs: add phase 4a ...` (
 - [ ] **Step 2: Confirm Phase 3b suite passes**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3
 ```
 Expected: `292 passed` (Phase 3b baseline). If lower, stop and investigate.
@@ -200,7 +200,7 @@ def test_make_isolated_provider_supported_strategies_filter() -> None:
 
 - [ ] **Step 2: Run test to verify it fails**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_finalize_result_types.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_finalize_result_types.py -v`
 Expected: FAIL — `FinalizeResult`, `IsolatedSandboxHandle`, `make_isolated_provider` not importable.
 
 - [ ] **Step 3: Add FinalizeResult to `eden/providers/_types.py`**
@@ -301,18 +301,18 @@ The `Callable[[CreateOptions], "IsolatedSandboxHandle"]` uses a string forward r
 
 - [ ] **Step 6: Run tests to verify pass**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_finalize_result_types.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_finalize_result_types.py -v`
 Expected: PASS — 7 tests.
 
 - [ ] **Step 7: Pre-existing types/protocols tests pass**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_branch_strategy.py tests/unit/test_no_sandbox.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_branch_strategy.py tests/unit/test_no_sandbox.py -v`
 Expected: PASS (no regression).
 
 - [ ] **Step 8: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/providers tests/unit/test_finalize_result_types.py && \
 .venv/bin/ruff format eden/providers/_types.py eden/providers/_protocols.py eden/providers/_helpers.py tests/unit/test_finalize_result_types.py && \
 .venv/bin/ruff format --check eden/providers/_types.py eden/providers/_protocols.py eden/providers/_helpers.py tests/unit/test_finalize_result_types.py && \
@@ -324,7 +324,7 @@ Expected: All clean.
 - [ ] **Step 9: Commit (stage by name — only 4 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/providers/_types.py eden/providers/_protocols.py eden/providers/_helpers.py tests/unit/test_finalize_result_types.py && \
 git commit -m "feat(providers): add FinalizeResult + IsolatedSandboxHandle + make_isolated_provider"
 ```
@@ -341,7 +341,7 @@ git commit -m "feat(providers): add FinalizeResult + IsolatedSandboxHandle + mak
 
 - [ ] **Step 1: Read current docker provider for reference**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && cat eden/sandboxes/docker/__init__.py`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && cat eden/sandboxes/docker/__init__.py`
 
 The existing implementation is the source of truth for argv shape. Task 2 is a pure refactor: every literal `"docker"` becomes `binary`, but the rest stays line-for-line.
 
@@ -563,7 +563,7 @@ def test_network_flag_threaded(
 
 - [ ] **Step 3: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_container_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_container_provider.py -v`
 Expected: FAIL — `eden.providers._impl.container` not found.
 
 - [ ] **Step 4: Create the empty `_impl` package init**
@@ -805,13 +805,13 @@ __all__ = ["provider"]
 - [ ] **Step 7: Run new container tests + Phase 2 docker regression tests**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest tests/unit/test_container_provider.py -v
 ```
 Expected: PASS — 16 tests (8 cases × 2 binaries).
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest tests/integration/test_docker_*.py -v 2>&1 | tail -10
 ```
 Expected: PASS or skip-on-no-docker (depends on environment). The Phase 2 integration tests are the regression net; if they fail, the extraction broke behavior.
@@ -819,7 +819,7 @@ Expected: PASS or skip-on-no-docker (depends on environment). The Phase 2 integr
 - [ ] **Step 8: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/providers/_impl eden/sandboxes/docker tests/unit/test_container_provider.py && \
 .venv/bin/ruff format eden/providers/_impl/__init__.py eden/providers/_impl/container.py eden/sandboxes/docker/__init__.py tests/unit/test_container_provider.py && \
 .venv/bin/ruff format --check eden/providers/_impl/__init__.py eden/providers/_impl/container.py eden/sandboxes/docker/__init__.py tests/unit/test_container_provider.py && \
@@ -831,7 +831,7 @@ Expected: All clean.
 - [ ] **Step 9: Commit (stage by name — only 4 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/providers/_impl/__init__.py eden/providers/_impl/container.py eden/sandboxes/docker/__init__.py tests/unit/test_container_provider.py && \
 git commit -m "refactor(providers): extract make_container_provider; docker becomes thin factory"
 ```
@@ -911,7 +911,7 @@ def test_podman_uses_podman_binary(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_podman_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_podman_provider.py -v`
 Expected: FAIL — `eden.sandboxes.podman` module not found.
 
 - [ ] **Step 3: Implement podman factory**
@@ -951,13 +951,13 @@ __all__ = ["provider"]
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_podman_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_podman_provider.py -v`
 Expected: PASS — 3 tests.
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/sandboxes/podman tests/unit/test_podman_provider.py && \
 .venv/bin/ruff format eden/sandboxes/podman/__init__.py tests/unit/test_podman_provider.py && \
 .venv/bin/ruff format --check eden/sandboxes/podman/__init__.py tests/unit/test_podman_provider.py && \
@@ -969,7 +969,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/sandboxes/podman/__init__.py tests/unit/test_podman_provider.py && \
 git commit -m "feat(podman): add bind-mount sandbox provider (sibling of docker)"
 ```
@@ -1158,7 +1158,7 @@ def test_apply_unlink_missing_target_is_silent(tmp_path: Path) -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_patch_sync.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_patch_sync.py -v`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Implement patch_sync**
@@ -1295,13 +1295,13 @@ __all__ = ["DiffResult", "apply", "diff", "snapshot"]
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_patch_sync.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_patch_sync.py -v`
 Expected: PASS — 11 tests (one skipped on Windows).
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/providers/_impl/patch_sync.py tests/unit/test_patch_sync.py && \
 .venv/bin/ruff format eden/providers/_impl/patch_sync.py tests/unit/test_patch_sync.py && \
 .venv/bin/ruff format --check eden/providers/_impl/patch_sync.py tests/unit/test_patch_sync.py && \
@@ -1313,7 +1313,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/providers/_impl/patch_sync.py tests/unit/test_patch_sync.py && \
 git commit -m "feat(patch_sync): add snapshot/diff/apply for isolated provider sync"
 ```
@@ -1463,7 +1463,7 @@ def test_explicit_base_dir(tmp_path: Path) -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_isolated_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_isolated_provider.py -v`
 Expected: FAIL — `eden.sandboxes.isolated` not found.
 
 - [ ] **Step 3: Implement isolated provider**
@@ -1578,13 +1578,13 @@ __all__ = ["provider"]
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_isolated_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_isolated_provider.py -v`
 Expected: PASS — 9 tests.
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/sandboxes/isolated tests/unit/test_isolated_provider.py && \
 .venv/bin/ruff format eden/sandboxes/isolated/__init__.py tests/unit/test_isolated_provider.py && \
 .venv/bin/ruff format --check eden/sandboxes/isolated/__init__.py tests/unit/test_isolated_provider.py && \
@@ -1596,7 +1596,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/sandboxes/isolated/__init__.py tests/unit/test_isolated_provider.py && \
 git commit -m "feat(isolated): add local copy+patch-sync sandbox provider"
 ```
@@ -1676,7 +1676,7 @@ def test_explicit_none_cwd_matches_default(tmp_path: Path) -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_agent_runner_cwd.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_agent_runner_cwd.py -v`
 Expected: FAIL — `_AgentRunner.__init__` doesn't accept `cwd`.
 
 - [ ] **Step 3: Add cwd kwarg to _AgentRunner**
@@ -1727,7 +1727,7 @@ Also add `from pathlib import Path` to the imports if not already present (Phase
 - [ ] **Step 4: Run passing test + Phase 3a regression tests**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest tests/unit/test_agent_runner_cwd.py tests/unit/test_agent_runner.py -v
 ```
 Expected: PASS — 3 new + 5 existing = 8 tests.
@@ -1735,7 +1735,7 @@ Expected: PASS — 3 new + 5 existing = 8 tests.
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/orchestrator/_runner.py tests/unit/test_agent_runner_cwd.py && \
 .venv/bin/ruff format eden/orchestrator/_runner.py tests/unit/test_agent_runner_cwd.py && \
 .venv/bin/ruff format --check eden/orchestrator/_runner.py tests/unit/test_agent_runner_cwd.py && \
@@ -1747,7 +1747,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/orchestrator/_runner.py tests/unit/test_agent_runner_cwd.py && \
 git commit -m "feat(orchestrator): add optional cwd kwarg to _AgentRunner"
 ```
@@ -1827,7 +1827,7 @@ This block is INSIDE the outer `try:` block (so it's skipped when `Aborted`/`Idl
 - [ ] **Step 2: Run Phase 3a/3b regression tests**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest tests/unit/test_run_loop.py tests/e2e/test_run_smoke.py tests/e2e/test_claude_code_smoke.py -v
 ```
 Expected: PASS — all existing run-loop tests (6 + 2 + 2 = 10 tests passing on macOS).
@@ -1835,7 +1835,7 @@ Expected: PASS — all existing run-loop tests (6 + 2 + 2 = 10 tests passing on 
 - [ ] **Step 3: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/orchestrator && \
 .venv/bin/ruff format eden/orchestrator/_loop.py && \
 .venv/bin/ruff format --check eden/orchestrator/_loop.py && \
@@ -1847,7 +1847,7 @@ Expected: All clean.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/orchestrator/_loop.py && \
 git commit -m "feat(orchestrator): pass cwd to _AgentRunner; call handle.finalize() on success"
 ```
@@ -1873,7 +1873,7 @@ Edit `eden/__init__.py`. Add `FinalizeResult` and `IsolatedSandboxHandle` to the
 - [ ] **Step 2: Verify imports**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/python -c "import eden; assert eden.FinalizeResult is not None; assert eden.IsolatedSandboxHandle is not None; print('ok')"
 ```
 Expected: `ok`.
@@ -1881,7 +1881,7 @@ Expected: `ok`.
 - [ ] **Step 3: Run full unit + e2e suite (regression check)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest -m "unit or e2e" --no-cov -q
 ```
 Expected: All tests pass. Total: 292 (Phase 3b baseline) + new tests through Task 7 (~46) = ~338 passing.
@@ -1889,7 +1889,7 @@ Expected: All tests pass. Total: 292 (Phase 3b baseline) + new tests through Tas
 - [ ] **Step 4: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden && \
 .venv/bin/ruff format eden/__init__.py && \
 .venv/bin/ruff format --check eden/__init__.py && \
@@ -1901,7 +1901,7 @@ Expected: All clean.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/__init__.py && \
 git commit -m "feat(eden): re-export FinalizeResult + IsolatedSandboxHandle"
 ```
@@ -2009,18 +2009,18 @@ The sandbox hook runs via `handle.exec(...)` whose default cwd is `handle.worktr
 
 - [ ] **Step 2: Run e2e test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/e2e/test_isolated_smoke.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/e2e/test_isolated_smoke.py -v`
 Expected: PASS — 1 test (skipped on Windows). If the host-hook quoting is too brittle, fall back to the manual-handle approach described above.
 
 - [ ] **Step 3: Run combined unit + e2e (regression check)**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q`
 Expected: All tests pass.
 
 - [ ] **Step 4: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy tests/e2e/test_isolated_smoke.py && \
 .venv/bin/ruff format tests/e2e/test_isolated_smoke.py && \
 .venv/bin/ruff format --check tests/e2e/test_isolated_smoke.py && \
@@ -2032,7 +2032,7 @@ Expected: All clean.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add tests/e2e/test_isolated_smoke.py && \
 git commit -m "test(e2e): add isolated provider + finalize smoke run"
 ```
@@ -2131,13 +2131,13 @@ def test_close_is_idempotent(tmp_path: Path) -> None:
 
 - [ ] **Step 2: Run the test (locally, if podman is installed; skip otherwise)**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/integration/test_podman.py -v -m integration`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/integration/test_podman.py -v -m integration`
 Expected: 4 tests pass on Linux with podman installed; SKIP on systems without podman.
 
 - [ ] **Step 3: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy tests/integration/test_podman.py && \
 .venv/bin/ruff format tests/integration/test_podman.py && \
 .venv/bin/ruff format --check tests/integration/test_podman.py && \
@@ -2149,7 +2149,7 @@ Expected: All clean.
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add tests/integration/test_podman.py && \
 git commit -m "test(integration): add podman parity tests (Linux-gated)"
 ```
@@ -2172,7 +2172,7 @@ Edit `README.md:5` (the `> **Status:** ...` blockquote). Replace the existing li
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add README.md && \
 git commit -m "docs: bump README status to phase 4a complete"
 ```
@@ -2184,7 +2184,7 @@ git commit -m "docs: bump README status to phase 4a complete"
 - [ ] **Step 1: Full local CI parity check**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/ruff format --check eden tests && \
 .venv/bin/ruff check --no-cache eden tests && \
 .venv/bin/mypy --strict eden tests && \

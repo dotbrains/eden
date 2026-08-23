@@ -47,7 +47,7 @@ README.md                             # MODIFY — bump status to phase 5 comple
 - [ ] **Step 1: Confirm 4c baseline**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   git status -s && git log --oneline -1 && \
   .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3
 ```
@@ -200,7 +200,7 @@ def test_prompt_passed_unescaped() -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_cli_agent.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_cli_agent.py -v`
 Expected: FAIL — `eden.agents.cli` not found.
 
 - [ ] **Step 3: Implement cli_agent**
@@ -296,13 +296,13 @@ __all__ = ["cli_agent"]
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_cli_agent.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_cli_agent.py -v`
 Expected: PASS — 10 tests.
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/agents/cli tests/unit/test_cli_agent.py && \
 .venv/bin/ruff format eden/agents/cli/__init__.py tests/unit/test_cli_agent.py && \
 .venv/bin/ruff format --check eden/agents/cli/__init__.py tests/unit/test_cli_agent.py && \
@@ -314,7 +314,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/agents/cli/__init__.py tests/unit/test_cli_agent.py && \
 git commit -m "feat(agents): add generic cli_agent factory + _CliAgent dataclass"
 ```
@@ -561,7 +561,7 @@ def test_pi_extra_args_threaded() -> None:
 - [ ] **Step 2: Run failing tests**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest tests/unit/test_codex_agent.py tests/unit/test_opencode_agent.py tests/unit/test_pi_agent.py -v
 ```
 Expected: FAIL — modules not found.
@@ -681,7 +681,7 @@ __all__ = ["pi"]
 - [ ] **Step 4: Run passing tests**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest tests/unit/test_codex_agent.py tests/unit/test_opencode_agent.py tests/unit/test_pi_agent.py -v
 ```
 Expected: PASS — 12 tests (4 per agent).
@@ -689,7 +689,7 @@ Expected: PASS — 12 tests (4 per agent).
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/agents/codex eden/agents/opencode eden/agents/pi tests/unit/test_codex_agent.py tests/unit/test_opencode_agent.py tests/unit/test_pi_agent.py && \
 .venv/bin/ruff format eden/agents/codex/__init__.py eden/agents/opencode/__init__.py eden/agents/pi/__init__.py tests/unit/test_codex_agent.py tests/unit/test_opencode_agent.py tests/unit/test_pi_agent.py && \
 .venv/bin/ruff format --check eden/agents/codex/__init__.py eden/agents/opencode/__init__.py eden/agents/pi/__init__.py tests/unit/test_codex_agent.py tests/unit/test_opencode_agent.py tests/unit/test_pi_agent.py && \
@@ -701,7 +701,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 6 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/agents/codex/__init__.py eden/agents/opencode/__init__.py eden/agents/pi/__init__.py tests/unit/test_codex_agent.py tests/unit/test_opencode_agent.py tests/unit/test_pi_agent.py && \
 git commit -m "feat(agents): add codex/opencode/pi named factories over cli_agent"
 ```
@@ -717,7 +717,7 @@ git commit -m "feat(agents): add codex/opencode/pi named factories over cli_agen
 - [ ] **Step 1: Read current `eden/agents/__init__.py` and `eden/__init__.py`**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   cat eden/agents/__init__.py && echo "---" && cat eden/__init__.py | head -100
 ```
 
@@ -775,20 +775,20 @@ Add `"cli_agent"`, `"codex"`, `"opencode"`, `"pi"` to `__all__`. Use `ruff check
 - [ ] **Step 4: Verify imports**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/python -c "import eden; assert eden.cli_agent is not None; assert eden.codex is not None; assert eden.opencode is not None; assert eden.pi is not None; print('ok')"
 ```
 Expected: `ok`.
 
 - [ ] **Step 5: Run full unit + e2e suite (regression check)**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3`
 Expected: All tests pass. Total: 404 (Phase 4c) + 10 (T1) + 12 (T2) = **426 tests**.
 
 - [ ] **Step 6: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden && \
 .venv/bin/ruff format eden/agents/__init__.py eden/__init__.py && \
 .venv/bin/ruff format --check eden/agents/__init__.py eden/__init__.py && \
@@ -800,7 +800,7 @@ Expected: All clean.
 - [ ] **Step 7: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/agents/__init__.py eden/__init__.py && \
 git commit -m "feat(eden): re-export cli_agent + codex/opencode/pi at package root"
 ```
@@ -823,7 +823,7 @@ Edit `README.md:5`. Replace the existing status line with:
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add README.md && \
 git commit -m "docs: bump README status to phase 5 complete"
 ```
@@ -835,7 +835,7 @@ git commit -m "docs: bump README status to phase 5 complete"
 - [ ] **Step 1: Full local CI parity check**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/ruff format --check eden tests && \
 .venv/bin/ruff check --no-cache eden tests && \
 .venv/bin/mypy --strict eden tests && \

@@ -23,7 +23,7 @@ When `flox_env` is set, the orchestrator runs that agent's CLI inside the declar
 flox activate -d <flox_env> -- <agent argv...>
 ```
 
-This mirrors [blacksmith's per-identity Flox env](https://github.com/dotbrains/blacksmith/pull/2): an agent's runtime is part of its definition, not an ambient property of the machine.
+This mirrors [blacksmith's per-identity Flox env](https://github.com/smeltery/blacksmith/pull/2): an agent's runtime is part of its definition, not an ambient property of the machine.
 
 Create one with Flox:
 

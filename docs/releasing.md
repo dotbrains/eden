@@ -22,7 +22,7 @@ Required once, before the first publish:
 
 1. Visit https://pypi.org/manage/project/eden-agent/settings/publishing/ (project owner only).
 2. Add a new pending publisher:
-   - Owner: `dotbrains`
+   - Owner: `smeltery`
    - Repository: `eden`
    - Workflow filename: `release.yml`
    - Environment name: `pypi`

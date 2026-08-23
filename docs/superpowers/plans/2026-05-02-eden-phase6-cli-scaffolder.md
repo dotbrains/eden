@@ -38,7 +38,7 @@ README.md                            # MODIFY — bump status to phase 6 complet
 - [ ] **Step 1: Confirm Phase 5 baseline**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   git status -s && git log --oneline -1 && \
   .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3
 ```
@@ -172,7 +172,7 @@ def test_prompt_md_mentions_substitution_syntax() -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_cli_blank_template.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_cli_blank_template.py -v`
 Expected: FAIL — `eden.cli._templates.blank` not found.
 
 - [ ] **Step 3: Create empty `_templates` package init**
@@ -306,13 +306,13 @@ __all__ = ["render_blank"]
 
 - [ ] **Step 5: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_cli_blank_template.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_cli_blank_template.py -v`
 Expected: PASS — 13 tests.
 
 - [ ] **Step 6: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/cli/_templates tests/unit/test_cli_blank_template.py && \
 .venv/bin/ruff format eden/cli/_templates/__init__.py eden/cli/_templates/blank.py tests/unit/test_cli_blank_template.py && \
 .venv/bin/ruff format --check eden/cli/_templates/__init__.py eden/cli/_templates/blank.py tests/unit/test_cli_blank_template.py && \
@@ -324,7 +324,7 @@ Expected: All clean.
 - [ ] **Step 7: Commit (stage by name — only 3 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/cli/_templates/__init__.py eden/cli/_templates/blank.py tests/unit/test_cli_blank_template.py && \
 git commit -m "feat(cli): add blank scaffolder template + render_blank()"
 ```
@@ -599,13 +599,13 @@ def init_command(
 
 - [ ] **Step 4: Run passing tests**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_cli_init.py tests/test_cli.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_cli_init.py tests/test_cli.py -v`
 Expected: PASS — 12 new tests + remaining pre-existing test_cli.py tests.
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/cli tests/unit/test_cli_init.py tests/test_cli.py && \
 .venv/bin/ruff format eden/cli/init.py tests/unit/test_cli_init.py tests/test_cli.py && \
 .venv/bin/ruff format --check eden/cli/init.py tests/unit/test_cli_init.py tests/test_cli.py && \
@@ -616,13 +616,13 @@ Expected: All clean.
 
 - [ ] **Step 6: Run full unit + e2e suite (regression check)**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3`
 Expected: All tests pass. Total: 426 (Phase 5) + 13 (T1) + 12 (T2) - 1 (removed stub-asserting test) = **450 tests**.
 
 - [ ] **Step 7: Commit (stage by name — only 3 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/cli/init.py tests/unit/test_cli_init.py tests/test_cli.py && \
 git commit -m "feat(cli): implement eden init scaffolder; replace Phase 1 stub"
 ```
@@ -645,7 +645,7 @@ Edit `README.md:5`. Replace the existing status line with:
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add README.md && \
 git commit -m "docs: bump README status to phase 6 complete"
 ```
@@ -657,7 +657,7 @@ git commit -m "docs: bump README status to phase 6 complete"
 - [ ] **Step 1: Full local CI parity check**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/ruff format --check eden tests && \
 .venv/bin/ruff check --no-cache eden tests && \
 .venv/bin/mypy --strict eden tests && \

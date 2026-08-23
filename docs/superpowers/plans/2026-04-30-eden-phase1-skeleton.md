@@ -74,7 +74,7 @@ eden/                                       # repo root (already exists at files
 Run from the repo root:
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden
 ls -la
 ls docs/superpowers/specs/
 ls docs/superpowers/plans/
@@ -143,13 +143,13 @@ Expected: one commit, message `chore: initial commit (PolyForm Shield 1.0.0)`, `
 Run:
 
 ```bash
-gh repo create dotbrains/eden --public --source=. --remote=origin --push --description "Python orchestrator for AI coding agents in sandboxed worktrees."
+gh repo create smeltery/eden --public --source=. --remote=origin --push --description "Python orchestrator for AI coding agents in sandboxed worktrees."
 ```
 
-Expected: command outputs the GitHub URL and pushes. If the repo `dotbrains/eden` already exists empty on GitHub, run instead:
+Expected: command outputs the GitHub URL and pushes. If the repo `smeltery/eden` already exists empty on GitHub, run instead:
 
 ```bash
-git remote add origin git@github.com:dotbrains/eden.git
+git remote add origin git@github.com:smeltery/eden.git
 git push -u origin main
 ```
 
@@ -160,7 +160,7 @@ git remote -v
 git branch -vv
 ```
 
-Expected: `origin` points to `git@github.com:dotbrains/eden.git`; the `main` branch tracks `origin/main`.
+Expected: `origin` points to `git@github.com:smeltery/eden.git`; the `main` branch tracks `origin/main`.
 
 ---
 
@@ -374,7 +374,7 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [
-    { name = "dotbrains" },
+    { name = "smeltery" },
 ]
 keywords = [
     "agents",
@@ -415,8 +415,8 @@ dev = [
 eden = "eden.cli.main:app"
 
 [project.urls]
-Homepage = "https://github.com/dotbrains/eden"
-Issues = "https://github.com/dotbrains/eden/issues"
+Homepage = "https://github.com/smeltery/eden"
+Issues = "https://github.com/smeltery/eden/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["eden"]
@@ -735,7 +735,7 @@ Python orchestrator for AI coding agents in sandboxed worktrees.
 ## Install (development)
 
 ```bash
-git clone https://github.com/dotbrains/eden.git
+git clone https://github.com/smeltery/eden.git
 cd eden
 python3 -m venv .venv
 . .venv/bin/activate
@@ -967,14 +967,14 @@ Create `.github/CODEOWNERS`:
 
 ```
 # Default owners for everything in the repo.
-# Replace @dotbrains/maintainers with the actual GitHub team or user handle.
-* @dotbrains/maintainers
+# Replace @smeltery/maintainers with the actual GitHub team or user handle.
+* @smeltery/maintainers
 ```
 
-If the team `@dotbrains/maintainers` does not exist, swap in a personal handle (e.g. `@nicholasadamou`) so PR review assignment works. Verify by running:
+If the team `@smeltery/maintainers` does not exist, swap in a personal handle (e.g. `@nicholasadamou`) so PR review assignment works. Verify by running:
 
 ```bash
-gh api orgs/dotbrains/teams/maintainers --silent && echo "team exists" || echo "team missing — use a personal handle"
+gh api orgs/smeltery/teams/maintainers --silent && echo "team exists" || echo "team missing — use a personal handle"
 ```
 
 - [ ] **Step 4: Commit and push**
@@ -999,7 +999,7 @@ Expected: CI passes again (these files don't affect tests, mypy, or ruff).
 Run:
 
 ```bash
-gh repo edit dotbrains/eden \
+gh repo edit smeltery/eden \
   --description "Python orchestrator for AI coding agents in sandboxed worktrees." \
   --add-topic agents \
   --add-topic claude-code \
@@ -1018,7 +1018,7 @@ Expected: command exits 0. Verify on github.com that topics appear.
 Run:
 
 ```bash
-gh api -X PUT repos/dotbrains/eden/branches/main/protection \
+gh api -X PUT repos/smeltery/eden/branches/main/protection \
   -F required_status_checks.strict=true \
   -F 'required_status_checks.contexts[]=test (ubuntu-latest / py3.11)' \
   -F 'required_status_checks.contexts[]=test (ubuntu-latest / py3.12)' \
@@ -1044,7 +1044,7 @@ If the command errors with "Required status check ... is not yet reporting," tha
 Verify:
 
 ```bash
-gh api repos/dotbrains/eden/branches/main/protection | jq '.required_status_checks.contexts'
+gh api repos/smeltery/eden/branches/main/protection | jq '.required_status_checks.contexts'
 ```
 
 Expected: lists all 9 matrix job names.
@@ -1052,7 +1052,7 @@ Expected: lists all 9 matrix job names.
 - [ ] **Step 3: Disable wikis and projects (not used)**
 
 ```bash
-gh repo edit dotbrains/eden --enable-wiki=false --enable-projects=false
+gh repo edit smeltery/eden --enable-wiki=false --enable-projects=false
 ```
 
 Expected: command exits 0.
@@ -1071,7 +1071,7 @@ Run:
 ```bash
 TMP=$(mktemp -d)
 cd "$TMP"
-git clone git@github.com:dotbrains/eden.git
+git clone git@github.com:smeltery/eden.git
 cd eden
 python3 -m venv .venv
 . .venv/bin/activate
@@ -1115,7 +1115,7 @@ Expected:
 
 ```bash
 deactivate
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden
 rm -rf "$TMP"
 ```
 

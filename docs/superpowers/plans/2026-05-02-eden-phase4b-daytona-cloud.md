@@ -56,7 +56,7 @@ README.md                            # MODIFY — bump status to phase 4b comple
 - [ ] **Step 1: Confirm working tree clean and on main**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   git status -s && git rev-parse --abbrev-ref HEAD && git log --oneline -1
 ```
 Expected: empty status, branch `main`, commit `2fc561a docs: add phase 4b ...` (or later).
@@ -64,7 +64,7 @@ Expected: empty status, branch `main`, commit `2fc561a docs: add phase 4b ...` (
 - [ ] **Step 2: Confirm Phase 4a suite passes**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3
 ```
 Expected: `343 passed` (Phase 4a baseline). If lower, stop and investigate.
@@ -72,7 +72,7 @@ Expected: `343 passed` (Phase 4a baseline). If lower, stop and investigate.
 - [ ] **Step 3: Verify `requests` is available locally for testing**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   .venv/bin/python -c "import requests; print(requests.__version__)" 2>&1
 ```
 Expected: prints a version >= 2.32. If `ModuleNotFoundError`, the implementer can `pip install 'requests>=2.32'` into the venv now (the formal `pyproject.toml` change is in Task 2).
@@ -167,7 +167,7 @@ def test_rest_error_carries_cause() -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_errors_phase4b.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_errors_phase4b.py -v`
 Expected: FAIL — `RestError` and subclasses not importable.
 
 - [ ] **Step 3: Append the 4 new error classes to `eden/errors.py`**
@@ -270,18 +270,18 @@ The `_format` helper and `EdenError` base class already exist in `eden/errors.py
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_errors_phase4b.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_errors_phase4b.py -v`
 Expected: PASS — 10 tests.
 
 - [ ] **Step 5: Pre-existing errors tests still pass**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_errors.py tests/unit/test_errors_phase3a.py tests/unit/test_errors_phase3b.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_errors.py tests/unit/test_errors_phase3a.py tests/unit/test_errors_phase3b.py -v`
 Expected: PASS (no regression — Phase 2 + 3a + 3b errors untouched).
 
 - [ ] **Step 6: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/errors.py tests/unit/test_errors_phase4b.py && \
 .venv/bin/ruff format eden/errors.py tests/unit/test_errors_phase4b.py && \
 .venv/bin/ruff format --check eden/errors.py tests/unit/test_errors_phase4b.py && \
@@ -293,7 +293,7 @@ Expected: All clean.
 - [ ] **Step 7: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/errors.py tests/unit/test_errors_phase4b.py && \
 git commit -m "feat(errors): add RestError + RestAuthError/RestNotFoundError/RestRateLimited"
 ```
@@ -323,7 +323,7 @@ vercel = ["requests >= 2.32"]
 - [ ] **Step 2: Install the new dep into the venv**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   .venv/bin/pip install -e '.[daytona,dev]' 2>&1 | tail -5
 ```
 Expected: succeeds; `requests` and its deps installed.
@@ -333,7 +333,7 @@ If `'.[dev]'` doesn't exist as an extras spec, drop it: `.venv/bin/pip install -
 - [ ] **Step 3: Verify install**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   .venv/bin/python -c "import requests; print(requests.__version__)"
 ```
 Expected: prints version >= 2.32.
@@ -546,7 +546,7 @@ def test_request_exception_retried_then_raises(monkeypatch: pytest.MonkeyPatch) 
 
 - [ ] **Step 5: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_http_rest.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_http_rest.py -v`
 Expected: FAIL — `eden.providers._impl.http_rest` not found.
 
 - [ ] **Step 6: Implement RestClient**
@@ -696,13 +696,13 @@ __all__ = ["RestClient"]
 
 - [ ] **Step 7: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_http_rest.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_http_rest.py -v`
 Expected: PASS — 13 tests.
 
 - [ ] **Step 8: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/providers/_impl/http_rest.py tests/unit/test_http_rest.py && \
 .venv/bin/ruff format eden/providers/_impl/http_rest.py tests/unit/test_http_rest.py && \
 .venv/bin/ruff format --check eden/providers/_impl/http_rest.py tests/unit/test_http_rest.py && \
@@ -714,7 +714,7 @@ Expected: All clean.
 - [ ] **Step 9: Commit (stage by name — only 3 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add pyproject.toml eden/providers/_impl/http_rest.py tests/unit/test_http_rest.py && \
 git commit -m "feat(http_rest): add RestClient with retry + auth + error mapping"
 ```
@@ -996,7 +996,7 @@ def test_handle_close_idempotent_on_not_found() -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v`
 Expected: FAIL — `eden.sandboxes.daytona` not found.
 
 - [ ] **Step 3: Implement the daytona provider (without finalize)**
@@ -1259,13 +1259,13 @@ Note: `finalize` is a stub returning `FinalizeResult(applied=False, ...)` for no
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v`
 Expected: PASS — 13 tests.
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/sandboxes/daytona tests/unit/test_daytona_provider.py && \
 .venv/bin/ruff format eden/sandboxes/daytona/__init__.py tests/unit/test_daytona_provider.py && \
 .venv/bin/ruff format --check eden/sandboxes/daytona/__init__.py tests/unit/test_daytona_provider.py && \
@@ -1277,7 +1277,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/sandboxes/daytona/__init__.py tests/unit/test_daytona_provider.py && \
 git commit -m "feat(daytona): add factory + _DaytonaHandle (exec/copy/close); finalize stub"
 ```
@@ -1387,7 +1387,7 @@ def test_finalize_returns_not_applied_on_snapshot_failure(tmp_path: Path) -> Non
 
 - [ ] **Step 2: Run tests to verify they fail (because finalize is stubbed)**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v 2>&1 | tail -10`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v 2>&1 | tail -10`
 Expected: FAIL — the new tests want real finalize behavior; the stub returns `applied=False` for everything.
 
 - [ ] **Step 3: Replace the finalize stub with the real implementation**
@@ -1439,13 +1439,13 @@ from eden.providers._impl import patch_sync
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_daytona_provider.py -v`
 Expected: PASS — 17 tests (13 from Task 3 + 4 new).
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/sandboxes/daytona tests/unit/test_daytona_provider.py && \
 .venv/bin/ruff format eden/sandboxes/daytona/__init__.py tests/unit/test_daytona_provider.py && \
 .venv/bin/ruff format --check eden/sandboxes/daytona/__init__.py tests/unit/test_daytona_provider.py && \
@@ -1457,7 +1457,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/sandboxes/daytona/__init__.py tests/unit/test_daytona_provider.py && \
 git commit -m "feat(daytona): implement finalize via patch_sync.diff/apply over remote snapshot"
 ```
@@ -1502,7 +1502,7 @@ Add `"RestAuthError"`, `"RestError"`, `"RestNotFoundError"`, `"RestRateLimited"`
 - [ ] **Step 3: Verify imports**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/python -c "import eden; assert eden.RestError is not None; assert eden.RestAuthError is not None; assert eden.RestNotFoundError is not None; assert eden.RestRateLimited is not None; print('ok')"
 ```
 Expected: `ok`.
@@ -1510,7 +1510,7 @@ Expected: `ok`.
 - [ ] **Step 4: Run full unit + e2e suite (regression check)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/pytest -m "unit or e2e" --no-cov -q
 ```
 Expected: All tests pass. Total: 343 (Phase 4a baseline) + new tests through Task 4. Specifically:
@@ -1523,7 +1523,7 @@ Expected: All tests pass. Total: 343 (Phase 4a baseline) + new tests through Tas
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden && \
 .venv/bin/ruff format eden/__init__.py && \
 .venv/bin/ruff format --check eden/__init__.py && \
@@ -1535,7 +1535,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 1 file)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/__init__.py && \
 git commit -m "feat(eden): re-export RestError + RestAuthError/RestNotFoundError/RestRateLimited"
 ```
@@ -1704,13 +1704,13 @@ __all__ = ["start_fake_daytona"]
 
 - [ ] **Step 2: Verify imports**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/python -c "from tests._fake_daytona import start_fake_daytona; print('ok')"`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/python -c "from tests._fake_daytona import start_fake_daytona; print('ok')"`
 Expected: `ok`.
 
 - [ ] **Step 3: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy tests/_fake_daytona && \
 .venv/bin/ruff format tests/_fake_daytona/__init__.py && \
 .venv/bin/ruff format --check tests/_fake_daytona/__init__.py && \
@@ -1722,7 +1722,7 @@ Expected: All clean.
 - [ ] **Step 4: Commit (stage by name — only 1 file)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add tests/_fake_daytona/__init__.py && \
 git commit -m "test: add fake-daytona ThreadingHTTPServer for phase 4b e2e tests"
 ```
@@ -1840,7 +1840,7 @@ def test_daytona_finalize_propagates_deletes(
 
 - [ ] **Step 2: Run the e2e tests**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/e2e/test_daytona_smoke.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/e2e/test_daytona_smoke.py -v`
 Expected: PASS — 2 tests on macOS/Linux. (Skipped on Windows.)
 
 If a test fails, the most likely causes:
@@ -1852,13 +1852,13 @@ If the test asserts the fake server's port is bound but the real `eden.run(...)`
 
 - [ ] **Step 3: Run combined unit + e2e (regression check)**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q`
 Expected: All tests pass. Total: 383 (after T5) + 2 = **385 tests**.
 
 - [ ] **Step 4: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy tests/e2e/test_daytona_smoke.py && \
 .venv/bin/ruff format tests/e2e/test_daytona_smoke.py && \
 .venv/bin/ruff format --check tests/e2e/test_daytona_smoke.py && \
@@ -1870,7 +1870,7 @@ Expected: All clean.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add tests/e2e/test_daytona_smoke.py && \
 git commit -m "test(e2e): add daytona smoke run via fake-daytona server"
 ```
@@ -1893,7 +1893,7 @@ Edit `README.md:5` (the `> **Status:** ...` blockquote). Replace the existing li
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add README.md && \
 git commit -m "docs: bump README status to phase 4b complete"
 ```
@@ -1905,7 +1905,7 @@ git commit -m "docs: bump README status to phase 4b complete"
 - [ ] **Step 1: Full local CI parity check**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/ruff format --check eden tests && \
 .venv/bin/ruff check --no-cache eden tests && \
 .venv/bin/mypy --strict eden tests && \

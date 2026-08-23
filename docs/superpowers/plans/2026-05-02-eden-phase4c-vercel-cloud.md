@@ -49,7 +49,7 @@ README.md                            # MODIFY — bump status to phase 4c comple
 - [ ] **Step 1: Confirm working tree clean and on main**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   git status -s && git rev-parse --abbrev-ref HEAD && git log --oneline -1
 ```
 Expected: empty status, branch `main`, commit `0a2cb5f docs: add phase 4c ...` (or later).
@@ -57,7 +57,7 @@ Expected: empty status, branch `main`, commit `0a2cb5f docs: add phase 4c ...` (
 - [ ] **Step 2: Confirm Phase 4b suite passes**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3
 ```
 Expected: `385 passed` (Phase 4b baseline).
@@ -353,7 +353,7 @@ def test_handle_close_idempotent_on_not_found() -> None:
 
 - [ ] **Step 2: Run failing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v`
 Expected: FAIL — `eden.sandboxes.vercel` not found.
 
 - [ ] **Step 3: Implement the vercel provider**
@@ -658,7 +658,7 @@ If the existing `RestClient.post` already accepts `params=None` (it does — Pha
 Read the existing `RestClient` first:
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   cat eden/providers/_impl/http_rest.py | head -80
 ```
 
@@ -671,7 +671,7 @@ If `post()` only accepts `json` and not `params`, **extend it first**:
 If you do extend `RestClient`, commit that change separately:
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/providers/_impl/http_rest.py && \
 git commit -m "feat(http_rest): surface params kwarg on RestClient.post/delete"
 ```
@@ -680,13 +680,13 @@ Then proceed with the vercel commit below.
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v`
 Expected: PASS — 13 tests.
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/sandboxes/vercel tests/unit/test_vercel_provider.py && \
 .venv/bin/ruff format eden/sandboxes/vercel/__init__.py tests/unit/test_vercel_provider.py && \
 .venv/bin/ruff format --check eden/sandboxes/vercel/__init__.py tests/unit/test_vercel_provider.py && \
@@ -698,7 +698,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/sandboxes/vercel/__init__.py tests/unit/test_vercel_provider.py && \
 git commit -m "feat(vercel): add factory + _VercelHandle (exec/copy/close); finalize stub"
 ```
@@ -808,7 +808,7 @@ def test_finalize_returns_not_applied_on_snapshot_failure(tmp_path: Path) -> Non
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v 2>&1 | tail -10`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v 2>&1 | tail -10`
 Expected: FAIL — the stub returns `applied=False` for everything.
 
 - [ ] **Step 3: Replace the finalize stub**
@@ -855,13 +855,13 @@ Replace with:
 
 - [ ] **Step 4: Run passing test**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/unit/test_vercel_provider.py -v`
 Expected: PASS — 17 tests (13 from T1 + 4 new).
 
 - [ ] **Step 5: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy eden/sandboxes/vercel tests/unit/test_vercel_provider.py && \
 .venv/bin/ruff format eden/sandboxes/vercel/__init__.py tests/unit/test_vercel_provider.py && \
 .venv/bin/ruff format --check eden/sandboxes/vercel/__init__.py tests/unit/test_vercel_provider.py && \
@@ -873,7 +873,7 @@ Expected: All clean.
 - [ ] **Step 6: Commit (stage by name — only 2 files)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add eden/sandboxes/vercel/__init__.py tests/unit/test_vercel_provider.py && \
 git commit -m "feat(vercel): implement finalize via patch_sync.diff/apply over remote snapshot"
 ```
@@ -1045,13 +1045,13 @@ __all__ = ["start_fake_vercel"]
 
 - [ ] **Step 2: Verify imports**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/python -c "from tests._fake_vercel import start_fake_vercel; print('ok')"`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/python -c "from tests._fake_vercel import start_fake_vercel; print('ok')"`
 Expected: `ok`.
 
 - [ ] **Step 3: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy tests/_fake_vercel && \
 .venv/bin/ruff format tests/_fake_vercel/__init__.py && \
 .venv/bin/ruff format --check tests/_fake_vercel/__init__.py && \
@@ -1063,7 +1063,7 @@ Expected: All clean.
 - [ ] **Step 4: Commit (stage by name — only 1 file)**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add tests/_fake_vercel/__init__.py && \
 git commit -m "test: add fake-vercel ThreadingHTTPServer for phase 4c e2e tests"
 ```
@@ -1181,18 +1181,18 @@ def test_vercel_finalize_propagates_deletes(
 
 - [ ] **Step 2: Run the e2e tests**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest tests/e2e/test_vercel_smoke.py -v`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest tests/e2e/test_vercel_smoke.py -v`
 Expected: PASS — 2 tests on macOS/Linux.
 
 - [ ] **Step 3: Run combined unit + e2e suite (regression check)**
 
-`cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3`
+`cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3`
 Expected: All tests pass. Total: 385 (Phase 4b) + 17 unit + 2 e2e + (possibly 1 if RestClient was extended) = ~404 tests.
 
 - [ ] **Step 4: mypy + ruff**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/mypy tests/e2e/test_vercel_smoke.py && \
 .venv/bin/ruff format tests/e2e/test_vercel_smoke.py && \
 .venv/bin/ruff format --check tests/e2e/test_vercel_smoke.py && \
@@ -1204,7 +1204,7 @@ Expected: All clean.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add tests/e2e/test_vercel_smoke.py && \
 git commit -m "test(e2e): add vercel smoke run via fake-vercel server"
 ```
@@ -1227,7 +1227,7 @@ Edit `README.md:5`. Replace the existing line with:
 - [ ] **Step 2: Commit**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 git add README.md && \
 git commit -m "docs: bump README status to phase 4c complete"
 ```
@@ -1239,7 +1239,7 @@ git commit -m "docs: bump README status to phase 4c complete"
 - [ ] **Step 1: Full local CI parity check**
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
 .venv/bin/ruff format --check eden tests && \
 .venv/bin/ruff check --no-cache eden tests && \
 .venv/bin/mypy --strict eden tests && \

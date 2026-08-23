@@ -10,7 +10,7 @@ Eden today is a Rust workspace (~14k LoC across 5 crates) that orchestrates AI c
 
 The benchmark for "as simple as possible" is a programmatic API that boils down to a single `run({ agent, sandbox, promptFile })` call plus an `init` command for scaffolding.
 
-The directory `/Users/nicholas/Documents/GitHub/github.com/dotbrains/eden` exists but is **not yet a git repo**, and Eden has **no users**. The rewrite is therefore unconstrained by API stability or migration concerns.
+The directory `/Users/nicholas/Documents/GitHub/github.com/smeltery/eden` exists but is **not yet a git repo**, and Eden has **no users**. The rewrite is therefore unconstrained by API stability or migration concerns.
 
 ## Goals
 
@@ -635,7 +635,7 @@ All result types are frozen dataclasses — values, not objects.
 ### Day 0 — Initialize repo
 
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden
 rm -rf crates/ scripts/
 rm -f  Cargo.toml Cargo.lock CONTEXT.md README.md
 # Wipe Rust-flavored docs but preserve docs/superpowers/ (working specs / this file).
@@ -646,8 +646,8 @@ git init -b main
 git add LICENSE docs/superpowers
 git commit -m "chore: initial commit (PolyForm Shield 1.0.0)"
 
-gh repo create dotbrains/eden --public --source=. --remote=origin --push
-# OR: git remote add origin git@github.com:dotbrains/eden.git && git push -u origin main
+gh repo create smeltery/eden --public --source=. --remote=origin --push
+# OR: git remote add origin git@github.com:smeltery/eden.git && git push -u origin main
 ```
 
 No Rust history is preserved; the directory was never a git repo. `docs/superpowers/` is preserved because it holds this design spec and any future planning artifacts.
@@ -676,7 +676,7 @@ No Rust history is preserved; the directory was never a git repo. `docs/superpow
 | Default branch | `main` |
 | Branch protection on `main` | Require PR; require CI green; no force-push. |
 | Issue / PR templates | `.github/ISSUE_TEMPLATE/{bug.md, feature.md}`, `.github/PULL_REQUEST_TEMPLATE.md` |
-| `CODEOWNERS` | `* @dotbrains/maintainers` |
+| `CODEOWNERS` | `* @smeltery/maintainers` |
 | Actions secrets | `PYPI_API_TOKEN` (added in phase 7). |
 
 ### `docs/` structure (rebuilt in phase 7)
@@ -719,7 +719,7 @@ ADRs are written from scratch for this Python design; nothing carries forward fr
 |---|---|
 | Patch-sync (isolated provider) is intricate to design from scratch. | Ship correct-but-slow first in phase 4; optimize once tests pass. |
 | Windows subprocess/signal quirks. | Run Windows in CI from phase 1; raise clear errors with hints where Unix-only behavior doesn't translate. |
-| PyPI name `eden-agent` may be taken. | Reserve before phase 1. Backups: `eden-orchestrator`, `dotbrains-eden`. |
+| PyPI name `eden-agent` may be taken. | Reserve before phase 1. Backups: `eden-orchestrator`, `smeltery-eden`. |
 | Performance regression vs Rust. | Subprocess startup dominates wall time; Python overhead is noise. Phase 7 micro-benchmark documents the tradeoff. |
 
 ### Out of scope for v1

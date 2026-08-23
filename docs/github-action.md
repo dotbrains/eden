@@ -17,7 +17,7 @@ jobs:
       issues: write         # for the github backlog manager to close issues
     steps:
       - uses: actions/checkout@v4
-      - uses: dotbrains/eden@v0.1.0
+      - uses: smeltery/eden@v0.1.0
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

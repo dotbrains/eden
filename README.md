@@ -1,6 +1,6 @@
 # Eden
 
-[![CI](https://github.com/dotbrains/eden/actions/workflows/ci.yml/badge.svg)](https://github.com/dotbrains/eden/actions/workflows/ci.yml)
+[![CI](https://github.com/smeltery/eden/actions/workflows/ci.yml/badge.svg)](https://github.com/smeltery/eden/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/eden-agent.svg?cacheSeconds=300)](https://pypi.org/project/eden-agent/)
 [![Python](https://img.shields.io/pypi/pyversions/eden-agent.svg?cacheSeconds=300)](https://pypi.org/project/eden-agent/)
 [![License](https://img.shields.io/badge/license-PolyForm%20Shield-blue)](LICENSE)

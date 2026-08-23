@@ -1031,7 +1031,7 @@ Local setup, test markers, lint and type gates, and how to publish a release.
 ## Local setup
 
 ```bash
-git clone https://github.com/dotbrains/eden.git
+git clone https://github.com/smeltery/eden.git
 cd eden
 python3 -m venv .venv
 . .venv/bin/activate
@@ -1099,7 +1099,7 @@ Required once, before the first publish:
 
 1. Visit https://pypi.org/manage/project/eden-agent/settings/publishing/ (project owner only).
 2. Add a new pending publisher:
-   - Owner: `dotbrains`
+   - Owner: `smeltery`
    - Repository: `eden`
    - Workflow filename: `release.yml`
    - Environment name: `pypi`
@@ -1257,7 +1257,7 @@ Replace the entire contents of `README.md` with:
 ```markdown
 # Eden
 
-[![CI](https://github.com/dotbrains/eden/actions/workflows/ci.yml/badge.svg)](https://github.com/dotbrains/eden/actions/workflows/ci.yml)
+[![CI](https://github.com/smeltery/eden/actions/workflows/ci.yml/badge.svg)](https://github.com/smeltery/eden/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/eden-agent.svg)](https://pypi.org/project/eden-agent/)
 [![Python](https://img.shields.io/pypi/pyversions/eden-agent.svg)](https://pypi.org/project/eden-agent/)
 [![License](https://img.shields.io/badge/license-PolyForm%20Shield-blue)](LICENSE)
@@ -1545,7 +1545,7 @@ git tag v0.1.0-rc1 -m "v0.1.0 release candidate 1" && git push origin v0.1.0-rc1
 ```
 Expected: pushes the tag. The `release.yml` workflow triggers; check `gh run watch` or the Actions tab.
 
-**Note for the executor:** This step assumes PyPI Trusted Publishing is configured for `eden-agent` on TestPyPI with `dotbrains/eden`, workflow `release.yml`, environment `testpypi`. If not configured, the publish step fails — configure per `docs/development.md` and re-run the workflow via the GH UI. **Pause here and confirm the user wants to proceed before running steps 3-4.**
+**Note for the executor:** This step assumes PyPI Trusted Publishing is configured for `eden-agent` on TestPyPI with `smeltery/eden`, workflow `release.yml`, environment `testpypi`. If not configured, the publish step fails — configure per `docs/development.md` and re-run the workflow via the GH UI. **Pause here and confirm the user wants to proceed before running steps 3-4.**
 
 - [ ] **Step 3: After confirming TestPyPI upload succeeded, tag production**
 

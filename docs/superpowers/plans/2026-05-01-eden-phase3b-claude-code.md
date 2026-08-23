@@ -83,7 +83,7 @@ README.md                                   # MODIFY — bump status to phase 3b
 
 Run:
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   git status -s && git rev-parse --abbrev-ref HEAD && git log --oneline -1
 ```
 Expected: empty status, branch `main`, commit `ae5e2b2 docs: add phase 3b ...` (or later).
@@ -92,7 +92,7 @@ Expected: empty status, branch `main`, commit `ae5e2b2 docs: add phase 3b ...` (
 
 Run:
 ```bash
-cd /Users/nicholas/Documents/GitHub/github.com/dotbrains/eden && \
+cd /Users/nicholas/Documents/GitHub/github.com/smeltery/eden && \
   .venv/bin/pytest -m "unit or e2e" --no-cov -q 2>&1 | tail -3
 ```
 Expected: `241 passed` (Phase 3a baseline). If lower, stop and investigate.

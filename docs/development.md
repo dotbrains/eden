@@ -7,7 +7,7 @@ Local setup, repo layout, test markers, lint and type gates.
 ## Local setup
 
 ```bash
-git clone https://github.com/dotbrains/eden.git
+git clone https://github.com/smeltery/eden.git
 cd eden
 python3 -m venv .venv
 . .venv/bin/activate

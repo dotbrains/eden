@@ -222,7 +222,7 @@ ships.
   (`.flox/env/manifest.toml`). When set, Eden runs the agent CLI inside it via
   `flox activate -d <dir> -- <argv>`, so each agent type gets its own declared,
   lockfile-pinned toolchain instead of inheriting the host's (mirrors
-  [blacksmith's per-identity Flox env](https://github.com/dotbrains/blacksmith/pull/2)).
+  [blacksmith's per-identity Flox env](https://github.com/smeltery/blacksmith/pull/2)).
   Enforced when present: a declared env whose manifest is missing — or a missing
   `flox` binary — raises the new `FloxEnvError`; set `EDEN_ALLOW_NO_FLOX=1` to
   skip activation where Flox is unavailable (Windows / CI smoke tests). Agents
