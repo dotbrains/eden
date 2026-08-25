@@ -23,7 +23,7 @@ _CAPABILITIES: dict[str, ProviderCapabilities] = {
     "isolated": ProviderCapabilities(ports="dynamic", background_exec=True),
     "daytona": ProviderCapabilities(ports="dynamic", background_exec=True),
     "vercel": ProviderCapabilities(ports="static", background_exec=True),
-  # forkd guest agent exposes no public port-forward or background-exec SDK surface.
+    # forkd guest agent exposes no public port-forward or background-exec SDK surface.
     "forkd": ProviderCapabilities(ports="unsupported", background_exec=False),
 }
 
