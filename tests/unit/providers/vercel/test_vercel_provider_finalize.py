@@ -14,13 +14,13 @@ pytestmark = pytest.mark.unit
 
 
 def test_finalize_no_changes_returns_applied_true(tmp_path: Path) -> None:
-    """When sandbox snapshot equals baseline, finalize is a no-op success."""
     from eden.sandboxes.vercel import _VercelHandle
 
-    client = mock_client({"stdout": "", "stderr": "", "exit_code": 0})
+    client = mock_client({"stdout": "", "stderr": "", "exitCode": 0})
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=tmp_path,
         baseline={},
@@ -33,21 +33,21 @@ def test_finalize_no_changes_returns_applied_true(tmp_path: Path) -> None:
 
 
 def test_finalize_pulls_added_files_to_target(tmp_path: Path) -> None:
-    """Sandbox has a file not in baseline - finalize REST-pulls it to target."""
     from eden.sandboxes.vercel import _VercelHandle
 
     target = tmp_path / "target"
     target.mkdir()
 
-    base64_payload = "aGVsbG8="  # "hello"
+    base64_payload = "aGVsbG8="
     client = MagicMock(spec=RestClient)
     client.post.side_effect = [
-        {"stdout": "abc123  ./new.txt\n", "stderr": "", "exit_code": 0},
-        {"stdout": base64_payload, "stderr": "", "exit_code": 0},
+        {"stdout": "abc123  ./new.txt\n", "stderr": "", "exitCode": 0},
+        {"stdout": base64_payload, "stderr": "", "exitCode": 0},
     ]
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=target,
         baseline={},
@@ -60,17 +60,17 @@ def test_finalize_pulls_added_files_to_target(tmp_path: Path) -> None:
 
 
 def test_finalize_propagates_deletes(tmp_path: Path) -> None:
-    """Baseline has a file; sandbox snapshot doesn't - finalize removes it from target."""
     from eden.sandboxes.vercel import _VercelHandle
 
     target = tmp_path / "target"
     target.mkdir()
     (target / "to_delete.txt").write_text("gone soon", encoding="utf-8")
 
-    client = mock_client({"stdout": "", "stderr": "", "exit_code": 0})
+    client = mock_client({"stdout": "", "stderr": "", "exitCode": 0})
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=target,
         baseline={Path("to_delete.txt"): "old-hash"},
@@ -82,14 +82,14 @@ def test_finalize_propagates_deletes(tmp_path: Path) -> None:
 
 
 def test_finalize_returns_not_applied_on_snapshot_failure(tmp_path: Path) -> None:
-    """REST failure during finalize snapshot soft-fails."""
     from eden.sandboxes.vercel import _VercelHandle
 
     client = MagicMock(spec=RestClient)
     client.post.side_effect = RuntimeError("network down")
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=tmp_path,
         baseline={},

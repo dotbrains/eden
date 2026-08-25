@@ -59,7 +59,13 @@ def test_create_reads_token_from_env(
     class _ClientFactory:
         def __init__(self, **kw: object) -> None:
             captured_headers.update(kw["headers"])  # type: ignore[call-overload]
-            self.post = MagicMock(return_value={"id": "sb-1"})
+            self.post = MagicMock(
+                return_value={
+                    "sandbox": {"name": "sb-1"},
+                    "session": {"id": "sess-1"},
+                    "routes": [],
+                }
+            )
             self.close = MagicMock()
             self.delete = MagicMock()
 
@@ -78,7 +84,13 @@ def test_create_uses_explicit_base_url(
     class _ClientFactory:
         def __init__(self, **kw: object) -> None:
             captured_url["base_url"] = str(kw["base_url"])
-            self.post = MagicMock(return_value={"id": "sb-1"})
+            self.post = MagicMock(
+                return_value={
+                    "sandbox": {"name": "sb-1"},
+                    "session": {"id": "sess-1"},
+                    "routes": [],
+                }
+            )
             self.close = MagicMock()
             self.delete = MagicMock()
 
@@ -101,10 +113,14 @@ def test_create_posts_sandbox_with_runtime_and_env(
             self.delete = MagicMock()
 
         def _post(self, path: str, *, json: object, params: object = None) -> dict[str, object]:
-            if path == "/v1/sandboxes":
+            if path == "/v4/sandboxes":
                 captured_payload["payload"] = json
-                return {"id": "sb-9"}
-            return {"stdout": "", "stderr": "", "exit_code": 0}
+                return {
+                    "sandbox": {"name": "sb-9"},
+                    "session": {"id": "sess-9"},
+                    "routes": [],
+                }
+            return {"stdout": "", "stderr": "", "exitCode": 0}
 
     monkeypatch.setattr("eden.sandboxes.vercel.RestClient", _ClientFactory)
     p = vercel_provider(access_token="t", runtime="python313", env={"FOO": "bar"})
@@ -130,9 +146,13 @@ def test_team_id_threaded_as_query_param(
 
         def _post(self, path: str, *, json: object, params: object = None) -> dict[str, object]:
             captured_calls.append({"path": path, "params": params})
-            if path == "/v1/sandboxes":
-                return {"id": "sb-7"}
-            return {"stdout": "", "stderr": "", "exit_code": 0}
+            if path == "/v4/sandboxes":
+                return {
+                    "sandbox": {"name": "sb-7"},
+                    "session": {"id": "sess-7"},
+                    "routes": [],
+                }
+            return {"stdout": "", "stderr": "", "exitCode": 0}
 
         def _delete(self, path: str, *, params: object = None) -> None:
             captured_calls.append({"path": path, "params": params, "method": "DELETE"})

@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from pathlib import Path
 from typing import Literal, Protocol, runtime_checkable
 
-from eden.providers._types import BranchStrategy, CreateOptions, ExecResult, FinalizeResult
+from eden.providers._types import (
+    BranchStrategy,
+    CreateOptions,
+    ExecResult,
+    ExposedPort,
+    FinalizeResult,
+    ProcessStatus,
+)
 
 
 @runtime_checkable
@@ -39,6 +46,39 @@ class SandboxHandle(Protocol):
     def copy_file_out(self, sandbox: Path, host: Path) -> None: ...
 
     def close(self) -> None: ...
+
+
+@runtime_checkable
+class SupportsPorts(SandboxHandle, Protocol):
+    """Optional. Detected via ``hasattr(handle, "expose_port")``."""
+
+    def expose_port(self, port: int, *, public: bool = False) -> ExposedPort: ...
+
+
+@runtime_checkable
+class SandboxProcess(Protocol):
+    def status(self) -> ProcessStatus: ...
+
+    def output(self) -> Iterator[str]: ...
+
+    def write(self, data: str) -> None: ...
+
+    def wait(self, *, timeout: float | None = None) -> ExecResult: ...
+
+    def kill(self) -> None: ...
+
+
+@runtime_checkable
+class SupportsBackgroundExec(SandboxHandle, Protocol):
+    """Optional. Detected via ``hasattr(handle, "start")``."""
+
+    def start(
+        self,
+        cmd: str,
+        *,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> SandboxProcess: ...
 
 
 @runtime_checkable

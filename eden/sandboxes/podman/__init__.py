@@ -24,6 +24,7 @@ def provider(
     cpus: float | None = None,
     groups: tuple[str | int, ...] | None = None,
     userns: Literal["keep-id"] | None = "keep-id",
+    ports: tuple[int, ...] | None = None,
     max_output_tail_chars: int = DEFAULT_MAX_CHARS,
     create_timeout: float = 120.0,
 ) -> SandboxProvider:
@@ -60,6 +61,7 @@ def provider(
         userns=userns,
         max_output_tail_chars=max_output_tail_chars,
         create_timeout=create_timeout,
+        ports=ports,
     )
 
 

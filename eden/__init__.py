@@ -14,13 +14,7 @@ from eden.agents import (
     pi,
     simulated_agent,
 )
-from eden.display import (
-    Display,
-    DisplayEntry,
-    FileDisplay,
-    RichDisplay,
-    SilentDisplay,
-)
+from eden.display import Display, DisplayEntry, FileDisplay, RichDisplay, SilentDisplay
 from eden.errors import (
     AgentError,
     ConfigError,
@@ -50,16 +44,31 @@ from eden.logging import Logging
 from eden.orchestrator import create_worktree, run
 from eden.orchestrator.interactive import InteractiveResult, interactive
 from eden.output import Output, OutputDefinition
-from eden.providers import make_bind_mount_provider, make_isolated_provider
-from eden.providers._protocols import (
+from eden.providers import (
     BindMountSandboxHandle,
+    BranchStrategy,
+    CreateOptions,
+    ExecResult,
+    ExposedPort,
+    FinalizeResult,
     IsolatedSandboxHandle,
+    Mount,
+    PortSupport,
+    ProcessStatus,
+    ProviderCapabilities,
     SandboxHandle,
+    SandboxProcess,
     SandboxProvider,
+    SupportsBackgroundExec,
+    SupportsPorts,
+    capabilities_for,
+    make_bind_mount_provider,
+    make_isolated_provider,
 )
-from eden.providers._types import BranchStrategy, CreateOptions, ExecResult, FinalizeResult, Mount
 from eden.sandboxes import Sandbox, create_sandbox
 from eden.session import (
+    ClaudeSessionStorage,
+    CodexSessionStorage,
     claude_host_session_path,
     claude_sandbox_session_path,
     encode_project_path,
@@ -67,8 +76,6 @@ from eden.session import (
     find_codex_session_on_host,
     transfer_session,
 )
-from eden.session._claude import ClaudeSessionStorage
-from eden.session._codex import CodexSessionStorage
 from eden.session._pi import PiSessionStorage
 from eden.session._protocol import SessionStorage
 from eden.streaming import StreamEvent
@@ -96,6 +103,7 @@ __all__ = [
     "EdenTimeoutError",
     "EnvMergeError",
     "ExecResult",
+    "ExposedPort",
     "FileDisplay",
     "FinalizeResult",
     "FloxEnvError",
@@ -117,7 +125,10 @@ __all__ = [
     "Output",
     "OutputDefinition",
     "PiSessionStorage",
+    "PortSupport",
+    "ProcessStatus",
     "PromptError",
+    "ProviderCapabilities",
     "RestAuthError",
     "RestError",
     "RestNotFoundError",
@@ -127,6 +138,7 @@ __all__ = [
     "Sandbox",
     "SandboxHandle",
     "SandboxHooks",
+    "SandboxProcess",
     "SandboxProvider",
     "SessionCaptureFailed",
     "SessionNotFound",
@@ -136,9 +148,12 @@ __all__ = [
     "StepTimeout",
     "StreamEvent",
     "StructuredOutputError",
+    "SupportsBackgroundExec",
+    "SupportsPorts",
     "Timeouts",
     "Usage",
     "__version__",
+    "capabilities_for",
     "claude_code",
     "claude_host_session_path",
     "claude_sandbox_session_path",

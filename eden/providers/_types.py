@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 StrategyTag = Literal["head", "merge_to_head", "named"]
+ProcessState = Literal["running", "exited", "failed", "killed"]
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,19 @@ class Mount:
     host: Path
     sandbox: Path
     read_only: bool = False
+
+
+@dataclass(frozen=True)
+class ExposedPort:
+    port: int
+    url: str
+    public: bool
+
+
+@dataclass(frozen=True)
+class ProcessStatus:
+    state: ProcessState
+    exit_code: int | None
 
 
 @dataclass(frozen=True)

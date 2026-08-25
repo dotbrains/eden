@@ -40,7 +40,8 @@ def test_vercel_wraps_stdin_via_base64_pipe() -> None:
     fake_client.post.return_value = {"stdout": "ok", "stderr": "", "exit_code": 0}
     handle = _VercelHandle(
         client=fake_client,
-        sandbox_id="sb-vercel",
+        session_id="sess-vercel",
+        name="sb-vercel",
         team_id=None,
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),

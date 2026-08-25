@@ -113,7 +113,7 @@ Moved to [MicroVM sandbox providers](microvm-sandbox-providers.md#forkd).
 
 - [Custom providers](custom-providers.md) — implementing your own `SandboxProvider` and `IsolatedSandboxHandle`.
 - [Container sandbox providers](container-sandbox-providers.md) — Docker and Podman details.
-- [Cloud sandbox providers](cloud-sandbox-providers.md) — Daytona and Vercel details.
+- [Cloud sandbox providers](cloud-sandbox-providers.md) — Daytona and Vercel; see [sandbox capabilities](sandbox-capabilities.md).
 - [MicroVM sandbox providers](microvm-sandbox-providers.md) — forkd details.
 - [Sandbox provider usage](sandbox-provider-usage.md) — provider selection flowchart and import examples.
 - [Configuration](configuration.md) — the env vars each cloud provider falls back to.

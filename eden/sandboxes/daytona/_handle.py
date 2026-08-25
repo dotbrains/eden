@@ -8,7 +8,7 @@ from pathlib import Path
 
 from eden.errors import RestNotFoundError
 from eden.providers._impl.http_rest import RestClient
-from eden.providers._types import ExecResult, FinalizeResult
+from eden.providers._types import ExecResult, ExposedPort, FinalizeResult
 from eden.sandboxes._remote_exec import (
     copy_file_in_via_exec,
     copy_file_out_via_exec,
@@ -16,6 +16,7 @@ from eden.sandboxes._remote_exec import (
     snapshot_via_rest_exec,
 )
 from eden.sandboxes.daytona._exec_payload import build_exec_payload
+from eden.sandboxes.daytona._process import start_daytona_process
 
 
 @dataclass
@@ -61,6 +62,28 @@ class DaytonaHandle:
             for line in stdout.splitlines():
                 on_line(line)
         return ExecResult(stdout=stdout, stderr=stderr, exit_code=exit_code)
+
+    def start(
+        self,
+        cmd: str,
+        *,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> object:
+        return start_daytona_process(
+            self.client,
+            sandbox_id=self.sandbox_id,
+            cmd=cmd,
+            cwd=cwd,
+            env=env,
+            timeout=None,
+            stdin=None,
+        )
+
+    def expose_port(self, port: int, *, public: bool = False) -> ExposedPort:
+        resp = self.client.get(f"/api/sandbox/{self.sandbox_id}/ports/{port}/preview-url")
+        url = str(resp.get("url") or resp.get("previewUrl") or resp.get("preview_url") or "")
+        return ExposedPort(port=port, url=url, public=public)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
         copy_file_in_via_exec(self.exec, host=host, sandbox=sandbox)

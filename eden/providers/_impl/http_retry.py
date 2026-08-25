@@ -90,13 +90,14 @@ def raise_status(resp: requests.Response, url: str) -> None:
     body = resp.text
     status = resp.status_code
     msg = f"HTTP {status} from {url}: {body[:200]}"
+    retryable = status in _RETRYABLE_STATUSES
     if status in (401, 403):
-        raise RestAuthError(message=msg, status=status, body=body, url=url)
+        raise RestAuthError(message=msg, status=status, body=body, url=url, retryable=False)
     if status == 404:
-        raise RestNotFoundError(message=msg, status=status, body=body, url=url)
+        raise RestNotFoundError(message=msg, status=status, body=body, url=url, retryable=False)
     if status == 429:
-        raise RestRateLimited(message=msg, status=status, body=body, url=url)
-    raise RestError(message=msg, status=status, body=body, url=url)
+        raise RestRateLimited(message=msg, status=status, body=body, url=url, retryable=True)
+    raise RestError(message=msg, status=status, body=body, url=url, retryable=retryable)
 
 
 __all__ = [

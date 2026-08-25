@@ -19,6 +19,7 @@ Sandbox providers live alongside the public surface but are imported from `eden.
 - [Interactive](python-api-interactive.md) — terminal-attached agent sessions.
 - [Async API](python-api-async.md) — `eden.aio` wrappers for async callers.
 - [Sandboxes and worktrees](python-api-sandboxes.md) — caller-managed `Sandbox`.
+- [Capabilities](python-api-capabilities.md) — ports, background exec, `capabilities_for`.
 - [Worktrees](python-api-worktrees.md) — standalone worktree creation.
 - [Types](python-api-types.md) — configuration dataclasses.
 - [Results](python-api-results.md) — result dataclasses.

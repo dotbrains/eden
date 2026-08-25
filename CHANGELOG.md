@@ -5,6 +5,36 @@ All notable changes to Eden are documented here. Format follows
 project adheres to [Semantic Versioning](https://semver.org/) once 1.0
 ships.
 
+## [Unreleased]
+
+### Added
+
+- **Structured sandbox errors with secret redaction** — `SandboxError` and
+  `RestError` carry `code`, redacted `message`, optional `hint`, and
+  `retryable`. New `eden/_redact.redact_secrets()` for token/key/password and
+  Bearer patterns. `RestError.body` and `.url` are redacted at construction.
+- **Provider capability declarations** — `ProviderCapabilities`,
+  `capabilities_for()`, and a built-in map for all seven providers (`forkd`
+  documents unsupported ports/background exec). See ADR 0019 and
+  `docs/sandbox-capabilities.md`.
+- **Port exposure** — optional `expose_port()` on supported handles, returning
+  `ExposedPort`. Dynamic providers (`no_sandbox`, `isolated`, `daytona`) and
+  static providers (`docker`, `podman`, `vercel` with `ports=` at factory
+  time). `PortNotDeclared` when docker/podman ports were not pre-declared.
+- **Background process handles** — optional `start()` returning `SandboxProcess`
+  with `status()`, `output()`, `write()`, `wait()`, and `kill()`. Shared
+  `LocalProcess` for bind-mount providers; Daytona session commands; Vercel
+  detached session commands.
+
+### Fixed
+
+- **Vercel sandbox API endpoints** — migrate from guessed `/v1/sandboxes/*` to
+  `POST /v4/sandboxes` (create), `POST /v2/sandboxes/sessions/{sessionId}/cmd`
+  (exec), and `DELETE /v2/sandboxes/{name}`. `VercelHandle` now tracks
+  `session_id` and `name` instead of a single opaque id.
+- **forkd `cwd` handling** — stop passing unsupported `cwd=` to the forkd SDK;
+  prefix `cd <cwd> &&` into the command string instead.
+
 ## [1.0.0] - 2026-08-17
 
 ### Changed
