@@ -22,12 +22,10 @@ class LocalProcess:
         self._stdout_q: Queue[Any] = Queue()
         self._stderr_q: Queue[Any] = Queue()
         assert proc.stdout is not None and proc.stderr is not None
-        threading.Thread(
-            target=drain_stream, args=(proc.stdout, self._stdout_q), daemon=True,
-        ).start()
-        threading.Thread(
-            target=drain_stream, args=(proc.stderr, self._stderr_q), daemon=True,
-        ).start()
+        # fmt: off
+        threading.Thread(target=drain_stream, args=(proc.stdout, self._stdout_q), daemon=True).start()  # noqa: E501
+        threading.Thread(target=drain_stream, args=(proc.stderr, self._stderr_q), daemon=True).start()  # noqa: E501
+        # fmt: on
         self._stdout_lines: list[str] = []
         self._stderr_parts: list[str] = []
         self._stdout_done = False
