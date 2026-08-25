@@ -81,6 +81,7 @@ from eden.session._protocol import SessionStorage
 from eden.streaming import StreamEvent
 from eden.worktree import CloseResult
 
+# fmt: off
 __all__ = [
     "AbortController", "AbortSignal", "Aborted", "Agent", "AgentError",
     "BindMountSandboxHandle", "BranchStrategy", "ClaudeSessionStorage", "CloseResult",
@@ -102,3 +103,4 @@ __all__ = [
     "format_error_message", "interactive", "make_bind_mount_provider", "make_isolated_provider",
     "opencode", "pi", "register_shutdown", "run", "simulated_agent", "transfer_session",
 ]
+# fmt: on
