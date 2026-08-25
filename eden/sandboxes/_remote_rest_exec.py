@@ -54,8 +54,8 @@ def _post_exec(
     params: RestParams,
 ) -> dict[str, Any]:
     if params is None:
-        return client.post(endpoint, json={"command": command})
-    return client.post(endpoint, json={"command": command}, params=params)
+        return client.post(endpoint, json={"command": command, "wait": True})
+    return client.post(endpoint, json={"command": command, "wait": True}, params=params)
 
 
 __all__ = ["RestParams", "snapshot_via_rest_exec", "upload_tree_via_rest_exec"]

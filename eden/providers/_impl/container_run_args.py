@@ -74,6 +74,7 @@ def build_run_argv(
     groups: tuple[str | int, ...],
     image: str,
     selinux_label: SelinuxLabel | None,
+    ports: tuple[int, ...] = (),
 ) -> list[str]:
     argv: list[str] = [
         binary,
@@ -110,6 +111,8 @@ def build_run_argv(
         argv.extend(["--device", device])
     for group in groups:
         argv.extend(["--group-add", str(group)])
+    for port in ports:
+        argv.extend(["-p", f"127.0.0.1::{port}"])
     argv.extend([image, "infinity"])
     return argv
 

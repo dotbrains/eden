@@ -29,6 +29,7 @@ def provider(
     organization_id: str | None = None,
     base_url: str | None = None,
     env: Mapping[str, str] | None = None,
+    public: bool = False,
     timeout: float = 60.0,
 ) -> SandboxProvider:
     """Daytona cloud isolated/finalizing sandbox provider.
@@ -40,6 +41,7 @@ def provider(
     """
     fixed_image = image
     fixed_env: dict[str, str] = dict(env) if env else {}
+    fixed_public = public
     fixed_timeout = timeout
 
     def _create(opts: CreateOptions) -> IsolatedSandboxHandle:
@@ -68,6 +70,8 @@ def provider(
                 "image": fixed_image,
                 "env": merged_env,
             }
+            if fixed_public:
+                payload["public"] = True
             if opts.name_hint:
                 payload["name"] = opts.name_hint[:63]
             response = client.post("/api/sandbox", json=payload)

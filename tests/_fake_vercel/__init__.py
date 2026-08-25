@@ -1,10 +1,4 @@
-"""Fake Vercel REST server for e2e tests.
-
-Spins a ThreadingHTTPServer on localhost:<random-port> registering the three
-endpoints _VercelHandle uses. Sandbox state lives in a tmp directory; commands
-run via subprocess.run against that dir, so the e2e test exercises the real
-snapshot/diff/apply flow without an actual Vercel account.
-"""
+"""Fake Vercel REST server for e2e tests."""
 
 from __future__ import annotations
 
@@ -26,22 +20,14 @@ def start_fake_vercel(
     monkeypatch: pytest.MonkeyPatch,
     state_dir: Path,
 ) -> str:
-    """Start a fake-vercel ThreadingHTTPServer on a random port.
-
-    Routes:
-      POST   /v1/sandboxes              → create state_dir/<id>/, return {"id": <id>}
-      POST   /v1/sandboxes/<id>/exec    → subprocess.run(cmd, cwd=state_dir/<id>)
-      DELETE /v1/sandboxes/<id>         → shutil.rmtree(state_dir/<id>)
-
-    Sets VERCEL_TOKEN=test-token and VERCEL_API_URL=<base_url> via
-    monkeypatch.setenv. Returns the base_url string.
-    """
+    """Start a fake-vercel ThreadingHTTPServer on a random port."""
     state_dir.mkdir(parents=True, exist_ok=True)
     sandboxes: dict[str, Path] = {}
+    sessions: dict[str, str] = {}
 
     class _Handler(BaseHTTPRequestHandler):
         def log_message(self, format: str, *args: object) -> None:
-            return  # silence
+            return
 
         def _read_json(self) -> dict[str, object]:
             length = int(self.headers.get("Content-Length", "0"))
@@ -62,30 +48,63 @@ def start_fake_vercel(
         def _path_without_query(self) -> str:
             return self.path.split("?", 1)[0]
 
+        def do_GET(self) -> None:
+            path = self._path_without_query()
+            m = re.match(r"^/v2/sandboxes/sessions/([^/]+)/cmd/([^/]+)$", path)
+            if m:
+                self._send_json(
+                    200,
+                    {
+                        "stdout": "",
+                        "stderr": "",
+                        "exitCode": 0,
+                        "running": False,
+                    },
+                )
+                return
+            self._send_json(404, {"error": f"no such route: {path}"})
+
         def do_POST(self) -> None:
             payload = self._read_json()
             path = self._path_without_query()
-            if path == "/v1/sandboxes":
-                sb_id = uuid.uuid4().hex[:12]
-                sb_root = state_dir / sb_id
+            if path == "/v4/sandboxes":
+                name = str(payload.get("name") or uuid.uuid4().hex[:12])
+                session_id = uuid.uuid4().hex[:12]
+                sb_root = state_dir / name
                 sb_root.mkdir(parents=True, exist_ok=True)
                 (sb_root / "workspace").mkdir(parents=True, exist_ok=True)
-                sandboxes[sb_id] = sb_root
-                self._send_json(200, {"id": sb_id})
+                sandboxes[name] = sb_root
+                sessions[session_id] = name
+                ports_raw = payload.get("ports")
+                ports_list = ports_raw if isinstance(ports_raw, list) else []
+                routes = [
+                    {"port": port, "url": f"http://127.0.0.1:{30000 + int(port)}"}
+                    for port in ports_list
+                    if isinstance(port, int)
+                ]
+                self._send_json(
+                    200,
+                    {
+                        "sandbox": {"name": name},
+                        "session": {"id": session_id},
+                        "routes": routes,
+                    },
+                )
                 return
-            # /v1/sandboxes/<id>/exec
-            m = re.match(r"^/v1/sandboxes/([^/]+)/exec$", path)
+            m = re.match(r"^/v2/sandboxes/sessions/([^/]+)/cmd$", path)
             if m:
-                sb_id = m.group(1)
-                exec_root = sandboxes.get(sb_id)
+                cmd_session_id = m.group(1) or ""
+                sandbox_name = sessions.get(cmd_session_id)
+                exec_root = sandboxes.get(sandbox_name or "") if sandbox_name else None
                 if exec_root is None:
-                    self._send_json(404, {"error": "no such sandbox"})
+                    self._send_json(404, {"error": "no such session"})
+                    return
+                if payload.get("wait") is False:
+                    self._send_json(200, {"cmdId": uuid.uuid4().hex[:12]})
                     return
                 cmd = str(payload.get("command", ""))
                 try:
                     rewritten = cmd.replace("/workspace", str(exec_root / "workspace"))
-                    # macOS BSD `base64` doesn't accept positional file argument.
-                    # Rewrite `base64 <abs-path>` → `cat <abs-path> | base64`.
                     if sys.platform == "darwin":
                         rewritten = re.sub(
                             r"\bbase64 (/[^\s|>;&]+)",
@@ -104,30 +123,29 @@ def start_fake_vercel(
                         {
                             "stdout": proc.stdout,
                             "stderr": proc.stderr,
-                            "exit_code": proc.returncode,
+                            "exitCode": proc.returncode,
                         },
                     )
                 except subprocess.TimeoutExpired:
                     self._send_json(
                         200,
-                        {
-                            "stdout": "",
-                            "stderr": "timeout",
-                            "exit_code": 124,
-                        },
+                        {"stdout": "", "stderr": "timeout", "exitCode": 124},
                     )
                 return
             self._send_json(404, {"error": f"no such route: {path}"})
 
         def do_DELETE(self) -> None:
             path = self._path_without_query()
-            m = re.match(r"^/v1/sandboxes/([^/]+)$", path)
+            m = re.match(r"^/v2/sandboxes/([^/]+)$", path)
             if m:
-                sb_id = m.group(1)
-                sb_root = sandboxes.pop(sb_id, None)
+                name = m.group(1)
+                sb_root = sandboxes.pop(name, None)
                 if sb_root is None:
                     self._send_json(404, {"error": "no such sandbox"})
                     return
+                for sid, sname in list(sessions.items()):
+                    if sname == name:
+                        sessions.pop(sid, None)
                 shutil.rmtree(sb_root, ignore_errors=True)
                 self.send_response(204)
                 self.end_headers()

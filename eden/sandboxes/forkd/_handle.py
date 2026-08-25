@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import shlex
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -72,9 +73,9 @@ class _ForkdHandle:
             cmd = f"printf '%s' {b64} | base64 -d | ({cmd})"
 
         merged_env = {**self.env, **(dict(env) if env else {})}
-        kwargs: dict[str, object] = {}
         if cwd is not None:
-            kwargs["cwd"] = cwd.as_posix()
+            cmd = f"cd {shlex.quote(cwd.as_posix())} && ({cmd})"
+        kwargs: dict[str, object] = {}
         if merged_env:
             kwargs["envs"] = merged_env
         effective_timeout = timeout if timeout is not None else self.timeout

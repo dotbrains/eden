@@ -47,6 +47,7 @@ def make_container_provider(
     cpus: float | None = None,
     groups: tuple[str | int, ...] | None = None,
     userns: Literal["keep-id"] | None = None,
+    ports: tuple[int, ...] | None = None,
     max_output_tail_chars: int = DEFAULT_MAX_CHARS,
     create_timeout: float = 120.0,
 ) -> SandboxProvider:
@@ -75,25 +76,17 @@ def make_container_provider(
     workloads or KVM nesting. ``cpus`` bounds container CPU usage via
     ``--cpus <value>``.
 
-    ``groups`` is a tuple of supplementary group names or GIDs passed via
-    ``--group-add``. Most commonly used to grant the in-container ``agent``
-    user access to a bind-mounted Docker socket (``groups=("docker",)``).
-    ``userns`` is Podman-only. ``"keep-id"`` adds
-    ``--userns=keep-id:uid=<uid>,gid=<gid>`` so rootless Podman maps the host
-    user to the configured in-container user without chowning bind mounts.
-    ``max_output_tail_chars`` bounds the returned stdout/stderr tail for
-    streamed exec calls while preserving complete live ``on_line`` delivery.
+    ``groups`` adds supplementary groups (``--group-add``), commonly ``("docker",)``.
+    ``max_output_tail_chars`` bounds returned stdout/stderr tails for streamed exec.
 
-    ``create_timeout`` bounds the whole container-creation sequence (image
-    inspect, UID check, ``<binary> run``, mount-parent prep) against one
-    shared deadline, not each step independently — a hung daemon otherwise
-    costs up to N times the intended deadline across N sequential
-    subprocess calls. Raises ``ContainerStartTimeout`` on expiry.
+    ``create_timeout`` bounds the whole container-creation sequence. Raises
+    ``ContainerStartTimeout`` on expiry.
     """
     provider_mounts: tuple[Mount, ...] = mounts or ()
     provider_env: dict[str, str] = dict(env) if env else {}
     provider_devices: tuple[str, ...] = devices or ()
     provider_groups: tuple[str | int, ...] = groups or ()
+    provider_ports: tuple[int, ...] = ports or ()
     provider_networks: tuple[str, ...] = (
         () if network is None else (network,) if isinstance(network, str) else network
     )
@@ -137,6 +130,7 @@ def make_container_provider(
                 groups=provider_groups,
                 image=resolved_image,
                 selinux_label=selinux_label,
+                ports=provider_ports,
             )
 
             run_proc = subprocess.run(argv, capture_output=True, text=True, timeout=remaining())
@@ -163,6 +157,7 @@ def make_container_provider(
             worktree_path=Path("/workspace"),
             host_worktree_path=opts.worktree_path,
             max_output_tail_chars=max_output_tail_chars,
+            declared_ports=provider_ports,
         )
 
     return make_bind_mount_provider(name=binary, create=_create)

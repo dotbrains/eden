@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from eden._error_base import EdenError, _format
+from eden._redact import redact_secrets
 
 
 class RestError(EdenError):
@@ -23,15 +24,17 @@ class RestError(EdenError):
         status: int = 0,
         body: str = "",
         url: str = "",
+        retryable: bool = False,
     ) -> None:
         self.code = code
-        self.message = message
+        self.message = redact_secrets(message)
         self.hint = hint
         self.cause = cause
         self.status = status
-        self.body = body
-        self.url = url
-        super().__init__(_format(code, message, hint))
+        self.body = redact_secrets(body)
+        self.url = redact_secrets(url)
+        self.retryable = retryable
+        super().__init__(_format(code, self.message, hint))
 
 
 class RestAuthError(RestError):
@@ -47,6 +50,7 @@ class RestAuthError(RestError):
         status: int = 0,
         body: str = "",
         url: str = "",
+        retryable: bool = False,
     ) -> None:
         super().__init__(
             code=code,
@@ -56,6 +60,7 @@ class RestAuthError(RestError):
             status=status,
             body=body,
             url=url,
+            retryable=retryable,
         )
 
 
@@ -72,6 +77,7 @@ class RestNotFoundError(RestError):
         status: int = 0,
         body: str = "",
         url: str = "",
+        retryable: bool = False,
     ) -> None:
         super().__init__(
             code=code,
@@ -81,6 +87,7 @@ class RestNotFoundError(RestError):
             status=status,
             body=body,
             url=url,
+            retryable=retryable,
         )
 
 
@@ -97,6 +104,7 @@ class RestRateLimited(RestError):
         status: int = 0,
         body: str = "",
         url: str = "",
+        retryable: bool = True,
     ) -> None:
         super().__init__(
             code=code,
@@ -106,4 +114,5 @@ class RestRateLimited(RestError):
             status=status,
             body=body,
             url=url,
+            retryable=retryable,
         )

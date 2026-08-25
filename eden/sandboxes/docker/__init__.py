@@ -23,6 +23,7 @@ def provider(
     devices: tuple[str, ...] | None = None,
     cpus: float | None = None,
     groups: tuple[str | int, ...] | None = None,
+    ports: tuple[int, ...] | None = None,
     max_output_tail_chars: int = DEFAULT_MAX_CHARS,
     create_timeout: float = 120.0,
 ) -> SandboxProvider:
@@ -78,6 +79,7 @@ def provider(
         groups=groups,
         max_output_tail_chars=max_output_tail_chars,
         create_timeout=create_timeout,
+        ports=ports,
     )
 
 

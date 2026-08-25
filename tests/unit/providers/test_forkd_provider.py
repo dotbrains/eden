@@ -95,6 +95,18 @@ def test_handle_exec_merges_env(tmp_path: Path) -> None:
     h = handle(sandbox, host=tmp_path, env={"BASE": "1"})
     h.exec("env", env={"EXTRA": "2"})  # type: ignore[attr-defined]
     assert commands.calls[0]["envs"] == {"BASE": "1", "EXTRA": "2"}
+    assert commands.calls[0]["cwd"] is None
+
+
+def test_handle_exec_prefixes_cwd_into_command(tmp_path: Path) -> None:
+    commands = FakeCommands(results=[FakeResult()])
+    sandbox = FakeSandbox(commands=commands)
+    h = handle(sandbox, host=tmp_path)
+    h.exec("pwd", cwd=Path("/workspace/sub"))  # type: ignore[attr-defined]
+    cmd = commands.calls[0]["cmd"]
+    assert isinstance(cmd, str)
+    assert cmd.startswith("cd /workspace/sub && (pwd)")
+    assert commands.calls[0]["cwd"] is None
 
 
 def test_handle_exec_wraps_stdin_as_base64(tmp_path: Path) -> None:

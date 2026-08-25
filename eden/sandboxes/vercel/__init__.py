@@ -1,15 +1,4 @@
-"""Vercel cloud sandbox provider: REST-driven isolated/finalizing sandbox.
-
-Phase 4c: factory + create flow + handle methods (exec, copy_file_in/out, close)
-+ stub finalize. Phase 4c Task 2 fills in the real finalize.
-
-Endpoints (empirically derived from Vercel Sandbox SDK conventions):
-  POST   /v1/sandboxes              — create sandbox; payload {runtime, env, name?}
-  POST   /v1/sandboxes/{id}/exec    — run command; payload {command, cwd?, env?, timeout?}
-  DELETE /v1/sandboxes/{id}         — destroy sandbox
-
-When `team_id` is set, every request carries `?teamId=<id>` as a query parameter.
-"""
+"""Vercel cloud sandbox provider: REST-driven isolated/finalizing sandbox."""
 
 from __future__ import annotations
 
@@ -33,6 +22,24 @@ _DEFAULT_RUNTIME = "node24"
 _SANDBOX_WORKDIR = Path("/workspace")
 
 
+def _parse_create_response(response: dict[str, object]) -> tuple[str, str, dict[int, str]]:
+    sandbox = response.get("sandbox") or {}
+    session = response.get("session") or {}
+    routes_raw = response.get("routes") or []
+    if not isinstance(sandbox, dict):
+        sandbox = {}
+    if not isinstance(session, dict):
+        session = {}
+    name = str(sandbox.get("name") or response.get("name") or "")
+    session_id = str(session.get("id") or session.get("sessionId") or "")
+    routes: dict[int, str] = {}
+    if isinstance(routes_raw, list):
+        for entry in routes_raw:
+            if isinstance(entry, dict) and "port" in entry and "url" in entry:
+                routes[int(entry["port"])] = str(entry["url"])
+    return name, session_id, routes
+
+
 def provider(
     *,
     runtime: str = _DEFAULT_RUNTIME,
@@ -40,17 +47,13 @@ def provider(
     team_id: str | None = None,
     base_url: str | None = None,
     env: Mapping[str, str] | None = None,
+    ports: tuple[int, ...] | None = None,
     timeout: float = 60.0,
 ) -> SandboxProvider:
-    """Vercel Sandbox cloud isolated/finalizing sandbox provider.
-
-    `access_token` falls back to VERCEL_TOKEN env var; `team_id` to
-    VERCEL_TEAM_ID; `base_url` to VERCEL_API_URL (default
-    https://api.vercel.com). Raises ProviderUnavailable at create() time
-    (NOT at factory time) when no access_token is found.
-    """
+    """Vercel Sandbox cloud isolated/finalizing sandbox provider."""
     fixed_runtime = runtime
     fixed_env: dict[str, str] = dict(env) if env else {}
+    fixed_ports: tuple[int, ...] = ports or ()
     fixed_timeout = timeout
 
     def _create(opts: CreateOptions) -> IsolatedSandboxHandle:
@@ -78,39 +81,41 @@ def provider(
                 "runtime": fixed_runtime,
                 "env": merged_env,
             }
+            if fixed_ports:
+                payload["ports"] = list(fixed_ports)
             if opts.name_hint:
                 payload["name"] = opts.name_hint[:63]
-            response = client.post("/v1/sandboxes", json=payload, params=params)
+            response = client.post("/v4/sandboxes", json=payload, params=params)
         except Exception:
             client.close()
             raise
 
-        sandbox_id = str(response.get("id") or response.get("sandbox_id") or "")
-        if not sandbox_id:
+        name, session_id, routes = _parse_create_response(response)
+        if not session_id or not name:
             client.close()
             raise ProviderUnavailable(
                 provider="vercel",
-                binary=f"sandbox-id missing in response: {response}",
+                binary=f"sandbox session/name missing in response: {response}",
             )
 
+        cmd_endpoint = f"/v2/sandboxes/sessions/{session_id}/cmd"
         try:
-            endpoint = f"/v1/sandboxes/{sandbox_id}/exec"
             upload_tree_via_rest_exec(
                 client,
-                endpoint,
+                cmd_endpoint,
                 src=opts.worktree_path,
                 dst=_SANDBOX_WORKDIR,
                 params=params,
             )
             baseline = snapshot_via_rest_exec(
                 client,
-                endpoint,
+                cmd_endpoint,
                 root=_SANDBOX_WORKDIR,
                 params=params,
             )
         except Exception:
             try:
-                client.delete(f"/v1/sandboxes/{sandbox_id}", params=params)
+                client.delete(f"/v2/sandboxes/{name}", params=params)
             except Exception:
                 pass
             client.close()
@@ -118,11 +123,13 @@ def provider(
 
         return _VercelHandle(
             client=client,
-            sandbox_id=sandbox_id,
+            session_id=session_id,
+            name=name,
             worktree_path=_SANDBOX_WORKDIR,
             host_worktree_path=opts.worktree_path,
             baseline=baseline,
             team_id=resolved_team,
+            routes=routes,
         )
 
     return make_isolated_provider(name="vercel", create=_create)

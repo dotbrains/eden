@@ -13,11 +13,12 @@ from pathlib import Path
 
 from eden.abort import AbortSignal
 from eden.providers._helpers import make_bind_mount_provider
+from eden.providers._process_local import start_local_process
 from eden.providers._protocols import (
     BindMountSandboxHandle,
     SandboxProvider,
 )
-from eden.providers._types import CreateOptions, ExecResult
+from eden.providers._types import CreateOptions, ExecResult, ExposedPort
 from eden.sandboxes._exec import stream_exec
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
@@ -65,6 +66,25 @@ class _NoSandboxHandle:
             stdin=stdin,
             max_output_tail_chars=self.max_output_tail_chars,
         )
+
+    def start(
+        self,
+        cmd: str,
+        *,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> object:
+        merged_env = {**dict(self.base_env), **dict(env or {})}
+        return start_local_process(
+            cmd,
+            cmd_for_error=cmd,
+            shell=True,
+            cwd=cwd or self.worktree_path,
+            env=merged_env,
+        )
+
+    def expose_port(self, port: int, *, public: bool = False) -> ExposedPort:
+        return ExposedPort(port=port, url=f"http://localhost:{port}", public=public)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
         shutil.copy2(host, sandbox)

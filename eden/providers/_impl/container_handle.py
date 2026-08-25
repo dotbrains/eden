@@ -5,12 +5,14 @@ from __future__ import annotations
 import subprocess
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from eden.abort import AbortSignal
-from eden.providers._types import ExecResult
+from eden.providers._process_local import start_local_process
+from eden.providers._types import ExecResult, ExposedPort
 from eden.sandboxes._exec import stream_exec
+from eden.sandboxes.errors import PortNotDeclared
 from eden.streaming._bounded_tail import DEFAULT_MAX_CHARS
 
 
@@ -37,6 +39,7 @@ class ContainerHandle:
     worktree_path: Path
     host_worktree_path: Path
     max_output_tail_chars: int = DEFAULT_MAX_CHARS
+    declared_ports: tuple[int, ...] = field(default_factory=tuple)
 
     def exec(
         self,
@@ -64,6 +67,37 @@ class ContainerHandle:
             stdin=stdin,
             max_output_tail_chars=self.max_output_tail_chars,
         )
+
+    def start(
+        self,
+        cmd: str,
+        *,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> object:
+        argv: list[str] = [self.binary, "exec", "-i"]
+        if cwd is not None:
+            argv.extend(["-w", cwd.as_posix()])
+        if env:
+            for k, v in env.items():
+                argv.extend(["-e", f"{k}={v}"])
+        argv.extend([self.container_id, "/bin/sh", "-c", cmd])
+        return start_local_process(argv, cmd_for_error=cmd, shell=False)
+
+    def expose_port(self, port: int, *, public: bool = False) -> ExposedPort:
+        if port not in self.declared_ports:
+            raise PortNotDeclared(port=port, container_id=self.container_id)
+        proc = subprocess.run(
+            [self.binary, "port", self.container_id, str(port)],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        line = proc.stdout.strip().splitlines()[0]
+        host_part, _, mapped = line.rpartition(":")
+        host = host_part or "127.0.0.1"
+        url = f"http://{host}:{mapped}"
+        return ExposedPort(port=port, url=url, public=public)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
         subprocess.run(

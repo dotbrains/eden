@@ -20,11 +20,12 @@ def test_handle_exec_returns_exec_result() -> None:
     from eden.sandboxes.vercel import _VercelHandle
 
     client = mock_client(
-        {"stdout": "hello\n", "stderr": "", "exit_code": 0},
+        {"stdout": "hello\n", "stderr": "", "exitCode": 0},
     )
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),
         baseline={},
@@ -35,8 +36,9 @@ def test_handle_exec_returns_exec_result() -> None:
     assert result.stdout == "hello\n"
     assert result.exit_code == 0
     args, kwargs = client.post.call_args
-    assert args[0] == "/v1/sandboxes/sb-1/exec"
+    assert args[0] == "/v2/sandboxes/sessions/sess-1/cmd"
     assert kwargs["json"]["command"] == "echo hello"
+    assert kwargs["json"]["wait"] is True
 
 
 def test_handle_exec_returns_neg_one_on_rest_failure() -> None:
@@ -46,7 +48,8 @@ def test_handle_exec_returns_neg_one_on_rest_failure() -> None:
     client.post.side_effect = RuntimeError("network down")
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),
         baseline={},
@@ -62,10 +65,11 @@ def test_handle_copy_file_in_base64_shells(tmp_path: Path) -> None:
 
     src = tmp_path / "payload.bin"
     src.write_bytes(b"\x00\x01\x02\x03")
-    client = mock_client({"stdout": "", "stderr": "", "exit_code": 0})
+    client = mock_client({"stdout": "", "stderr": "", "exitCode": 0})
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),
         baseline={},
@@ -84,10 +88,11 @@ def test_handle_copy_file_in_raises_exec_failed_on_nonzero(tmp_path: Path) -> No
 
     src = tmp_path / "payload.bin"
     src.write_bytes(b"x")
-    client = mock_client({"stdout": "", "stderr": "boom", "exit_code": 1})
+    client = mock_client({"stdout": "", "stderr": "boom", "exitCode": 1})
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),
         baseline={},
@@ -103,14 +108,15 @@ def test_handle_close_deletes_sandbox() -> None:
     client = MagicMock(spec=RestClient)
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),
         baseline={},
         team_id=None,
     )
     handle.close()
-    client.delete.assert_called_once_with("/v1/sandboxes/sb-1", params=None)
+    client.delete.assert_called_once_with("/v2/sandboxes/sb-1", params=None)
     client.close.assert_called_once()
 
 
@@ -122,11 +128,12 @@ def test_handle_close_idempotent_on_not_found() -> None:
     client.delete.side_effect = RestNotFoundError(
         message="404",
         status=404,
-        url="https://x/v1/sandboxes/sb-1",
+        url="https://x/v2/sandboxes/sb-1",
     )
     handle = _VercelHandle(
         client=client,
-        sandbox_id="sb-1",
+        session_id="sess-1",
+        name="sb-1",
         worktree_path=Path("/workspace"),
         host_worktree_path=Path("/host"),
         baseline={},

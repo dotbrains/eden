@@ -8,7 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from eden.providers._impl import patch_sync
-from eden.providers._types import ExecResult, FinalizeResult
+from eden.providers._process_local import start_local_process
+from eden.providers._types import ExecResult, ExposedPort, FinalizeResult
 from eden.sandboxes._exec import stream_exec
 
 
@@ -40,6 +41,25 @@ class IsolatedHandle:
             timeout=timeout,
             stdin=stdin,
         )
+
+    def start(
+        self,
+        cmd: str,
+        *,
+        cwd: Path | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> object:
+        merged_cwd = cwd if cwd is not None else self.worktree_path
+        return start_local_process(
+            ["/bin/sh", "-c", cmd],
+            cmd_for_error=cmd,
+            shell=False,
+            cwd=merged_cwd,
+            env=env,
+        )
+
+    def expose_port(self, port: int, *, public: bool = False) -> ExposedPort:
+        return ExposedPort(port=port, url=f"http://localhost:{port}", public=public)
 
     def copy_file_in(self, host: Path, sandbox: Path) -> None:
         sandbox.parent.mkdir(parents=True, exist_ok=True)
